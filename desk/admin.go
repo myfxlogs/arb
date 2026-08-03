@@ -22,8 +22,8 @@ type AdminTab struct {
 }
 
 // NewAdminTab creates an admin tab.
-func NewAdminTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
-	a := &AdminTab{client: client}
+func NewAdminTab(client dashpb.DashboardServiceClient, win fyne.Window) fyne.CanvasObject {
+	a := &AdminTab{client: client, window: win}
 
 	statusLabel := widget.NewLabel("策略状态: 加载中...")
 	killStatusLabel := widget.NewLabel("紧急停止: 未知")

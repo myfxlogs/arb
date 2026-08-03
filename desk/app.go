@@ -63,7 +63,7 @@ func (a *App) Run() {
 		container.NewTabItem("持仓", NewPositionsTab(a.client)),
 		container.NewTabItem("交易", NewTradingTab(a.client)),
 		container.NewTabItem("历史", NewHistoryTab(a.client)),
-		container.NewTabItem("管理", NewAdminTab(a.client)),
+		container.NewTabItem("管理", NewAdminTab(a.client, window)),
 	)
 	window.SetContent(tabs)
 	window.Resize(fyne.NewSize(1400, 900))
