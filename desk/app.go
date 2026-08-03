@@ -2,6 +2,7 @@ package desk
 
 import (
 	"crypto/tls"
+	_ "embed"
 	"fmt"
 	"strings"
 
@@ -14,6 +15,9 @@ import (
 
 	dashpb "arb/proto/gen/dashboard"
 )
+
+//go:embed icon.png
+var iconPNG []byte
 
 // App is the Fyne desktop application for ARB.
 type App struct {
@@ -58,6 +62,8 @@ func hostFromAddr(addr string) string {
 // Run starts the Fyne application with 5 tabs.
 func (a *App) Run() {
 	window := a.fyneApp.NewWindow("ARB 交易终端")
+	iconRes := fyne.NewStaticResource("icon.png", iconPNG)
+	window.SetIcon(iconRes)
 	tabs := container.NewAppTabs(
 		container.NewTabItem("价差矩阵", NewMatrixTab(a.client)),
 		container.NewTabItem("持仓", NewPositionsTab(a.client)),
