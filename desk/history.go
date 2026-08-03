@@ -28,8 +28,8 @@ func NewHistoryTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 		func() fyne.CanvasObject { return widget.NewLabel("") },
 		func(i widget.ListItemID, obj fyne.CanvasObject) {
 			if i < len(h.signals) {
-				obj.(*widget.Label).SetText(fmt.Sprintf("%s %s %s",
-					h.signals[i].Id, h.signals[i].Strategy, h.signals[i].Status))
+				obj.(*widget.Label).SetText(fmt.Sprintf("%s %s executed=%v",
+					h.signals[i].Id, h.signals[i].Strategy, h.signals[i].Executed))
 			}
 		},
 	)
