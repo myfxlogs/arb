@@ -3,6 +3,7 @@ package desk
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -178,131 +179,99 @@ func (a *AdminTab) showAddBrokerDialog() {
 		return
 	}
 
-	// 平台选择
+	// === 共享状态 ===
+	var searchResult *dashpb.SearchBrokerReply
+	step := 0
+
 	platformSelect := widget.NewSelect([]string{"MT4", "MT5"}, nil)
 	platformSelect.SetSelected("MT5")
 
-	// 搜索框
 	companyEntry := widget.NewEntry()
-	companyEntry.SetPlaceHolder("输入经纪商名称关键词（如 OctaFX, RoboForex）")
+	companyEntry.SetPlaceHolder("输入经纪商关键词（如 OctaFX, RoboForex）")
 
 	searchStatus := widget.NewLabel("")
+
+	// 公司列表：显示 "公司名 (N个服务器)"
 	companySelect := widget.NewSelect([]string{}, nil)
+
+	// 服务器列表：只显示 name，正序排列
 	serverSelect := widget.NewSelect([]string{}, nil)
-
-	// 搜索结果缓存
-	var searchResult *dashpb.SearchBrokerReply
-
-	// 服务器选择变化时，显示服务器地址
 	serverInfo := widget.NewLabel("")
 
-	// 账号密码
 	userEntry := widget.NewEntry()
 	userEntry.SetPlaceHolder("交易账号")
 	passwordEntry := widget.NewPasswordEntry()
 	passwordEntry.SetPlaceHolder("密码")
-
-	// 自定义名称
 	nameEntry := widget.NewEntry()
 	nameEntry.SetPlaceHolder("自定义名称（可留空，默认用公司名）")
 
-	searchBtn := widget.NewButton("搜索", func() {
-		platform := int32(0)
-		if platformSelect.Selected == "MT5" {
-			platform = 1
-		}
-		searchStatus.SetText("搜索中...")
-		companySelect.Options = []string{}
-		serverSelect.Options = []string{}
-		serverInfo.SetText("")
-		companySelect.ClearSelected()
-		serverSelect.ClearSelected()
+	// === 步骤标题 ===
+	stepTitle := widget.NewLabel("步骤 1/3 — 搜索经纪商")
+	stepTitle.TextStyle = fyne.TextStyle{Bold: true}
 
-		go func() {
-			reply, err := a.client.SearchBroker(context.Background(), &dashpb.SearchBrokerRequest{
-				Company:  companyEntry.Text,
-				Platform: platform,
-			})
-			fyne.Do(func() {
-				if err != nil {
-					searchStatus.SetText(fmt.Sprintf("搜索失败: %v", err))
-					return
-				}
-				if reply.Error != "" {
-					searchStatus.SetText(reply.Error)
-					return
-				}
-				searchResult = reply
-				companies := make([]string, 0, len(reply.Companies))
-				for _, c := range reply.Companies {
-					companies = append(companies, c.CompanyName)
-				}
-				if len(companies) == 0 {
-					searchStatus.SetText("未找到匹配的经纪商")
-					return
-				}
-				companySelect.Options = companies
-				companySelect.SetSelectedIndex(0)
-				searchStatus.SetText(fmt.Sprintf("找到 %d 个经纪商", len(companies)))
-			})
-		}()
-	})
+	// === 步骤内容容器 ===
+	stepContent := container.NewStack()
 
-	// 公司选择变化时，更新服务器列表（只显示 name）
-	companySelect.OnChanged = func(companyName string) {
-		if searchResult == nil {
-			return
-		}
-		for _, c := range searchResult.Companies {
-			if c.CompanyName == companyName {
-				servers := make([]string, 0, len(c.Servers))
-				for _, s := range c.Servers {
-					servers = append(servers, s.Name)
-				}
-				serverSelect.Options = servers
-				if len(servers) > 0 {
-					serverSelect.SetSelectedIndex(0)
-				}
-				return
-			}
-		}
-	}
-
-	// 服务器选择变化时，显示服务器名
-	serverSelect.OnChanged = func(serverName string) {
-		if searchResult == nil {
-			return
-		}
-		for _, c := range searchResult.Companies {
-			if c.CompanyName != companySelect.Selected {
-				continue
-			}
-			for _, s := range c.Servers {
-				if s.Name == serverName {
-					serverInfo.SetText(fmt.Sprintf("已选择: %s", s.Name))
-					return
-				}
-			}
-		}
-	}
-
-	form := container.NewVBox(
-		widget.NewLabel("平台"), platformSelect,
+	// 步骤1：搜索
+	step1 := container.NewVBox(
+		widget.NewLabel("选择平台"), platformSelect,
 		spacer(8),
-		widget.NewLabel("经纪商名称"), companyEntry,
-		spacer(4),
-		searchBtn,
-		spacer(4),
+		widget.NewLabel("经纪商关键词"), companyEntry,
+		spacer(8),
+		widget.NewButton("搜索", func() {
+			platform := int32(0)
+			if platformSelect.Selected == "MT5" {
+				platform = 1
+			}
+			searchStatus.SetText("搜索中...")
+			companySelect.Options = []string{}
+			companySelect.ClearSelected()
+
+			go func() {
+				reply, err := a.client.SearchBroker(context.Background(), &dashpb.SearchBrokerRequest{
+					Company:  companyEntry.Text,
+					Platform: platform,
+				})
+				fyne.Do(func() {
+					if err != nil {
+						searchStatus.SetText(fmt.Sprintf("搜索失败: %v", err))
+						return
+					}
+					if reply.Error != "" {
+						searchStatus.SetText(reply.Error)
+						return
+					}
+					searchResult = reply
+					if len(reply.Companies) == 0 {
+						searchStatus.SetText("未找到匹配的经纪商")
+						return
+					}
+					// 公司列表显示 "公司名 (N个服务器)"
+					labels := make([]string, 0, len(reply.Companies))
+					for _, c := range reply.Companies {
+						labels = append(labels, fmt.Sprintf("%s (%d个服务器)", c.CompanyName, len(c.Servers)))
+					}
+					companySelect.Options = labels
+					companySelect.SetSelectedIndex(0)
+					searchStatus.SetText(fmt.Sprintf("找到 %d 个经纪商", len(reply.Companies)))
+				})
+			}()
+		}),
+		spacer(8),
 		searchStatus,
-		spacer(8),
-		widget.NewLabel("选择公司"), companySelect,
-		spacer(8),
-		widget.NewLabel("选择服务器"), serverSelect,
-		spacer(4),
-		serverInfo,
-		spacer(16),
-		widget.NewSeparator(),
 		spacer(12),
+		widget.NewLabel("选择公司"), companySelect,
+	)
+
+	// 步骤2：选择服务器
+	step2 := container.NewVBox(
+		widget.NewLabel("选择服务器"), serverSelect,
+		spacer(8),
+		serverInfo,
+	)
+
+	// 步骤3：输入账号
+	step3 := container.NewVBox(
 		widget.NewLabel("交易账号"), userEntry,
 		spacer(8),
 		widget.NewLabel("密码"), passwordEntry,
@@ -310,44 +279,93 @@ func (a *AdminTab) showAddBrokerDialog() {
 		widget.NewLabel("自定义名称（可选）"), nameEntry,
 	)
 
-	dialogWin := dialog.NewCustomConfirm("添加经纪商", "添加", "取消", form, func(confirmed bool) {
-		if !confirmed {
+	// 公司选择变化时，更新服务器列表（正序排列，只显示 name）
+	companySelect.OnChanged = func(selected string) {
+		if searchResult == nil {
 			return
 		}
-		platform := int32(0)
-		if platformSelect.Selected == "MT5" {
-			platform = 1
+		// 从 label 中提取公司名
+		for _, c := range searchResult.Companies {
+			label := fmt.Sprintf("%s (%d个服务器)", c.CompanyName, len(c.Servers))
+			if label != selected {
+				continue
+			}
+			servers := make([]string, 0, len(c.Servers))
+			for _, s := range c.Servers {
+				servers = append(servers, s.Name)
+			}
+			sort.Strings(servers)
+			serverSelect.Options = servers
+			if len(servers) > 0 {
+				serverSelect.SetSelectedIndex(0)
+			}
+			return
 		}
+	}
 
-		// 解析服务器信息（用 name 匹配，access 内部使用）
-		serverName := ""
-		host := ""
-		port := int32(443)
-		if searchResult != nil {
-			for _, c := range searchResult.Companies {
-				if c.CompanyName != companySelect.Selected {
-					continue
-				}
-				for _, s := range c.Servers {
-					if s.Name == serverSelect.Selected {
-						serverName = s.Name
-						if s.Access != "" {
-							parts := strings.Split(s.Access, ":")
-							host = parts[0]
-							if len(parts) > 1 {
-								port = int32(parseInt(parts[1]))
-							}
-						}
-						break
-					}
-				}
+	serverSelect.OnChanged = func(serverName string) {
+		serverInfo.SetText(fmt.Sprintf("已选择: %s", serverName))
+	}
+
+	// === 导航栏 ===
+	navBar := container.NewHBox()
+
+	// 先声明按钮变量，updateStep 闭包引用
+	var prevBtn, nextBtn, submitBtn *widget.Button
+
+	// === 步骤切换逻辑 ===
+	updateStep := func() {
+		switch step {
+		case 0:
+			stepTitle.SetText("步骤 1/3 — 搜索经纪商")
+			stepContent.Objects = []fyne.CanvasObject{step1}
+			navBar.Objects = []fyne.CanvasObject{nextBtn}
+		case 1:
+			stepTitle.SetText("步骤 2/3 — 选择服务器")
+			stepContent.Objects = []fyne.CanvasObject{step2}
+			navBar.Objects = []fyne.CanvasObject{prevBtn, nextBtn}
+		case 2:
+			stepTitle.SetText("步骤 3/3 — 输入账号")
+			stepContent.Objects = []fyne.CanvasObject{step3}
+			navBar.Objects = []fyne.CanvasObject{prevBtn, submitBtn}
+		}
+		stepContent.Refresh()
+		navBar.Refresh()
+	}
+
+	// === 导航按钮 ===
+	prevBtn = widget.NewButton("上一步", func() {
+		if step > 0 {
+			step--
+			updateStep()
+		}
+	})
+
+	nextBtn = widget.NewButton("下一步", func() {
+		if step == 0 {
+			// 步骤1 → 步骤2：检查已搜索并选择公司
+			if searchResult == nil || len(companySelect.Options) == 0 {
+				dialog.ShowInformation("提示", "请先搜索并选择经纪商公司", a.window)
+				return
+			}
+			if companySelect.Selected == "" {
+				dialog.ShowInformation("提示", "请选择一个公司", a.window)
+				return
+			}
+			// 触发公司选择以填充服务器列表
+			companySelect.OnChanged(companySelect.Selected)
+		} else if step == 1 {
+			// 步骤2 → 步骤3：检查已选择服务器
+			if serverSelect.Selected == "" {
+				dialog.ShowInformation("提示", "请选择一个服务器", a.window)
+				return
 			}
 		}
+		step++
+		updateStep()
+	})
 
-		if host == "" && serverName == "" {
-			dialog.ShowInformation("错误", "请先搜索并选择经纪商和服务器", a.window)
-			return
-		}
+	submitBtn = widget.NewButton("确认添加", func() {
 		if userEntry.Text == "" {
 			dialog.ShowInformation("错误", "请输入交易账号", a.window)
 			return
@@ -357,9 +375,47 @@ func (a *AdminTab) showAddBrokerDialog() {
 			return
 		}
 
+		platform := int32(0)
+		if platformSelect.Selected == "MT5" {
+			platform = 1
+		}
+
+		// 从 label 提取公司名
+		companyName := ""
+		for _, c := range searchResult.Companies {
+			label := fmt.Sprintf("%s (%d个服务器)", c.CompanyName, len(c.Servers))
+			if label == companySelect.Selected {
+				companyName = c.CompanyName
+				break
+			}
+		}
+
+		// 解析服务器信息
+		serverName := ""
+		host := ""
+		port := int32(443)
+		for _, c := range searchResult.Companies {
+			if c.CompanyName != companyName {
+				continue
+			}
+			for _, s := range c.Servers {
+				if s.Name == serverSelect.Selected {
+					serverName = s.Name
+					if s.Access != "" {
+						parts := strings.Split(s.Access, ":")
+						host = parts[0]
+						if len(parts) > 1 {
+							port = int32(parseInt(parts[1]))
+						}
+					}
+					break
+				}
+			}
+		}
+
 		name := nameEntry.Text
 		if name == "" {
-			name = companySelect.Selected
+			name = companyName
 		}
 
 		req := &dashpb.AddBrokerRequest{
@@ -382,7 +438,22 @@ func (a *AdminTab) showAddBrokerDialog() {
 		}
 		dialog.ShowInformation("成功", fmt.Sprintf("经纪商 %s 添加成功", name), a.window)
 		a.refreshBrokers()
-	}, a.window)
-	dialogWin.Resize(fyne.NewSize(520, 700))
+	})
+
+	// 初始显示步骤1
+	updateStep()
+
+	form := container.NewVBox(
+		stepTitle,
+		spacer(12),
+		stepContent,
+		spacer(16),
+		widget.NewSeparator(),
+		spacer(8),
+		navBar,
+	)
+
+	dialogWin := dialog.NewCustom("添加经纪商", "关闭", form, a.window)
+	dialogWin.Resize(fyne.NewSize(520, 600))
 	dialogWin.Show()
 }
