@@ -1,0 +1,23 @@
+FROM golang:1.24-bookworm AS builder
+
+WORKDIR /build
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 go build -o /bin/arb-core ./cmd/core
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /bin/arb-core /usr/local/bin/arb-core
+COPY config/default.textproto /etc/arb/config.textproto
+
+EXPOSE 50051
+
+ENTRYPOINT ["arb-core", "-config=/etc/arb/config.textproto"]

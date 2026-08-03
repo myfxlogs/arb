@@ -96,8 +96,12 @@ func main() {
 
 	// 6. Store (optional — skip if no DSN)
 	var st *store.Store
-	if cfg.Database != nil && cfg.Database.Dsn != "" {
-		st, err = store.New(ctx, cfg.Database.Dsn)
+	dsn := cfg.Database.GetDsn()
+	if envDSN := os.Getenv("DB_DSN"); envDSN != "" {
+		dsn = envDSN
+	}
+	if dsn != "" {
+		st, err = store.New(ctx, dsn)
 		if err != nil {
 			slog.Warn("connect store", "error", err)
 		} else {
