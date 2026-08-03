@@ -3,6 +3,7 @@ package desk
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -177,31 +178,134 @@ func (a *AdminTab) showAddBrokerDialog() {
 		return
 	}
 
-	nameEntry := widget.NewEntry()
-	nameEntry.SetPlaceHolder("经纪商名称（如 OctaFX-Demo）")
-
+	// 平台选择
 	platformSelect := widget.NewSelect([]string{"MT4", "MT5"}, nil)
 	platformSelect.SetSelected("MT5")
 
-	hostEntry := widget.NewEntry()
-	hostEntry.SetPlaceHolder("服务器地址（如 78.140.180.198）")
+	// 搜索框
+	companyEntry := widget.NewEntry()
+	companyEntry.SetPlaceHolder("输入经纪商名称关键词（如 OctaFX, RoboForex）")
 
-	portEntry := widget.NewEntry()
-	portEntry.SetPlaceHolder("端口（如 443）")
+	searchStatus := widget.NewLabel("")
+	companySelect := widget.NewSelect([]string{}, nil)
+	serverSelect := widget.NewSelect([]string{}, nil)
 
+	// 搜索结果缓存
+	var searchResult *dashpb.SearchBrokerReply
+
+	// 服务器选择变化时，显示服务器地址
+	serverInfo := widget.NewLabel("")
+
+	// 账号密码
 	userEntry := widget.NewEntry()
 	userEntry.SetPlaceHolder("交易账号")
-
 	passwordEntry := widget.NewPasswordEntry()
 	passwordEntry.SetPlaceHolder("密码")
 
+	// 自定义名称
+	nameEntry := widget.NewEntry()
+	nameEntry.SetPlaceHolder("自定义名称（可留空，默认用公司名）")
+
+	searchBtn := widget.NewButton("搜索", func() {
+		platform := int32(0)
+		if platformSelect.Selected == "MT5" {
+			platform = 1
+		}
+		searchStatus.SetText("搜索中...")
+		companySelect.Options = []string{}
+		serverSelect.Options = []string{}
+		serverInfo.SetText("")
+		companySelect.ClearSelected()
+		serverSelect.ClearSelected()
+
+		go func() {
+			reply, err := a.client.SearchBroker(context.Background(), &dashpb.SearchBrokerRequest{
+				Company:  companyEntry.Text,
+				Platform: platform,
+			})
+			fyne.Do(func() {
+				if err != nil {
+					searchStatus.SetText(fmt.Sprintf("搜索失败: %v", err))
+					return
+				}
+				if reply.Error != "" {
+					searchStatus.SetText(reply.Error)
+					return
+				}
+				searchResult = reply
+				companies := make([]string, 0, len(reply.Companies))
+				for _, c := range reply.Companies {
+					companies = append(companies, c.CompanyName)
+				}
+				if len(companies) == 0 {
+					searchStatus.SetText("未找到匹配的经纪商")
+					return
+				}
+				companySelect.Options = companies
+				companySelect.SetSelectedIndex(0)
+				searchStatus.SetText(fmt.Sprintf("找到 %d 个经纪商", len(companies)))
+			})
+		}()
+	})
+
+	// 公司选择变化时，更新服务器列表
+	companySelect.OnChanged = func(companyName string) {
+		if searchResult == nil {
+			return
+		}
+		for _, c := range searchResult.Companies {
+			if c.CompanyName == companyName {
+				servers := make([]string, 0, len(c.Servers))
+				for _, s := range c.Servers {
+					label := s.Name
+					if s.Access != "" {
+						label = fmt.Sprintf("%s (%s)", s.Name, s.Access)
+					}
+					servers = append(servers, label)
+				}
+				serverSelect.Options = servers
+				if len(servers) > 0 {
+					serverSelect.SetSelectedIndex(0)
+				}
+				return
+			}
+		}
+	}
+
+	// 服务器选择变化时，显示地址信息
+	serverSelect.OnChanged = func(serverLabel string) {
+		if searchResult == nil {
+			return
+		}
+		for _, c := range searchResult.Companies {
+			if c.CompanyName != companySelect.Selected {
+				continue
+			}
+			for _, s := range c.Servers {
+				label := s.Name
+				if s.Access != "" {
+					label = fmt.Sprintf("%s (%s)", s.Name, s.Access)
+				}
+				if label == serverLabel {
+					serverInfo.SetText(fmt.Sprintf("服务器: %s\n地址: %s", s.Name, s.Access))
+					return
+				}
+			}
+		}
+	}
+
 	form := container.NewVBox(
-		widget.NewLabel("名称"), nameEntry,
 		widget.NewLabel("平台"), platformSelect,
-		widget.NewLabel("服务器地址"), hostEntry,
-		widget.NewLabel("端口"), portEntry,
-		widget.NewLabel("账号"), userEntry,
+		widget.NewLabel("经纪商名称"), companyEntry,
+		searchBtn,
+		searchStatus,
+		widget.NewLabel("选择公司"), companySelect,
+		widget.NewLabel("选择服务器"), serverSelect,
+		serverInfo,
+		widget.NewSeparator(),
+		widget.NewLabel("交易账号"), userEntry,
 		widget.NewLabel("密码"), passwordEntry,
+		widget.NewLabel("自定义名称（可选）"), nameEntry,
 	)
 
 	dialog.ShowCustomConfirm("添加经纪商", "添加", "取消", form, func(confirmed bool) {
@@ -212,13 +316,62 @@ func (a *AdminTab) showAddBrokerDialog() {
 		if platformSelect.Selected == "MT5" {
 			platform = 1
 		}
+
+		// 解析服务器信息
+		serverName := ""
+		host := ""
+		port := int32(443)
+		if searchResult != nil {
+			for _, c := range searchResult.Companies {
+				if c.CompanyName != companySelect.Selected {
+					continue
+				}
+				for _, s := range c.Servers {
+					label := s.Name
+					if s.Access != "" {
+						label = fmt.Sprintf("%s (%s)", s.Name, s.Access)
+					}
+					if label == serverSelect.Selected {
+						serverName = s.Name
+						if s.Access != "" {
+							parts := strings.Split(s.Access, ":")
+							host = parts[0]
+							if len(parts) > 1 {
+								port = int32(parseInt(parts[1]))
+							}
+						}
+						break
+					}
+				}
+			}
+		}
+
+		if host == "" && serverName == "" {
+			dialog.ShowInformation("错误", "请先搜索并选择经纪商和服务器", a.window)
+			return
+		}
+		if userEntry.Text == "" {
+			dialog.ShowInformation("错误", "请输入交易账号", a.window)
+			return
+		}
+		if passwordEntry.Text == "" {
+			dialog.ShowInformation("错误", "请输入密码", a.window)
+			return
+		}
+
+		name := nameEntry.Text
+		if name == "" {
+			name = companySelect.Selected
+		}
+
 		req := &dashpb.AddBrokerRequest{
-			Name:     nameEntry.Text,
+			Name:     name,
 			Platform: platform,
-			Host:     hostEntry.Text,
-			Port:     int32(parseInt(portEntry.Text)),
+			Host:     host,
+			Port:     port,
 			User:     int64(parseInt(userEntry.Text)),
 			Password: passwordEntry.Text,
+			Server:   serverName,
 		}
 		reply, err := a.client.AddBroker(context.Background(), req)
 		if err != nil {
@@ -229,7 +382,7 @@ func (a *AdminTab) showAddBrokerDialog() {
 			dialog.ShowInformation("失败", reply.Error, a.window)
 			return
 		}
-		dialog.ShowInformation("成功", fmt.Sprintf("经纪商 %s 添加成功", nameEntry.Text), a.window)
+		dialog.ShowInformation("成功", fmt.Sprintf("经纪商 %s 添加成功", name), a.window)
 		a.refreshBrokers()
 	}, a.window)
 }

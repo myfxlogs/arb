@@ -170,9 +170,9 @@ func (s *Server) AddBroker(ctx context.Context, req *dashpb.AddBrokerRequest) (*
 	var a adapter.PlatformAdapter
 	switch req.Platform {
 	case 0: // MT4
-		a = adapter.NewMT4Adapter(req.Name, req.Host, "", req.Port, req.User, req.Password, maxOrders)
+		a = adapter.NewMT4Adapter(req.Name, req.Host, req.Server, req.Port, req.User, req.Password, maxOrders)
 	case 1: // MT5
-		a = adapter.NewMT5Adapter(req.Name, req.Host, "", req.Port, req.User, req.Password, maxOrders)
+		a = adapter.NewMT5Adapter(req.Name, req.Host, req.Server, req.Port, req.User, req.Password, maxOrders)
 	default:
 		return &dashpb.AddBrokerReply{Success: false, Error: "unknown platform type"}, nil
 	}

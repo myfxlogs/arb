@@ -56,7 +56,8 @@ service DashboardService {
   rpc GetKillSwitchStatus(KillSwitchStatusRequest) returns (KillSwitchStatusReply);
   rpc TailLogs(TailLogsRequest) returns (stream TailLogsReply);
 
-  // === Broker 管理（v2 预留，v1 返回 Unimplemented） ===
+  // === Broker 管理 ===
+  rpc SearchBroker(SearchBrokerRequest) returns (SearchBrokerReply);
   rpc AddBroker(AddBrokerRequest) returns (AddBrokerReply);
   rpc RemoveBroker(RemoveBrokerRequest) returns (RemoveBrokerReply);
 }
@@ -361,8 +362,28 @@ message ResetCBReply {
 }
 
 // ============================================================
-// Broker 管理（v2 预留）
+// Broker 管理
 // ============================================================
+
+message SearchBrokerRequest {
+  string company = 1;   // 经纪商关键词（如 "OctaFX", "RoboForex"）
+  int32 platform = 2;   // 0=MT4, 1=MT5
+}
+
+message SearchBrokerReply {
+  repeated BrokerCompany companies = 1;
+  string error = 2;
+
+  message BrokerCompany {
+    string company_name = 1;
+    repeated BrokerServer servers = 2;
+  }
+
+  message BrokerServer {
+    string name = 1;     // 服务器名称（如 "RoboForex-Demo"）
+    string access = 2;   // host:port（如 "78.140.180.198:443"）
+  }
+}
 
 message AddBrokerRequest {
   string name = 1;
@@ -371,6 +392,7 @@ message AddBrokerRequest {
   int32 port = 4;
   int64 user = 5;
   string password = 6;
+  string server = 7;   // 服务器名称（非空时使用 ConnectEx）
 }
 
 message AddBrokerReply {
