@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 
 	"arb/internal/adapter"
 	"arb/internal/bus"
@@ -141,6 +142,7 @@ func main() {
 	}
 	grpcServer := grpc.NewServer()
 	dashpb.RegisterDashboardServiceServer(grpcServer, dashServer)
+	reflection.Register(grpcServer)
 
 	slog.Info("dashboard listening", "addr", cfg.Dashboard.ListenAddress)
 	go func() {

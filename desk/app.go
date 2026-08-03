@@ -1,15 +1,12 @@
 package desk
 
 import (
-	"crypto/tls"
 	"fmt"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
 	dashpb "arb/proto/gen/dashboard"
@@ -23,16 +20,8 @@ type App struct {
 
 // NewApp creates a new desktop application connected to the core gRPC server.
 func NewApp(addr string) (*App, error) {
-	var opts []grpc.DialOption
-	if isLocal(addr) {
-		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	} else {
-		creds := credentials.NewTLS(&tls.Config{
-			ServerName: hostFromAddr(addr),
-		})
-		opts = append(opts, grpc.WithTransportCredentials(creds))
-	}
-	conn, err := grpc.Dial(addr, opts...)
+	conn, err := grpc.Dial(addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("dial core %s: %w", addr, err)
 	}
@@ -41,18 +30,6 @@ func NewApp(addr string) (*App, error) {
 		fyneApp: app.New(),
 		client:  client,
 	}, nil
-}
-
-func isLocal(addr string) bool {
-	return strings.HasPrefix(addr, "localhost") || strings.HasPrefix(addr, "127.")
-}
-
-func hostFromAddr(addr string) string {
-	host, _, ok := strings.Cut(addr, ":")
-	if !ok {
-		return addr
-	}
-	return host
 }
 
 // Run starts the Fyne application with 5 tabs.
