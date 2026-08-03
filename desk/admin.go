@@ -248,7 +248,7 @@ func (a *AdminTab) showAddBrokerDialog() {
 		}()
 	})
 
-	// 公司选择变化时，更新服务器列表
+	// 公司选择变化时，更新服务器列表（只显示 name）
 	companySelect.OnChanged = func(companyName string) {
 		if searchResult == nil {
 			return
@@ -257,11 +257,7 @@ func (a *AdminTab) showAddBrokerDialog() {
 			if c.CompanyName == companyName {
 				servers := make([]string, 0, len(c.Servers))
 				for _, s := range c.Servers {
-					label := s.Name
-					if s.Access != "" {
-						label = fmt.Sprintf("%s (%s)", s.Name, s.Access)
-					}
-					servers = append(servers, label)
+					servers = append(servers, s.Name)
 				}
 				serverSelect.Options = servers
 				if len(servers) > 0 {
@@ -272,8 +268,8 @@ func (a *AdminTab) showAddBrokerDialog() {
 		}
 	}
 
-	// 服务器选择变化时，显示地址信息
-	serverSelect.OnChanged = func(serverLabel string) {
+	// 服务器选择变化时，显示服务器名
+	serverSelect.OnChanged = func(serverName string) {
 		if searchResult == nil {
 			return
 		}
@@ -282,12 +278,8 @@ func (a *AdminTab) showAddBrokerDialog() {
 				continue
 			}
 			for _, s := range c.Servers {
-				label := s.Name
-				if s.Access != "" {
-					label = fmt.Sprintf("%s (%s)", s.Name, s.Access)
-				}
-				if label == serverLabel {
-					serverInfo.SetText(fmt.Sprintf("服务器: %s\n地址: %s", s.Name, s.Access))
+				if s.Name == serverName {
+					serverInfo.SetText(fmt.Sprintf("已选择: %s", s.Name))
 					return
 				}
 			}
@@ -318,7 +310,7 @@ func (a *AdminTab) showAddBrokerDialog() {
 		widget.NewLabel("自定义名称（可选）"), nameEntry,
 	)
 
-	dialog.ShowCustomConfirm("添加经纪商", "添加", "取消", form, func(confirmed bool) {
+	dialogWin := dialog.NewCustomConfirm("添加经纪商", "添加", "取消", form, func(confirmed bool) {
 		if !confirmed {
 			return
 		}
@@ -327,7 +319,7 @@ func (a *AdminTab) showAddBrokerDialog() {
 			platform = 1
 		}
 
-		// 解析服务器信息
+		// 解析服务器信息（用 name 匹配，access 内部使用）
 		serverName := ""
 		host := ""
 		port := int32(443)
@@ -337,11 +329,7 @@ func (a *AdminTab) showAddBrokerDialog() {
 					continue
 				}
 				for _, s := range c.Servers {
-					label := s.Name
-					if s.Access != "" {
-						label = fmt.Sprintf("%s (%s)", s.Name, s.Access)
-					}
-					if label == serverSelect.Selected {
+					if s.Name == serverSelect.Selected {
 						serverName = s.Name
 						if s.Access != "" {
 							parts := strings.Split(s.Access, ":")
@@ -395,4 +383,6 @@ func (a *AdminTab) showAddBrokerDialog() {
 		dialog.ShowInformation("成功", fmt.Sprintf("经纪商 %s 添加成功", name), a.window)
 		a.refreshBrokers()
 	}, a.window)
+	dialogWin.Resize(fyne.NewSize(520, 700))
+	dialogWin.Show()
 }

@@ -10,22 +10,22 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// 调色板 — 深色液态玻璃风格
+// 调色板 — 浅色液态玻璃风格
 var (
-	colorBg          = color.RGBA{R: 24, G: 27, B: 32, A: 255}
-	colorCardBg      = color.RGBA{R: 34, G: 38, B: 46, A: 230}
-	colorCardHover   = color.RGBA{R: 44, G: 50, B: 60, A: 240}
-	colorAccent      = color.RGBA{R: 88, G: 166, B: 255, A: 255}
-	colorAccentDim   = color.RGBA{R: 88, G: 166, B: 255, A: 60}
-	colorTextPrimary = color.RGBA{R: 235, G: 238, B: 242, A: 255}
-	colorTextDim     = color.RGBA{R: 140, G: 148, B: 160, A: 255}
-	colorGreen       = color.RGBA{R: 80, G: 200, B: 120, A: 255}
-	colorRed         = color.RGBA{R: 240, G: 90, B: 90, A: 255}
-	colorSeparator   = color.RGBA{R: 50, G: 55, B: 65, A: 255}
-	colorSkeleton    = color.RGBA{R: 45, G: 50, B: 58, A: 255}
+	colorBg          = color.RGBA{R: 240, G: 244, B: 248, A: 255}
+	colorCardBg      = color.RGBA{R: 255, G: 255, B: 255, A: 200}
+	colorCardHover   = color.RGBA{R: 255, G: 255, B: 255, A: 235}
+	colorAccent      = color.RGBA{R: 0, G: 122, B: 255, A: 255}
+	colorAccentDim   = color.RGBA{R: 0, G: 122, B: 255, A: 40}
+	colorTextPrimary = color.RGBA{R: 28, G: 32, B: 38, A: 255}
+	colorTextDim     = color.RGBA{R: 142, G: 150, B: 162, A: 255}
+	colorGreen       = color.RGBA{R: 52, G: 199, B: 89, A: 255}
+	colorRed         = color.RGBA{R: 255, G: 69, B: 58, A: 255}
+	colorSeparator   = color.RGBA{R: 220, G: 226, B: 234, A: 255}
+	colorSkeleton    = color.RGBA{R: 224, G: 230, B: 238, A: 255}
 )
 
-// glassTheme 自定义深色液态玻璃主题
+// glassTheme 自定义浅色液态玻璃主题
 type glassTheme struct {
 	fyne.Theme
 }
@@ -65,7 +65,7 @@ func (g *glassTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.
 	case theme.ColorNameOverlayBackground:
 		return colorCardBg
 	default:
-		return g.Theme.Color(name, theme.VariantDark)
+		return g.Theme.Color(name, theme.VariantLight)
 	}
 }
 
