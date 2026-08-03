@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"log/slog"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 
 	"arb/internal/adapter"
@@ -27,6 +29,8 @@ import (
 
 func main() {
 	configPath := flag.String("config", "config/default.textproto", "path to config file")
+	certFile := flag.String("cert", "", "TLS cert file (enables TLS when set)")
+	keyFile := flag.String("key", "", "TLS key file")
 	flag.Parse()
 
 	// Load config
@@ -140,7 +144,20 @@ func main() {
 		slog.Error("listen", "error", err)
 		os.Exit(1)
 	}
-	grpcServer := grpc.NewServer()
+	var grpcServer *grpc.Server
+	if *certFile != "" && *keyFile != "" {
+		tlsCfg, err := loadTLSConfig(*certFile, *keyFile)
+		if err != nil {
+			slog.Error("load TLS cert", "error", err)
+			os.Exit(1)
+		}
+		creds := credentials.NewTLS(tlsCfg)
+		grpcServer = grpc.NewServer(grpc.Creds(creds))
+		slog.Info("gRPC server with TLS")
+	} else {
+		grpcServer = grpc.NewServer()
+		slog.Info("gRPC server without TLS")
+	}
 	dashpb.RegisterDashboardServiceServer(grpcServer, dashServer)
 	reflection.Register(grpcServer)
 
@@ -182,4 +199,16 @@ func collectSymbols(cfg *configpb.SystemConfig) []string {
 		symbols = []string{"EURUSD", "GBPUSD", "USDJPY"}
 	}
 	return symbols
+}
+
+func loadTLSConfig(certFile, keyFile string) (*tls.Config, error) {
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		NextProtos:   []string{"h2"},
+		MinVersion:   tls.VersionTLS12,
+	}, nil
 }
