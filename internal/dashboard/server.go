@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"arb/internal/adapter"
@@ -17,6 +18,7 @@ import (
 type Server struct {
 	dashpb.UnimplementedDashboardServiceServer
 
+	mu        sync.RWMutex
 	bus       *bus.QuoteBus
 	adapters  map[string]adapter.PlatformAdapter
 	store     *store.Store
@@ -25,6 +27,7 @@ type Server struct {
 	symbols   map[string]bool
 	strategies map[string]*strategyState
 	quoteCache *quoteCache
+	maxConcurrentOrders int
 }
 
 type strategyState struct {
@@ -37,12 +40,13 @@ type strategyState struct {
 
 // Deps holds dependencies for the dashboard server.
 type Deps struct {
-	Bus        *bus.QuoteBus
-	Adapters   map[string]adapter.PlatformAdapter
-	Store      *store.Store
-	KillSwitch *risk.KillSwitch
-	Breaker    *risk.CircuitBreaker
-	Symbols    []string
+	Bus                 *bus.QuoteBus
+	Adapters            map[string]adapter.PlatformAdapter
+	Store               *store.Store
+	KillSwitch          *risk.KillSwitch
+	Breaker             *risk.CircuitBreaker
+	Symbols             []string
+	MaxConcurrentOrders int
 }
 
 // NewServer creates a DashboardServiceServer.
@@ -57,14 +61,15 @@ func NewServer(deps Deps) *Server {
 		"statistical":     {enabled: false},
 	}
 	return &Server{
-		bus:        deps.Bus,
-		adapters:   deps.Adapters,
-		store:      deps.Store,
-		kill:       deps.KillSwitch,
-		breaker:    deps.Breaker,
-		symbols:    syms,
-		strategies: strats,
-		quoteCache: newQuoteCache(),
+		bus:                 deps.Bus,
+		adapters:            deps.Adapters,
+		store:               deps.Store,
+		kill:                deps.KillSwitch,
+		breaker:             deps.Breaker,
+		symbols:             syms,
+		strategies:          strats,
+		quoteCache:          newQuoteCache(),
+		maxConcurrentOrders: deps.MaxConcurrentOrders,
 	}
 }
 
@@ -131,10 +136,12 @@ func (s *Server) BuildSpreadMatrixForTest() *dashpb.SpreadMatrixReply {
 
 // buildSpreadMatrix constructs a spread matrix snapshot from cached quotes.
 func (s *Server) buildSpreadMatrix() *dashpb.SpreadMatrixReply {
+	s.mu.RLock()
 	symbols := make([]string, 0, len(s.symbols))
 	for sym := range s.symbols {
 		symbols = append(symbols, sym)
 	}
+	s.mu.RUnlock()
 
 	// Get cached quotes organized by broker -> symbol -> Quote
 	cached := s.quoteCache.snapshot()
@@ -230,8 +237,14 @@ func (s *Server) buildSpreadMatrix() *dashpb.SpreadMatrixReply {
 
 // buildPositionWatch constructs a position watch snapshot.
 func (s *Server) buildPositionWatch(ctx context.Context) *dashpb.PositionWatchReply {
-	brokers := make([]*dashpb.PositionWatchReply_BrokerPosition, 0, len(s.adapters))
-	for name, a := range s.adapters {
+	s.mu.RLock()
+	adapters := make(map[string]adapter.PlatformAdapter, len(s.adapters))
+	for k, v := range s.adapters {
+		adapters[k] = v
+	}
+	s.mu.RUnlock()
+	brokers := make([]*dashpb.PositionWatchReply_BrokerPosition, 0, len(adapters))
+	for name, a := range adapters {
 		bp := &dashpb.PositionWatchReply_BrokerPosition{
 			BrokerName:  name,
 			IsConnected: true,

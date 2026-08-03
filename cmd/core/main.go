@@ -130,12 +130,13 @@ func main() {
 
 	// 8. Dashboard gRPC server
 	dashServer := dashboard.NewServer(dashboard.Deps{
-		Bus:        quoteBus,
-		Adapters:   adapters,
-		Store:      st,
-		KillSwitch: killSwitch,
-		Breaker:    breaker,
-		Symbols:    allSymbols,
+		Bus:                 quoteBus,
+		Adapters:            adapters,
+		Store:               st,
+		KillSwitch:          killSwitch,
+		Breaker:             breaker,
+		Symbols:             allSymbols,
+		MaxConcurrentOrders: int(cfg.Risk.MaxConcurrentOrders),
 	})
 	dashServer.StartFeeder()
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"arb/internal/adapter"
 	dashpb "arb/proto/gen/dashboard"
 )
 
@@ -17,7 +18,13 @@ func (s *Server) Kill(ctx context.Context, req *dashpb.KillRequest) (*dashpb.Kil
 	}
 	positionsClosed := int32(0)
 	ordersCancelled := int32(0)
-	for name, a := range s.adapters {
+	s.mu.RLock()
+	adapters := make(map[string]adapter.PlatformAdapter, len(s.adapters))
+	for k, v := range s.adapters {
+		adapters[k] = v
+	}
+	s.mu.RUnlock()
+	for name, a := range adapters {
 		orders, err := a.OpenOrders(ctx)
 		if err != nil {
 			slog.Warn("kill: openOrders", "broker", name, "error", err)
@@ -146,12 +153,66 @@ func (s *Server) TailLogs(req *dashpb.TailLogsRequest, stream dashpb.DashboardSe
 	return ctx.Err()
 }
 
-// AddBroker is v2 placeholder — returns Unimplemented.
+// AddBroker connects a new broker adapter at runtime.
 func (s *Server) AddBroker(ctx context.Context, req *dashpb.AddBrokerRequest) (*dashpb.AddBrokerReply, error) {
-	return &dashpb.AddBrokerReply{Success: false, Error: "not implemented in v1"}, nil
+	s.mu.Lock()
+	if _, exists := s.adapters[req.Name]; exists {
+		s.mu.Unlock()
+		return &dashpb.AddBrokerReply{Success: false, Error: "broker already exists"}, nil
+	}
+	s.mu.Unlock()
+
+	maxOrders := s.maxConcurrentOrders
+	if maxOrders <= 0 {
+		maxOrders = 5
+	}
+
+	var a adapter.PlatformAdapter
+	switch req.Platform {
+	case 0: // MT4
+		a = adapter.NewMT4Adapter(req.Name, req.Host, "", req.Port, req.User, req.Password, maxOrders)
+	case 1: // MT5
+		a = adapter.NewMT5Adapter(req.Name, req.Host, "", req.Port, req.User, req.Password, maxOrders)
+	default:
+		return &dashpb.AddBrokerReply{Success: false, Error: "unknown platform type"}, nil
+	}
+
+	token, err := a.Connect(ctx)
+	if err != nil {
+		return &dashpb.AddBrokerReply{Success: false, Error: err.Error()}, nil
+	}
+
+	s.mu.Lock()
+	s.adapters[req.Name] = a
+	symbols := make([]string, 0, len(s.symbols))
+	for sym := range s.symbols {
+		symbols = append(symbols, sym)
+	}
+	s.mu.Unlock()
+
+	if err := a.Subscribe(ctx, symbols); err != nil {
+		slog.Warn("addBroker subscribe", "broker", req.Name, "error", err)
+	}
+	go a.QuoteStream(ctx, s.bus)
+
+	slog.Info("broker added", "broker", req.Name, "token", token)
+	return &dashpb.AddBrokerReply{Success: true, Token: token}, nil
 }
 
-// RemoveBroker is v2 placeholder — returns Unimplemented.
+// RemoveBroker disconnects and removes a broker adapter.
 func (s *Server) RemoveBroker(ctx context.Context, req *dashpb.RemoveBrokerRequest) (*dashpb.RemoveBrokerReply, error) {
-	return &dashpb.RemoveBrokerReply{Success: false, Error: "not implemented in v1"}, nil
+	s.mu.Lock()
+	a, exists := s.adapters[req.Name]
+	if !exists {
+		s.mu.Unlock()
+		return &dashpb.RemoveBrokerReply{Success: false, Error: "broker not found"}, nil
+	}
+	delete(s.adapters, req.Name)
+	s.mu.Unlock()
+
+	if err := a.Disconnect(); err != nil {
+		slog.Warn("removeBroker disconnect", "broker", req.Name, "error", err)
+	}
+	slog.Info("broker removed", "broker", req.Name)
+	return &dashpb.RemoveBrokerReply{Success: true}, nil
 }
