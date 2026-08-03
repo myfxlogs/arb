@@ -18,16 +18,24 @@ type PositionsTab struct {
 	client dashpb.DashboardServiceClient
 	data   *dashpb.PositionWatchReply
 	mu     sync.RWMutex
+	loaded bool
 }
 
 // NewPositionsTab creates a positions tab.
-func NewPositionsTab(client dashpb.DashboardServiceClient) *PositionsTab {
+func NewPositionsTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 	p := &PositionsTab{client: client}
 	p.Table = *widget.NewTable(
 		func() (int, int) { return p.rows(), 7 },
 		func() fyne.CanvasObject { return widget.NewLabel("") },
 		p.updateCell,
 	)
+	p.Table.SetColumnWidth(0, 140)
+	p.Table.SetColumnWidth(1, 100)
+	p.Table.SetColumnWidth(2, 80)
+	p.Table.SetColumnWidth(3, 60)
+	p.Table.SetColumnWidth(4, 60)
+	p.Table.SetColumnWidth(5, 100)
+	p.Table.SetColumnWidth(6, 120)
 	go p.streamLoop()
 	return p
 }
@@ -35,12 +43,12 @@ func NewPositionsTab(client dashpb.DashboardServiceClient) *PositionsTab {
 func (p *PositionsTab) rows() int {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	if p.data == nil {
-		return 1
+	if !p.loaded || p.data == nil {
+		return 6
 	}
-	count := 1 // header
+	count := 1
 	for _, bp := range p.data.BrokerPositions {
-		count += 1 + len(bp.Positions) // broker row + position rows
+		count += 1 + len(bp.Positions)
 	}
 	return count
 }
@@ -57,7 +65,7 @@ func (p *PositionsTab) updateCell(id widget.TableCellID, cell fyne.CanvasObject)
 		}
 		return
 	}
-	if p.data == nil {
+	if !p.loaded || p.data == nil {
 		label.SetText("")
 		return
 	}
@@ -101,23 +109,27 @@ func (p *PositionsTab) updateCell(id widget.TableCellID, cell fyne.CanvasObject)
 
 func (p *PositionsTab) streamLoop() {
 	ctx := context.Background()
-	stream, err := p.client.PositionWatch(ctx, &dashpb.PositionWatchRequest{
-		RefreshIntervalMs: 500,
-	})
-	if err != nil {
-		slog.Error("positions stream", "error", err)
-		return
-	}
 	for {
-		reply, err := stream.Recv()
+		stream, err := p.client.PositionWatch(ctx, &dashpb.PositionWatchRequest{
+			RefreshIntervalMs: 500,
+		})
 		if err != nil {
-			slog.Warn("positions recv", "error", err)
-			time.Sleep(time.Second)
+			slog.Error("positions stream", "error", err)
+			time.Sleep(2 * time.Second)
 			continue
 		}
-		p.mu.Lock()
-		p.data = reply
-		p.mu.Unlock()
-		p.Table.Refresh()
+		for {
+			reply, err := stream.Recv()
+			if err != nil {
+				slog.Warn("positions recv", "error", err)
+				time.Sleep(time.Second)
+				break
+			}
+			p.mu.Lock()
+			p.data = reply
+			p.loaded = true
+			p.mu.Unlock()
+			fyne.Do(func() { p.Table.Refresh() })
+		}
 	}
 }

@@ -49,19 +49,29 @@ func NewTradingTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 			resultLabel.SetText(fmt.Sprintf("错误: %v", err))
 			return
 		}
-		resultLabel.SetText(fmt.Sprintf("状态: %s 订单号: %d", reply.Status, reply.Ticket))
+		resultLabel.SetText(fmt.Sprintf("状态: %s  订单号: %d", reply.Status, reply.Ticket))
 	})
 
-	form := container.NewVBox(
-		widget.NewLabel("手动下单"),
-		brokerEntry,
-		symbolEntry,
-		sideSelect,
-		lotsEntry,
-		priceEntry,
-		slippageEntry,
+	formContent := container.NewVBox(
+		widget.NewLabel("经纪商"), brokerEntry,
+		spacer(8),
+		widget.NewLabel("品种"), symbolEntry,
+		spacer(8),
+		widget.NewLabel("方向"), sideSelect,
+		spacer(8),
+		container.NewGridWithColumns(2,
+			container.NewVBox(widget.NewLabel("手数"), lotsEntry),
+			container.NewVBox(widget.NewLabel("价格"), priceEntry),
+		),
+		spacer(8),
+		widget.NewLabel("滑点"), slippageEntry,
+		spacer(16),
 		submitBtn,
+		spacer(12),
 		resultLabel,
 	)
-	return form
+
+	return paddedWithInsets(40, 40, 40, 40,
+		sectionCard("手动下单", formContent),
+	)
 }

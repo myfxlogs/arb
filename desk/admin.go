@@ -42,7 +42,7 @@ func NewAdminTab(client dashpb.DashboardServiceClient, win fyne.Window) fyne.Can
 						statusLabel.SetText(fmt.Sprintf("停止错误: %v", err))
 						return
 					}
-					statusLabel.SetText(fmt.Sprintf("停止: 成功=%v 取消订单=%d",
+					statusLabel.SetText(fmt.Sprintf("停止: 成功=%v  取消订单=%d",
 						reply.Success, reply.OrdersCancelled))
 				}
 			}, a.window)
@@ -66,6 +66,17 @@ func NewAdminTab(client dashpb.DashboardServiceClient, win fyne.Window) fyne.Can
 		}
 		statusLabel.SetText(fmt.Sprintf("熔断器重置: 成功=%v", reply.Success))
 	})
+
+	// === 风控卡片 ===
+	riskContent := container.NewVBox(
+		statusLabel,
+		spacer(8),
+		killStatusLabel,
+		spacer(16),
+		container.NewGridWithColumns(3, refreshBtn, killBtn, resumeBtn),
+		spacer(8),
+		resetCBBtn,
+	)
 
 	// === 经纪商管理 ===
 	a.brokerList = widget.NewList(
@@ -113,31 +124,20 @@ func NewAdminTab(client dashpb.DashboardServiceClient, win fyne.Window) fyne.Can
 		a.refreshBrokers()
 	})
 
-	brokerSection := container.NewBorder(
-		container.NewVBox(
-			widget.NewLabel("经纪商管理"),
-			container.NewHBox(addBrokerBtn, removeBrokerBtn, refreshBrokerBtn),
-		),
-		nil, nil, nil,
+	brokerContent := container.NewVBox(
+		container.NewGridWithColumns(3, addBrokerBtn, removeBrokerBtn, refreshBrokerBtn),
+		spacer(12),
 		a.brokerList,
-	)
-
-	riskSection := container.NewVBox(
-		widget.NewLabel("风控管理"),
-		statusLabel,
-		killStatusLabel,
-		container.NewHBox(refreshBtn),
-		container.NewHBox(killBtn, resumeBtn),
-		container.NewHBox(resetCBBtn),
 	)
 
 	go a.refreshBrokers()
 
-	return container.NewVBox(
-		widget.NewLabel("管理控制面板"),
-		riskSection,
-		widget.NewSeparator(),
-		brokerSection,
+	return paddedWithInsets(20, 20, 20, 20,
+		container.NewVBox(
+			sectionCard("风控管理", riskContent),
+			spacer(16),
+			sectionCard("经纪商管理", brokerContent),
+		),
 	)
 }
 
@@ -296,15 +296,25 @@ func (a *AdminTab) showAddBrokerDialog() {
 
 	form := container.NewVBox(
 		widget.NewLabel("平台"), platformSelect,
+		spacer(8),
 		widget.NewLabel("经纪商名称"), companyEntry,
+		spacer(4),
 		searchBtn,
+		spacer(4),
 		searchStatus,
+		spacer(8),
 		widget.NewLabel("选择公司"), companySelect,
+		spacer(8),
 		widget.NewLabel("选择服务器"), serverSelect,
+		spacer(4),
 		serverInfo,
+		spacer(16),
 		widget.NewSeparator(),
+		spacer(12),
 		widget.NewLabel("交易账号"), userEntry,
+		spacer(8),
 		widget.NewLabel("密码"), passwordEntry,
+		spacer(8),
 		widget.NewLabel("自定义名称（可选）"), nameEntry,
 	)
 

@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
-	"image/color"
 
 	dashpb "arb/proto/gen/dashboard"
 )
@@ -21,16 +20,22 @@ type MatrixTab struct {
 	client dashpb.DashboardServiceClient
 	data   *dashpb.SpreadMatrixReply
 	mu     sync.RWMutex
+	loaded bool
 }
 
 // NewMatrixTab creates a spread matrix tab.
-func NewMatrixTab(client dashpb.DashboardServiceClient) *MatrixTab {
+func NewMatrixTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 	m := &MatrixTab{client: client}
 	m.Table = *widget.NewTable(
 		func() (int, int) { return m.rows(), m.cols() },
-		func() fyne.CanvasObject { return canvas.NewText("", color.White) },
+		func() fyne.CanvasObject {
+			t := canvas.NewText("", colorTextPrimary)
+			t.TextSize = 13
+			return t
+		},
 		m.updateCell,
 	)
+	m.Table.SetColumnWidth(0, 120)
 	go m.streamLoop()
 	return m
 }
@@ -38,19 +43,19 @@ func NewMatrixTab(client dashpb.DashboardServiceClient) *MatrixTab {
 func (m *MatrixTab) rows() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	if m.data == nil || len(m.data.Rows) == 0 {
-		return 1
+	if !m.loaded || m.data == nil || len(m.data.Rows) == 0 {
+		return 8
 	}
-	return len(m.data.Rows) + 1 // header row
+	return len(m.data.Rows) + 1
 }
 
 func (m *MatrixTab) cols() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	if m.data == nil || len(m.data.Rows) == 0 {
-		return 1
+	if !m.loaded || m.data == nil || len(m.data.Rows) == 0 {
+		return 6
 	}
-	return int(m.data.TotalSymbols) + 1 // broker name column
+	return int(m.data.TotalSymbols) + 1
 }
 
 func (m *MatrixTab) updateCell(id widget.TableCellID, cell fyne.CanvasObject) {
@@ -58,11 +63,21 @@ func (m *MatrixTab) updateCell(id widget.TableCellID, cell fyne.CanvasObject) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
+	if !m.loaded || m.data == nil {
+		txt.Text = ""
+		txt.Color = colorSkeleton
+		return
+	}
+
 	if id.Row == 0 {
 		if id.Col == 0 {
 			txt.Text = "经纪商"
-		} else if m.data != nil && int(id.Col-1) < len(m.data.Rows[0].Cells) {
+			txt.Color = colorTextDim
+			txt.TextStyle = fyne.TextStyle{Bold: true}
+		} else if int(id.Col-1) < len(m.data.Rows[0].Cells) {
 			txt.Text = m.data.Rows[0].Cells[id.Col-1].Symbol
+			txt.Color = colorTextDim
+			txt.TextStyle = fyne.TextStyle{Bold: true}
 		} else {
 			txt.Text = ""
 		}
@@ -70,13 +85,14 @@ func (m *MatrixTab) updateCell(id widget.TableCellID, cell fyne.CanvasObject) {
 	}
 
 	rowIdx := id.Row - 1
-	if m.data == nil || rowIdx >= len(m.data.Rows) {
+	if rowIdx >= len(m.data.Rows) {
 		txt.Text = ""
 		return
 	}
 	row := m.data.Rows[rowIdx]
 	if id.Col == 0 {
 		txt.Text = row.BrokerName
+		txt.Color = colorTextPrimary
 		return
 	}
 	if int(id.Col-1) >= len(row.Cells) {
@@ -85,32 +101,36 @@ func (m *MatrixTab) updateCell(id widget.TableCellID, cell fyne.CanvasObject) {
 	}
 	c := row.Cells[id.Col-1]
 	if c.IsArbitrageable {
-		txt.Color = color.RGBA{G: 255, A: 255}
+		txt.Color = colorGreen
 	} else {
-		txt.Color = color.White
+		txt.Color = colorTextPrimary
 	}
 	txt.Text = fmt.Sprintf("%.1f", c.SpreadToBestAskBps)
 }
 
 func (m *MatrixTab) streamLoop() {
 	ctx := context.Background()
-	stream, err := m.client.SpreadMatrix(ctx, &dashpb.SpreadMatrixRequest{
-		RefreshIntervalMs: 200,
-	})
-	if err != nil {
-		slog.Error("matrix stream", "error", err)
-		return
-	}
 	for {
-		reply, err := stream.Recv()
+		stream, err := m.client.SpreadMatrix(ctx, &dashpb.SpreadMatrixRequest{
+			RefreshIntervalMs: 200,
+		})
 		if err != nil {
-			slog.Warn("matrix recv", "error", err)
-			time.Sleep(time.Second)
+			slog.Error("matrix stream", "error", err)
+			time.Sleep(2 * time.Second)
 			continue
 		}
-		m.mu.Lock()
-		m.data = reply
-		m.mu.Unlock()
-		m.Table.Refresh()
+		for {
+			reply, err := stream.Recv()
+			if err != nil {
+				slog.Warn("matrix recv", "error", err)
+				time.Sleep(time.Second)
+				break
+			}
+			m.mu.Lock()
+			m.data = reply
+			m.loaded = true
+			m.mu.Unlock()
+			fyne.Do(func() { m.Table.Refresh() })
+		}
 	}
 }
