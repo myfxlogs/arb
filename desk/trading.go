@@ -21,21 +21,21 @@ func NewTradingTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 	t := &TradingTab{client: client}
 
 	brokerEntry := widget.NewEntry()
-	brokerEntry.SetPlaceHolder("Broker name")
+	brokerEntry.SetPlaceHolder("经纪商名称")
 	symbolEntry := widget.NewEntry()
-	symbolEntry.SetPlaceHolder("Symbol")
-	sideSelect := widget.NewSelect([]string{"Buy", "Sell"}, nil)
-	sideSelect.SetSelected("Buy")
+	symbolEntry.SetPlaceHolder("品种")
+	sideSelect := widget.NewSelect([]string{"买入", "卖出"}, nil)
+	sideSelect.SetSelected("买入")
 	lotsEntry := widget.NewEntry()
 	lotsEntry.SetPlaceHolder("0.1")
 	priceEntry := widget.NewEntry()
-	priceEntry.SetPlaceHolder("0 (market)")
+	priceEntry.SetPlaceHolder("0 (市价)")
 	slippageEntry := widget.NewEntry()
 	slippageEntry.SetPlaceHolder("0")
 
 	resultLabel := widget.NewLabel("")
 
-	submitBtn := widget.NewButton("Submit Order", func() {
+	submitBtn := widget.NewButton("提交订单", func() {
 		req := &dashpb.ManualOrderRequest{
 			BrokerName: brokerEntry.Text,
 			Symbol:     symbolEntry.Text,
@@ -46,14 +46,14 @@ func NewTradingTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 		req.Slippage = int32(parseInt(slippageEntry.Text))
 		reply, err := t.client.SubmitOrder(context.Background(), req)
 		if err != nil {
-			resultLabel.SetText(fmt.Sprintf("Error: %v", err))
+			resultLabel.SetText(fmt.Sprintf("错误: %v", err))
 			return
 		}
-		resultLabel.SetText(fmt.Sprintf("Status: %s Ticket: %d", reply.Status, reply.Ticket))
+		resultLabel.SetText(fmt.Sprintf("状态: %s 订单号: %d", reply.Status, reply.Ticket))
 	})
 
 	form := container.NewVBox(
-		widget.NewLabel("Manual Order"),
+		widget.NewLabel("手动下单"),
 		brokerEntry,
 		symbolEntry,
 		sideSelect,

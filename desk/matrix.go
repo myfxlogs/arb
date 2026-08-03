@@ -60,7 +60,7 @@ func (m *MatrixTab) updateCell(id widget.TableCellID, cell fyne.CanvasObject) {
 
 	if id.Row == 0 {
 		if id.Col == 0 {
-			txt.Text = "Broker"
+			txt.Text = "经纪商"
 		} else if m.data != nil && int(id.Col-1) < len(m.data.Rows[0].Cells) {
 			txt.Text = m.data.Rows[0].Cells[id.Col-1].Symbol
 		} else {

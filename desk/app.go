@@ -57,13 +57,13 @@ func hostFromAddr(addr string) string {
 
 // Run starts the Fyne application with 5 tabs.
 func (a *App) Run() {
-	window := a.fyneApp.NewWindow("ARB Desk")
+	window := a.fyneApp.NewWindow("ARB 交易终端")
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Spread Matrix", NewMatrixTab(a.client)),
-		container.NewTabItem("Positions", NewPositionsTab(a.client)),
-		container.NewTabItem("Trading", NewTradingTab(a.client)),
-		container.NewTabItem("History", NewHistoryTab(a.client)),
-		container.NewTabItem("Admin", NewAdminTab(a.client)),
+		container.NewTabItem("价差矩阵", NewMatrixTab(a.client)),
+		container.NewTabItem("持仓", NewPositionsTab(a.client)),
+		container.NewTabItem("交易", NewTradingTab(a.client)),
+		container.NewTabItem("历史", NewHistoryTab(a.client)),
+		container.NewTabItem("管理", NewAdminTab(a.client)),
 	)
 	window.SetContent(tabs)
 	window.Resize(fyne.NewSize(1400, 900))

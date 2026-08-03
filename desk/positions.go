@@ -50,7 +50,7 @@ func (p *PositionsTab) updateCell(id widget.TableCellID, cell fyne.CanvasObject)
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	headers := []string{"Broker", "Ticket", "Symbol", "Side", "Lots", "Equity", "Free Margin"}
+	headers := []string{"经纪商", "订单号", "品种", "方向", "手数", "净值", "可用保证金"}
 	if id.Row == 0 {
 		if id.Col < len(headers) {
 			label.SetText(headers[id.Col])

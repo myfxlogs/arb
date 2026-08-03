@@ -22,49 +22,49 @@ type AdminTab struct {
 func NewAdminTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 	a := &AdminTab{client: client}
 
-	statusLabel := widget.NewLabel("Strategy status: loading...")
-	killStatusLabel := widget.NewLabel("Kill switch: unknown")
+	statusLabel := widget.NewLabel("策略状态: 加载中...")
+	killStatusLabel := widget.NewLabel("紧急停止: 未知")
 
-	refreshBtn := widget.NewButton("Refresh Status", func() {
+	refreshBtn := widget.NewButton("刷新状态", func() {
 		a.refreshStatus(statusLabel, killStatusLabel)
 	})
 
-	killBtn := widget.NewButton("KILL SWITCH", func() {
+	killBtn := widget.NewButton("紧急停止", func() {
 		if a.window != nil {
-			dialog.ShowConfirm("Kill Switch", "Close all positions and stop trading?", func(ok bool) {
+			dialog.ShowConfirm("紧急停止", "确认平仓所有持仓并停止交易？", func(ok bool) {
 				if ok {
 					reply, err := a.client.Kill(context.Background(), &dashpb.KillRequest{})
 					if err != nil {
-						statusLabel.SetText(fmt.Sprintf("Kill error: %v", err))
+						statusLabel.SetText(fmt.Sprintf("停止错误: %v", err))
 						return
 					}
-					statusLabel.SetText(fmt.Sprintf("Kill: success=%v cancelled=%d",
+					statusLabel.SetText(fmt.Sprintf("停止: 成功=%v 取消订单=%d",
 						reply.Success, reply.OrdersCancelled))
 				}
 			}, a.window)
 		}
 	})
 
-	resumeBtn := widget.NewButton("Resume", func() {
+	resumeBtn := widget.NewButton("恢复交易", func() {
 		reply, err := a.client.Resume(context.Background(), &dashpb.ResumeRequest{})
 		if err != nil {
-			statusLabel.SetText(fmt.Sprintf("Resume error: %v", err))
+			statusLabel.SetText(fmt.Sprintf("恢复错误: %v", err))
 			return
 		}
-		statusLabel.SetText(fmt.Sprintf("Resume: success=%v", reply.Success))
+		statusLabel.SetText(fmt.Sprintf("恢复: 成功=%v", reply.Success))
 	})
 
-	resetCBBtn := widget.NewButton("Reset Circuit Breaker", func() {
+	resetCBBtn := widget.NewButton("重置熔断器", func() {
 		reply, err := a.client.ResetGlobalCircuitBreaker(context.Background(), &dashpb.ResetCBRequest{})
 		if err != nil {
-			statusLabel.SetText(fmt.Sprintf("Reset CB error: %v", err))
+			statusLabel.SetText(fmt.Sprintf("重置熔断器错误: %v", err))
 			return
 		}
-		statusLabel.SetText(fmt.Sprintf("CB reset: success=%v", reply.Success))
+		statusLabel.SetText(fmt.Sprintf("熔断器重置: 成功=%v", reply.Success))
 	})
 
 	return container.NewVBox(
-		widget.NewLabel("Admin Control Panel"),
+		widget.NewLabel("管理控制面板"),
 		statusLabel,
 		killStatusLabel,
 		container.NewHBox(refreshBtn),
@@ -76,12 +76,12 @@ func NewAdminTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 func (a *AdminTab) refreshStatus(statusLabel, killStatusLabel *widget.Label) {
 	reply, err := a.client.GetStrategyStatus(context.Background(), &dashpb.StrategyStatusRequest{})
 	if err != nil {
-		statusLabel.SetText(fmt.Sprintf("Error: %v", err))
+		statusLabel.SetText(fmt.Sprintf("错误: %v", err))
 		return
 	}
 	text := ""
 	for _, item := range reply.Items {
-		text += fmt.Sprintf("%s: enabled=%v cb=%v losses=%d pnl=%.2f\n",
+		text += fmt.Sprintf("%s: 启用=%v 熔断=%v 连亏=%d 今日盈亏=%.2f\n",
 			item.Name, item.Enabled, item.CircuitBreakerOpen,
 			item.ConsecutiveLosses, item.PnlToday)
 	}
@@ -89,6 +89,6 @@ func (a *AdminTab) refreshStatus(statusLabel, killStatusLabel *widget.Label) {
 
 	ksReply, err := a.client.GetKillSwitchStatus(context.Background(), &dashpb.KillSwitchStatusRequest{})
 	if err == nil {
-		killStatusLabel.SetText(fmt.Sprintf("Kill switch: active=%v", ksReply.Active))
+		killStatusLabel.SetText(fmt.Sprintf("紧急停止: 已激活=%v", ksReply.Active))
 	}
 }

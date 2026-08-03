@@ -28,7 +28,7 @@ func NewHistoryTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 		func() fyne.CanvasObject { return widget.NewLabel("") },
 		func(i widget.ListItemID, obj fyne.CanvasObject) {
 			if i < len(h.signals) {
-				obj.(*widget.Label).SetText(fmt.Sprintf("%s %s executed=%v",
+				obj.(*widget.Label).SetText(fmt.Sprintf("%s %s 已执行=%v",
 					h.signals[i].Id, h.signals[i].Strategy, h.signals[i].Executed))
 			}
 		},
@@ -39,24 +39,24 @@ func NewHistoryTab(client dashpb.DashboardServiceClient) fyne.CanvasObject {
 		func() fyne.CanvasObject { return widget.NewLabel("") },
 		func(i widget.ListItemID, obj fyne.CanvasObject) {
 			if i < len(h.orders) {
-				obj.(*widget.Label).SetText(fmt.Sprintf("%s %s %s %.2f",
+				obj.(*widget.Label).SetText(fmt.Sprintf("%s %s %s %.2f手",
 					h.orders[i].ClientId, h.orders[i].Broker, h.orders[i].Symbol, h.orders[i].Volume))
 			}
 		},
 	)
 
-	refreshBtn := widget.NewButton("Refresh", func() {
+	refreshBtn := widget.NewButton("刷新", func() {
 		h.refresh()
 		signalList.Refresh()
 		orderList.Refresh()
 	})
 
 	return container.NewBorder(
-		container.NewHBox(widget.NewLabel("History"), refreshBtn),
+		container.NewHBox(widget.NewLabel("历史记录"), refreshBtn),
 		nil, nil, nil,
 		container.NewAppTabs(
-			container.NewTabItem("Signals", signalList),
-			container.NewTabItem("Orders", orderList),
+			container.NewTabItem("信号", signalList),
+			container.NewTabItem("订单", orderList),
 		),
 	)
 }
