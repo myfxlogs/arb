@@ -26,7 +26,7 @@ services:
     environment:
       DB_DSN: "postgres://arb:arb@postgres:5432/arb?sslmode=disable"
     ports:
-      - "0.0.0.0:50051:50051"
+      - "127.0.0.1:50051:50051"
     restart: unless-stopped
 
 volumes:
