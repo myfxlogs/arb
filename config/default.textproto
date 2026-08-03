@@ -1,0 +1,49 @@
+# ARB 系统配置
+# 复制此文件并填入真实的 broker 凭证
+
+brokers: [
+  {
+    name: "OctaFX-Demo"
+    platform: PLATFORM_TYPE_MT5
+    host: "78.140.180.198"
+    port: 443
+    user: 0
+    password: ""
+  }
+]
+
+strategies: [
+  {
+    type: STRATEGY_TYPE_TRIANGULAR
+    enabled: true
+    max_slippage_bps: 0.5
+    order_timeout: { seconds: 0 nanos: 500000000 }
+    subscribed_symbols: ["EURUSD", "GBPUSD", "EURGBP"]
+  },
+  {
+    type: STRATEGY_TYPE_CROSS_EXCHANGE
+    enabled: false
+    max_slippage_bps: 1.0
+    order_timeout: { seconds: 0 nanos: 500000000 }
+    subscribed_symbols: []
+  }
+]
+
+risk: {
+  max_notional_per_trade: 10000
+  max_consecutive_losses: 5
+  max_window_loss: 500
+  daily_loss_limit: 5000
+  max_drawdown_pct: 20
+  max_concurrent_orders: 5
+  rate_limit_initial: 10
+}
+
+database: {
+  dsn: "postgres://arb:arb@localhost:5432/arb?sslmode=disable"
+}
+
+dashboard: {
+  listen_address: "127.0.0.1:50051"
+  matrix_refresh_ms: 100
+}

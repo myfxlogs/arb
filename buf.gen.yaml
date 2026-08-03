@@ -1,0 +1,15 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: arb/proto
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: proto/gen
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    out: proto/gen
+    opt: paths=source_relative
+inputs:
+  - directory: proto

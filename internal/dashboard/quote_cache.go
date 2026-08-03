@@ -1,0 +1,74 @@
+package dashboard
+
+import (
+	"sync"
+	"time"
+
+	"arb/internal/bus"
+)
+
+// quoteCache stores the latest quote per broker per symbol.
+// It is fed by a background goroutine that subscribes to all symbols on QuoteBus.
+type quoteCache struct {
+	mu      sync.RWMutex
+	quotes  map[string]map[string]bus.Quote // broker -> symbol -> Quote
+}
+
+func newQuoteCache() *quoteCache {
+	return &quoteCache{quotes: make(map[string]map[string]bus.Quote)}
+}
+
+// update stores the latest quote for a broker+symbol.
+func (c *quoteCache) update(q bus.Quote) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if _, ok := c.quotes[q.Broker]; !ok {
+		c.quotes[q.Broker] = make(map[string]bus.Quote)
+	}
+	c.quotes[q.Broker][q.Symbol] = q
+}
+
+// snapshot returns a copy of all quotes organized by broker -> symbol -> Quote.
+func (c *quoteCache) snapshot() map[string]map[string]bus.Quote {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	result := make(map[string]map[string]bus.Quote, len(c.quotes))
+	for broker, syms := range c.quotes {
+		result[broker] = make(map[string]bus.Quote, len(syms))
+		for sym, q := range syms {
+			result[broker][sym] = q
+		}
+	}
+	return result
+}
+
+// startFeeder starts a background goroutine that subscribes to all symbols
+// on the QuoteBus and feeds quotes into the cache.
+func (c *quoteCache) startFeeder(bus *bus.QuoteBus, symbols []string) {
+	for _, sym := range symbols {
+		go c.feedSymbol(bus, sym)
+	}
+}
+
+func (c *quoteCache) feedSymbol(bus *bus.QuoteBus, symbol string) {
+	ch, _ := bus.Subscribe(symbol)
+	for q := range ch {
+		c.update(q)
+	}
+}
+
+// staleEntries returns the age of the oldest quote entry.
+func (c *quoteCache) staleEntries(maxAge time.Duration) []string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	now := time.Now()
+	var stale []string
+	for broker, syms := range c.quotes {
+		for sym, q := range syms {
+			if now.Sub(q.Time) > maxAge {
+				stale = append(stale, broker+":"+sym)
+			}
+		}
+	}
+	return stale
+}

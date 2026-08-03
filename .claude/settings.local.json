@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"^## 四\\\\|^### 4\\\\.\\\\|^---$\" /opt/arb/docs/evaluation-framework.md)",
+      "Bash(grep -n \"^---$\" /opt/arb/docs/evaluation-framework.md)"
+    ]
+  }
+}

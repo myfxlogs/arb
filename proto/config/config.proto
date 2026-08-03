@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package arb.config;
+
+option go_package = "arb/proto/config";
+
+import "google/protobuf/duration.proto";
+
+// BrokerConfig 定义单个 MT4/MT5 经纪商连接参数。
+message BrokerConfig {
+  // 经纪商标识名（如 "OctaFX-Demo"），用于 Quote.Broker 字段和日志。
+  string name = 1;
+
+  // 平台类型：MT4 或 MT5。
+  PlatformType platform = 2;
+
+  // gRPC 连接参数。
+  string host = 3;       // IP 或 DNS
+  int32 port = 4;        // 通常 443
+
+  // 登录凭证。
+  int64 user = 5;        // MT5: uint64 转 int64；MT4: int32 转 int64
+  string password = 6;
+
+  // 可选：使用 ConnectEx（按服务器名而非 host:port）。
+  string server = 7;     // 如 "RoboForex-Demo"，非空时使用 ConnectEx
+
+  // 可选：代理。
+  ProxyConfig proxy = 8;
+
+  // 可选：连接超时。默认 30 秒。
+  google.protobuf.Duration connect_timeout = 9;
+}
+
+enum PlatformType {
+  PLATFORM_TYPE_UNSPECIFIED = 0;
+  PLATFORM_TYPE_MT4 = 1;
+  PLATFORM_TYPE_MT5 = 2;
+}
+
+message ProxyConfig {
+  string host = 1;
+  int32 port = 2;
+  string user = 3;
+  string password = 4;
+  ProxyType type = 5;
+}
+
+enum ProxyType {
+  PROXY_TYPE_UNSPECIFIED = 0;
+  PROXY_TYPE_HTTPS = 1;
+  PROXY_TYPE_SOCKS4 = 2;
+  PROXY_TYPE_SOCKS5 = 3;
+}
+
+// StrategyConfig 定义策略参数。
+message StrategyConfig {
+  // 策略类型。
+  StrategyType type = 1;
+
+  // 是否启用。
+  bool enabled = 2;
+
+  // 滑点容忍度（basis points，即 0.01%）。
+  double max_slippage_bps = 3;
+
+  // 单腿下单超时。
+  google.protobuf.Duration order_timeout = 4;
+
+  // 订阅的品种列表。空 = 该 broker 所有品种。
+  repeated string subscribed_symbols = 5;
+
+  // 统计套利专用参数。
+  StatisticalParams statistical = 6;
+}
+
+enum StrategyType {
+  STRATEGY_TYPE_UNSPECIFIED = 0;
+  STRATEGY_TYPE_TRIANGULAR = 1;
+  STRATEGY_TYPE_CROSS_EXCHANGE = 2;
+  STRATEGY_TYPE_STATISTICAL = 3;
+  STRATEGY_TYPE_FUTURES_SPOT = 4;
+}
+
+message StatisticalParams {
+  int32 lookback_bars = 1;     // 回看 bar 数
+  double entry_z_score = 2;    // 入场 z-score 阈值
+  double exit_z_score = 3;     // 退场 z-score 阈值
+  string timeframe = 4;        // 如 "H1"、"D1"
+}
+
+// RiskConfig 定义风控参数。
+message RiskConfig {
+  // 单笔名义本金上限（美元），防配置错误。
+  double max_notional_per_trade = 1;
+
+  // 策略级熔断：连续亏损笔数上限。
+  int32 max_consecutive_losses = 2;
+
+  // 策略级熔断：滑动窗口最大亏损（美元）。
+  double max_window_loss = 3;
+
+  // 全局熔断：日亏损上限（美元）。
+  double daily_loss_limit = 4;
+
+  // 全局熔断：总回撤上限（相对于峰值净值的百分比）。
+  double max_drawdown_pct = 5;
+
+  // 订单并发上限（每 broker）。
+  int32 max_concurrent_orders = 6;
+
+  // 自适应限流初始速率（req/s）。
+  double rate_limit_initial = 7;
+}
+
+// DatabaseConfig 定义 PostgreSQL 连接。
+message DatabaseConfig {
+  string dsn = 1;  // "postgres://user:pass@host:port/db"
+}
+
+// DashboardConfig 定义 DashboardService gRPC server。
+message DashboardConfig {
+  string listen_address = 1;   // 默认 "127.0.0.1:50051"
+  int32 matrix_refresh_ms = 2; // 价差矩阵刷新间隔，默认 100ms
+}
+
+// SystemConfig 是完整的系统配置。
+message SystemConfig {
+  repeated BrokerConfig brokers = 1;
+  repeated StrategyConfig strategies = 2;
+  RiskConfig risk = 3;
+  DatabaseConfig database = 4;
+  DashboardConfig dashboard = 5;
+}

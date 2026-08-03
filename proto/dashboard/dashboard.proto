@@ -1,0 +1,423 @@
+syntax = "proto3";
+
+package arb.dashboard;
+
+option go_package = "arb/proto/dashboard";
+
+// DashboardService 为 desk 桌面应用提供数据和控制接口。
+// core 是 gRPC server；desk 是 gRPC client。
+service DashboardService {
+  // SpreadMatrix 持续推送价差矩阵数据。
+  // 每 refresh_interval_ms 毫秒一次全量快照。
+  rpc SpreadMatrix(SpreadMatrixRequest) returns (stream SpreadMatrixReply);
+
+  // PositionWatch 持续推送所有 broker 的持仓和账户汇总。
+  rpc PositionWatch(PositionWatchRequest) returns (stream PositionWatchReply);
+
+  // SubmitOrder 手动下单（人工触发）。
+  rpc SubmitOrder(ManualOrderRequest) returns (ManualOrderReply);
+
+  // ClosePosition 手动平仓。
+  rpc ClosePosition(ClosePositionRequest) returns (ClosePositionReply);
+
+  // CancelOrder 取消挂单。
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderReply);
+
+  // GetSignalHistory 查询历史信号。
+  rpc GetSignalHistory(SignalHistoryRequest) returns (SignalHistoryReply);
+
+  // GetOrderHistory 查询历史订单。
+  rpc GetOrderHistory(OrderHistoryRequest) returns (OrderHistoryReply);
+
+  // GetDailySummary 查询日资金汇总。
+  rpc GetDailySummary(DailySummaryRequest) returns (DailySummaryReply);
+
+  // GetAccountSnapshots 获取所有 broker 的实时账户快照。
+  rpc GetAccountSnapshots(AccountSnapshotRequest) returns (AccountSnapshotReply);
+
+  // Kill 触发全局 Kill Switch。
+  rpc Kill(KillRequest) returns (KillReply);
+
+  // Resume 解除 Kill Switch（仅核心恢复，策略仍需逐一手动启用）。
+  rpc Resume(ResumeRequest) returns (ResumeReply);
+
+  // === 品种管理 ===
+  rpc SubscribeSymbols(SubscribeSymbolsRequest) returns (SubscribeSymbolsReply);
+  rpc UnsubscribeSymbols(UnsubscribeSymbolsRequest) returns (UnsubscribeSymbolsReply);
+  rpc ListSubscribedSymbols(ListSymbolsRequest) returns (ListSymbolsReply);
+
+  // === 策略管理 ===
+  rpc GetStrategyStatus(StrategyStatusRequest) returns (StrategyStatusReply);
+  rpc ToggleStrategy(ToggleStrategyRequest) returns (ToggleStrategyReply);
+  rpc ResumeStrategy(ResumeStrategyRequest) returns (ResumeStrategyReply);
+  rpc ResetGlobalCircuitBreaker(ResetCBRequest) returns (ResetCBReply);
+
+  // === 系统管理 ===
+  rpc GetKillSwitchStatus(KillSwitchStatusRequest) returns (KillSwitchStatusReply);
+  rpc TailLogs(TailLogsRequest) returns (stream TailLogsReply);
+
+  // === Broker 管理（v2 预留，v1 返回 Unimplemented） ===
+  rpc AddBroker(AddBrokerRequest) returns (AddBrokerReply);
+  rpc RemoveBroker(RemoveBrokerRequest) returns (RemoveBrokerReply);
+}
+
+// ============================================================
+// SpreadMatrix
+// ============================================================
+
+message SpreadMatrixRequest {
+  int32 refresh_interval_ms = 1;  // 默认 100ms
+}
+
+message SpreadMatrixReply {
+  int64 timestamp_unix_ms = 1;       // 矩阵计算时间（毫秒级 Unix 时间戳）
+  repeated BrokerRow rows = 2;
+  string best_bid_broker = 3;        // 全市场最优 bid 的 broker 名
+  string best_ask_broker = 4;        // 全市场最优 ask 的 broker 名
+  int32 total_symbols = 5;           // 品种总数
+
+  message BrokerRow {
+    string broker_name = 1;
+    string base_currency = 2;        // 账户基础币种（USD/EUR 等）
+    double daily_swap_long_bps = 3;  // 做多方向隔夜利息（bps）
+    double daily_swap_short_bps = 4; // 做空方向隔夜利息（bps）
+    bool is_connected = 5;           // 该 broker 当前连接状态
+    double free_margin = 6;          // 可用保证金
+    double equity = 7;               // 净值
+    repeated SpreadCell cells = 8;
+  }
+
+  message SpreadCell {
+    string symbol = 1;
+    double bid = 2;
+    double ask = 3;
+    // 该 broker 的 ask 与全市场最优 ask 之间的价差（bps）。
+    // 正值 = 该 broker 的 ask 更贵；可以在此 broker 卖出。
+    double spread_to_best_ask_bps = 4;
+    // 该 broker 的 bid 与全市场最优 bid 之间的价差（bps）。
+    // 正值 = 该 broker 的 bid 更高；可以在此 broker 买入。
+    double spread_to_best_bid_bps = 5;
+    bool is_arbitrageable = 6;
+    double estimated_net_profit_bps = 7; // 扣费+滑点后预估净利润
+  }
+}
+
+// ============================================================
+// PositionWatch
+// ============================================================
+
+message PositionWatchRequest {
+  int32 refresh_interval_ms = 1;  // 默认 500ms
+}
+
+message PositionWatchReply {
+  int64 timestamp_unix_ms = 1;
+  repeated BrokerPosition broker_positions = 2;
+
+  message BrokerPosition {
+    string broker_name = 1;
+    bool is_connected = 2;
+    double equity = 3;
+    double balance = 4;
+    double margin_used = 5;
+    double margin_free = 6;
+    double margin_level_pct = 7;
+    double total_floating_pnl = 8;
+    string currency = 9;
+    repeated Position positions = 10;
+  }
+
+  message Position {
+    int64 ticket = 1;
+    string symbol = 2;
+    string side = 3;             // "Buy" | "Sell"
+    double lots = 4;
+    double open_price = 5;
+    double current_price = 6;
+    double stop_loss = 7;
+    double take_profit = 8;
+    double floating_pnl = 9;
+    double swap_accrued = 10;
+    double commission = 11;
+    int64 open_time_unix_ms = 12;
+    string comment = 13;
+  }
+}
+
+// ============================================================
+// 交易操作
+// ============================================================
+
+message ManualOrderRequest {
+  string broker_name = 1;
+  string symbol = 2;
+  string side = 3;               // "Buy" | "Sell"
+  double lots = 4;
+  double price = 5;              // 0 = 市价
+  int32 slippage = 6;            // 点数
+  double stop_loss = 7;          // 0 = 无
+  double take_profit = 8;        // 0 = 无
+  string client_id = 9;          // 可选，不填则自动生成 UUID
+}
+
+message ManualOrderReply {
+  string client_id = 1;
+  int64 ticket = 2;
+  string status = 3;             // "Filled" | "Partial" | "Rejected" | "Unknown"
+  string error = 4;
+}
+
+message ClosePositionRequest {
+  string broker_name = 1;
+  int64 ticket = 2;
+  double lots = 3;               // 0 = 全部平仓
+  double price = 4;              // 0 = 市价
+  int32 slippage = 5;
+}
+
+message ClosePositionReply {
+  string client_id = 1;
+  int64 ticket = 2;
+  string status = 3;
+  string error = 4;
+}
+
+message CancelOrderRequest {
+  string broker_name = 1;
+  int64 ticket = 2;
+}
+
+message CancelOrderReply {
+  bool success = 1;
+  string error = 2;
+}
+
+// ============================================================
+// 历史查询
+// ============================================================
+
+message SignalHistoryRequest {
+  int64 from_unix_ms = 1;
+  int64 to_unix_ms = 2;
+  string strategy = 3;           // 空 = 全部策略
+  int32 limit = 4;               // 默认 100，最大 1000
+}
+
+message SignalHistoryReply {
+  repeated SignalItem items = 1;
+
+  message SignalItem {
+    string id = 1;
+    int64 timestamp_unix_ms = 2;
+    string strategy = 3;
+    string legs_json = 4;        // JSONB → 直接透传
+    double gross_bps = 5;
+    double net_bps = 6;
+    bool executed = 7;
+  }
+}
+
+message OrderHistoryRequest {
+  int64 from_unix_ms = 1;
+  int64 to_unix_ms = 2;
+  string broker = 3;             // 空 = 全部 broker
+  int32 limit = 4;
+}
+
+message OrderHistoryReply {
+  repeated OrderItem items = 1;
+
+  message OrderItem {
+    string client_id = 1;
+    int64 ticket = 2;
+    string broker = 3;
+    string symbol = 4;
+    string side = 5;
+    double volume = 6;
+    double open_price = 7;
+    double close_price = 8;
+    int64 open_time_unix_ms = 9;
+    int64 close_time_unix_ms = 10;
+    double pnl = 11;
+    double commission = 12;
+    double swap = 13;
+  }
+}
+
+message DailySummaryRequest {
+  int64 from_unix_ms = 1;
+  int64 to_unix_ms = 2;
+  string broker = 3;             // 空 = 全部
+}
+
+message DailySummaryReply {
+  repeated DailyItem items = 1;
+
+  message DailyItem {
+    string date = 1;             // "2006-01-02"
+    string broker = 2;
+    double start_equity = 3;
+    double end_equity = 4;
+    double pnl = 5;
+  }
+}
+
+// ============================================================
+// 账户快照 & Kill Switch
+// ============================================================
+
+message AccountSnapshotRequest {}
+
+message AccountSnapshotReply {
+  repeated AccountSnapshotItem items = 1;
+
+  message AccountSnapshotItem {
+    string broker_name = 1;
+    bool is_connected = 2;
+    double equity = 3;
+    double free_margin = 4;
+    int32 open_positions = 5;
+  }
+}
+
+message KillRequest {}
+
+message KillReply {
+  bool success = 1;
+  int32 positions_closed = 2;
+  int32 orders_cancelled = 3;
+  string error = 4;
+}
+
+message ResumeRequest {}
+
+message ResumeReply {
+  bool success = 1;
+}
+
+// ============================================================
+// 品种管理
+// ============================================================
+
+message SubscribeSymbolsRequest {
+  repeated string symbols = 1;
+}
+
+message SubscribeSymbolsReply {
+  bool success = 1;
+  string error = 2;
+}
+
+message UnsubscribeSymbolsRequest {
+  repeated string symbols = 1;
+}
+
+message UnsubscribeSymbolsReply {
+  bool success = 1;
+  string error = 2;
+}
+
+message ListSymbolsRequest {}
+
+message ListSymbolsReply {
+  repeated string symbols = 1;
+}
+
+// ============================================================
+// 策略管理
+// ============================================================
+
+message StrategyStatusRequest {
+  string strategy = 1; // 空 = 全部策略
+}
+
+message StrategyStatusReply {
+  repeated StrategyItem items = 1;
+
+  message StrategyItem {
+    string name = 1;
+    bool enabled = 2;
+    bool circuit_breaker_open = 3;
+    int32 consecutive_losses = 4;
+    double window_pnl = 5;
+    int32 trades_today = 6;
+    double pnl_today = 7;
+  }
+}
+
+message ResumeStrategyRequest {
+  string strategy = 1;
+}
+
+message ResumeStrategyReply {
+  bool success = 1;
+  string error = 2;
+}
+
+message ResetCBRequest {}
+
+message ResetCBReply {
+  bool success = 1;
+}
+
+// ============================================================
+// Broker 管理（v2 预留）
+// ============================================================
+
+message AddBrokerRequest {
+  string name = 1;
+  int32 platform = 2;  // 0=MT4, 1=MT5
+  string host = 3;
+  int32 port = 4;
+  int64 user = 5;
+  string password = 6;
+}
+
+message AddBrokerReply {
+  bool success = 1;
+  string token = 2;
+  string error = 3;
+}
+
+message RemoveBrokerRequest {
+  string name = 1;
+}
+
+message RemoveBrokerReply {
+  bool success = 1;
+  string error = 2;
+}
+
+// ============================================================
+// Admin Tab 专用
+// ============================================================
+
+message ToggleStrategyRequest {
+  string strategy = 1;
+  bool enabled = 2;
+}
+
+message ToggleStrategyReply {
+  bool success = 1;
+  string error = 2;
+}
+
+message KillSwitchStatusRequest {}
+
+message KillSwitchStatusReply {
+  bool active = 1;
+  int64 triggered_at_unix_ms = 2;
+  string triggered_by = 3;       // "strategy_cb" | "global_cb" | "manual"
+}
+
+message TailLogsRequest {
+  int32 tail_lines = 1;          // 尾行数，默认 50
+  string level_filter = 2;       // "ERROR" | "WARN" | ""（全部）
+}
+
+message TailLogsReply {
+  int64 timestamp_unix_ms = 1;
+  string level = 2;
+  string source = 3;
+  string message = 4;
+}

@@ -1,0 +1,6 @@
+.env
+.kill_switch
+bin/
+proto/gen/
+*.test
+.DS_Store
