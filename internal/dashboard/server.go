@@ -124,6 +124,11 @@ func (s *Server) PositionWatch(req *dashpb.PositionWatchRequest, stream dashpb.D
 	}
 }
 
+// BuildSpreadMatrixForTest is an exported wrapper for testing.
+func (s *Server) BuildSpreadMatrixForTest() *dashpb.SpreadMatrixReply {
+	return s.buildSpreadMatrix()
+}
+
 // buildSpreadMatrix constructs a spread matrix snapshot from cached quotes.
 func (s *Server) buildSpreadMatrix() *dashpb.SpreadMatrixReply {
 	symbols := make([]string, 0, len(s.symbols))

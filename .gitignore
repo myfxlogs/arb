@@ -4,3 +4,4 @@ bin/
 proto/gen/
 *.test
 .DS_Store
+core
