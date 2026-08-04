@@ -117,21 +117,6 @@ func (a *MT4Adapter) withSessionMD(ctx context.Context) context.Context {
 func (a *MT4Adapter) authenticate(ctx context.Context) (string, error) {
 	tempID := "mdgw-" + strconv.FormatInt(a.user, 10)
 	loginCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{"id": tempID}))
-	if a.server != "" {
-		resp, err := a.connMgr.ConnectEx(loginCtx, &mt4.ConnectExRequest{
-			User:     int32(a.user),
-			Password: a.password,
-			Server:   a.server,
-			Id:       &tempID,
-		})
-		if err != nil {
-			return "", err
-		}
-		if resp.Error != nil && resp.Error.Code != mt4.ErrorCode_INTERNAL_ERROR {
-			return "", fmt.Errorf("connectEx: %s", resp.Error.Message)
-		}
-		return resp.Result, nil
-	}
 	resp, err := a.connMgr.Connect(loginCtx, &mt4.ConnectRequest{
 		User:     int32(a.user),
 		Password: a.password,
@@ -142,8 +127,11 @@ func (a *MT4Adapter) authenticate(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if resp.Error != nil && resp.Error.Code != mt4.ErrorCode_INTERNAL_ERROR {
-		return "", fmt.Errorf("connect: %s", resp.Error.Message)
+	if resp.Error != nil {
+		return "", fmt.Errorf("connect: code=%d msg=%s", resp.Error.Code, resp.Error.Message)
+	}
+	if resp.Result == "" {
+		return "", fmt.Errorf("connect: empty token")
 	}
 	return resp.Result, nil
 }

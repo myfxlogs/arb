@@ -115,25 +115,10 @@ func (a *MT5Adapter) withSessionMD(ctx context.Context) context.Context {
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
-// authenticate calls Connect or ConnectEx depending on whether a server name is set.
+// authenticate connects to the MT5 broker via host:port.
 func (a *MT5Adapter) authenticate(ctx context.Context) (string, error) {
 	tempID := "mdgw-" + strconv.FormatInt(a.user, 10)
 	loginCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{"id": tempID}))
-	if a.server != "" {
-		resp, err := a.connMgr.ConnectEx(loginCtx, &mt5.ConnectExRequest{
-			User:     uint64(a.user),
-			Password: a.password,
-			Server:   a.server,
-			Id:       &tempID,
-		})
-		if err != nil {
-			return "", err
-		}
-		if resp.Error != nil && resp.Error.Code != mt5.ErrorCode_DONE {
-			return "", fmt.Errorf("connectEx: %s", resp.Error.Message)
-		}
-		return resp.Result, nil
-	}
 	resp, err := a.connMgr.Connect(loginCtx, &mt5.ConnectRequest{
 		User:     uint64(a.user),
 		Password: a.password,
@@ -144,8 +129,11 @@ func (a *MT5Adapter) authenticate(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if resp.Error != nil && resp.Error.Code != mt5.ErrorCode_DONE {
-		return "", fmt.Errorf("connect: %s", resp.Error.Message)
+	if resp.Error != nil {
+		return "", fmt.Errorf("connect: code=%d msg=%s", resp.Error.Code, resp.Error.Message)
+	}
+	if resp.Result == "" {
+		return "", fmt.Errorf("connect: empty token")
 	}
 	return resp.Result, nil
 }
