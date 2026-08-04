@@ -90,7 +90,7 @@
 
   async function removeBroker() {
     if (selectedBroker < 0 || selectedBroker >= brokers.length) return
-    const name = brokers[selectedBroker].brokerName
+    const name = brokers[selectedBroker].broker_name
     if (!confirm(`确认删除经纪商 ${name}？`)) return
     try {
       const reply = await backend.removeBroker({ name })
@@ -122,7 +122,7 @@
         wizardStatus = '未找到匹配的经纪商'
         return
       }
-      wizardCompanies = reply.companies.map(c => `${c.companyName} (${c.servers.length}个服务器)`)
+      wizardCompanies = reply.companies.map(c => `${c.company_name} (${c.servers.length}个服务器)`)
       wizardCompany = wizardCompanies[0]
       wizardStatus = `找到 ${reply.companies.length} 个经纪商`
     } catch (err) {
@@ -133,7 +133,7 @@
   function onCompanyChange(selected) {
     if (!searchResult) return
     for (const c of searchResult.companies) {
-      const label = `${c.companyName} (${c.servers.length}个服务器)`
+      const label = `${c.company_name} (${c.servers.length}个服务器)`
       if (label !== selected) continue
       const servers = c.servers.map(s => s.name).sort()
       wizardServers = servers
@@ -173,15 +173,15 @@
     const platform = wizardPlatform === 'MT5' ? 1 : 0
     let companyName = ''
     for (const c of searchResult.companies) {
-      const label = `${c.companyName} (${c.servers.length}个服务器)`
-      if (label === wizardCompany) { companyName = c.companyName; break }
+      const label = `${c.company_name} (${c.servers.length}个服务器)`
+      if (label === wizardCompany) { companyName = c.company_name; break }
     }
 
     let host = ''
     let port = 443
     let serverName = wizardServer
     for (const c of searchResult.companies) {
-      if (c.companyName !== companyName) continue
+      if (c.company_name !== companyName) continue
       for (const s of c.servers) {
         if (s.name === wizardServer) {
           if (s.access) {
@@ -252,12 +252,12 @@
         <span class="badge" class:badge-green={item.enabled} class:badge-red={!item.enabled}>
           {item.enabled ? '启用' : '停用'}
         </span>
-        {#if item.circuitBreakerOpen}
+        {#if item.circuit_breaker_open}
           <span class="badge badge-red">熔断</span>
         {/if}
-        <span class="strategy-stat">连亏: {item.consecutiveLosses}</span>
-        <span class="strategy-stat" style="color: {item.pnlToday >= 0 ? 'var(--green)' : 'var(--red)'}">
-          今日: {item.pnlToday ? item.pnlToday.toFixed(2) : '0.00'}
+        <span class="strategy-stat">连亏: {item.consecutive_losses}</span>
+        <span class="strategy-stat" style="color: {item.pnl_today >= 0 ? 'var(--green)' : 'var(--red)'}">
+          今日: {item.pnl_today ? item.pnl_today.toFixed(2) : '0.00'}
         </span>
         <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px;"
           onclick={() => toggleStrategy(item.name, item.enabled)}>
@@ -311,14 +311,14 @@
             onclick={() => selectedBroker = i}
             style="cursor: pointer; background: {selectedBroker === i ? 'var(--accent-dim)' : ''}"
           >
-            <td>{b.brokerName}</td>
+            <td>{b.broker_name}</td>
             <td>
-              <span class="badge" class:badge-green={b.isConnected} class:badge-red={!b.isConnected}>
-                {b.isConnected ? '在线' : '离线'}
+              <span class="badge" class:badge-green={b.is_connected} class:badge-red={!b.is_connected}>
+                {b.is_connected ? '在线' : '离线'}
               </span>
             </td>
             <td>{b.equity ? b.equity.toFixed(2) : '-'}</td>
-            <td>{b.marginFree ? b.marginFree.toFixed(2) : '-'}</td>
+            <td>{b.free_margin ? b.free_margin.toFixed(2) : '-'}</td>
           </tr>
         {/each}
       </tbody>

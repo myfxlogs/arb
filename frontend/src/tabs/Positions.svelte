@@ -40,19 +40,19 @@
     {/each}
   </div>
 {:else}
-  {#if data.brokerPositions.length === 0}
+  {#if data.broker_positions.length === 0}
     <div class="empty-state">
       <div class="empty-state-icon">📊</div>
       <div class="empty-state-text">暂无持仓数据</div>
     </div>
   {:else}
-    {#each data.brokerPositions as bp}
+    {#each data.broker_positions as bp}
       <Card style="margin-bottom: 16px;">
         <div class="broker-header">
-          <span class="broker-name">{bp.brokerName}</span>
+          <span class="broker-name">{bp.broker_name}</span>
           <div class="broker-stats">
             <span class="stat">净值: <strong>{fmt(bp.equity)}</strong></span>
-            <span class="stat">可用: <strong>{fmt(bp.marginFree)}</strong></span>
+            <span class="stat">可用: <strong>{fmt(bp.margin_free)}</strong></span>
           </div>
         </div>
 
@@ -76,9 +76,9 @@
                   <td>{pos.symbol}</td>
                   <td><span class="badge" class:badge-green={pos.side === 'BUY'} class:badge-red={pos.side === 'SELL'}>{pos.side}</span></td>
                   <td>{fmt(pos.lots)}</td>
-                  <td>{pos.openPrice ? pos.openPrice.toFixed(5) : '-'}</td>
-                  <td>{pos.currentPrice ? pos.currentPrice.toFixed(5) : '-'}</td>
-                  <td style="color: {pnlColor(pos.floatingPnl)}">{fmt(pos.floatingPnl)}</td>
+                  <td>{pos.open_price ? pos.open_price.toFixed(5) : '-'}</td>
+                  <td>{pos.current_price ? pos.current_price.toFixed(5) : '-'}</td>
+                  <td style="color: {pnlColor(pos.floating_pnl)}">{fmt(pos.floating_pnl)}</td>
                 </tr>
               {/each}
             </tbody>

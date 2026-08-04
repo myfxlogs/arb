@@ -2,7 +2,7 @@ import { writable } from 'svelte/store'
 import { backend } from './backend.js'
 
 export const spreadMatrix = writable({ rows: [] })
-export const positions = writable({ brokerPositions: [] })
+export const positions = writable({ broker_positions: [] })
 export const activeTab = writable('matrix')
 
 export const strategyStatus = writable({ items: [] })

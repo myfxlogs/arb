@@ -15,8 +15,8 @@
 
     try {
       const [sigReply, ordReply] = await Promise.all([
-        backend.getSignalHistory({ fromUnixMs: from, toUnixMs: now, limit: 100 }),
-        backend.getOrderHistory({ fromUnixMs: from, toUnixMs: now, limit: 100 }),
+        backend.getSignalHistory({ from_unix_ms: from, to_unix_ms: now, limit: 100 }),
+        backend.getOrderHistory({ from_unix_ms: from, to_unix_ms: now, limit: 100 }),
       ])
       signals = sigReply.items || []
       orders = ordReply.items || []
@@ -70,7 +70,7 @@
             <tr>
               <td>{sig.id}</td>
               <td>{sig.strategy}</td>
-              <td>{new Date(sig.tsUnixMs).toLocaleString('zh-CN')}</td>
+              <td>{new Date(sig.ts_unix_ms).toLocaleString('zh-CN')}</td>
               <td>
                 <span class="badge" class:badge-green={sig.executed} class:badge-red={!sig.executed}>
                   {sig.executed ? '已执行' : '未执行'}
@@ -103,11 +103,11 @@
         <tbody>
           {#each orders as ord}
             <tr>
-              <td>{ord.clientId}</td>
+              <td>{ord.client_id}</td>
               <td>{ord.broker}</td>
               <td>{ord.symbol}</td>
               <td>{ord.volume ? ord.volume.toFixed(2) : '-'}</td>
-              <td>{new Date(ord.tsUnixMs).toLocaleString('zh-CN')}</td>
+              <td>{new Date(ord.ts_unix_ms).toLocaleString('zh-CN')}</td>
             </tr>
           {/each}
         </tbody>

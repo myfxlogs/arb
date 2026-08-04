@@ -17,7 +17,7 @@
     result = ''
     try {
       const reply = await backend.submitOrder({
-        brokerName,
+        broker_name: brokerName,
         symbol,
         side,
         lots: parseFloat(lots) || 0,
