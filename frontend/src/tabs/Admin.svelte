@@ -24,6 +24,7 @@
   let wizardUser = $state('')
   let wizardPassword = $state('')
   let wizardName = $state('')
+  let serverFilter = $state('')
 
   async function refreshStatus() {
     statusLoaded = false
@@ -227,6 +228,7 @@
     wizardUser = ''
     wizardPassword = ''
     wizardName = ''
+    serverFilter = ''
   }
 
   refreshStatus()
@@ -365,9 +367,12 @@
         {/if}
       {:else if wizardStep === 1}
         <div class="form-group">
-          <span class="form-label">选择服务器</span>
+          <span class="form-label">选择服务器 ({wizardServers.length} 个)</span>
+          {#if wizardServers.length > 10}
+            <input class="form-input" bind:value={serverFilter} placeholder="过滤服务器名称..." style="margin-bottom: 8px;" />
+          {/if}
           <select class="form-select" bind:value={wizardServer}>
-            {#each wizardServers as s}
+            {#each wizardServers.filter(s => !serverFilter || s.toLowerCase().includes(serverFilter.toLowerCase())) as s}
               <option value={s}>{s}</option>
             {/each}
           </select>
@@ -380,7 +385,7 @@
         </div>
         <div class="form-group">
           <span class="form-label">密码</span>
-          <input class="form-input" type="password" bind:value={wizardPassword} placeholder="密码" />
+          <input class="form-input" type="text" bind:value={wizardPassword} placeholder="密码（明文显示）" />
         </div>
         <div class="form-group">
           <span class="form-label">自定义名称（可选）</span>
