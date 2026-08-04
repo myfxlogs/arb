@@ -69,7 +69,27 @@ func main() {
 		cfg.Risk.MaxWindowLoss,
 	)
 
-	// 5. Connect adapters
+	// 5. Store (optional — skip if no DSN)
+	var st *store.Store
+	dsn := cfg.Database.GetDsn()
+	if envDSN := os.Getenv("DB_DSN"); envDSN != "" {
+		dsn = envDSN
+	}
+	if dsn != "" {
+		st, err = store.New(ctx, dsn)
+		if err != nil {
+			slog.Warn("connect store", "error", err)
+		} else {
+			if err := st.EnsureMigrations(ctx); err != nil {
+				slog.Warn("migrations", "error", err)
+			}
+			if err := st.EnsureCurrentPartitions(ctx); err != nil {
+				slog.Warn("partitions", "error", err)
+			}
+		}
+	}
+
+	// 6. Connect adapters from textproto config
 	adapters := make(map[string]adapter.PlatformAdapter)
 	for _, bc := range cfg.Brokers {
 		var a adapter.PlatformAdapter
@@ -99,23 +119,37 @@ func main() {
 		go a.QuoteStream(ctx, quoteBus)
 	}
 
-	// 6. Store (optional — skip if no DSN)
-	var st *store.Store
-	dsn := cfg.Database.GetDsn()
-	if envDSN := os.Getenv("DB_DSN"); envDSN != "" {
-		dsn = envDSN
-	}
-	if dsn != "" {
-		st, err = store.New(ctx, dsn)
-		if err != nil {
-			slog.Warn("connect store", "error", err)
-		} else {
-			if err := st.EnsureMigrations(ctx); err != nil {
-				slog.Warn("migrations", "error", err)
+	// 6b. Load broker accounts from database and connect
+	if st != nil {
+		dbBrokers, dbErr := st.ListBrokerAccounts(ctx)
+		if dbErr != nil {
+			slog.Warn("list db broker accounts", "error", dbErr)
+		}
+		for _, db := range dbBrokers {
+			if _, exists := adapters[db.Name]; exists {
+				continue
 			}
-			if err := st.EnsureCurrentPartitions(ctx); err != nil {
-				slog.Warn("partitions", "error", err)
+			var a adapter.PlatformAdapter
+			switch db.Platform {
+			case 0: // MT4
+				a = adapter.NewMT4Adapter(db.Name, db.Host, db.Server, db.Port, db.Login, db.Password, int(cfg.Risk.MaxConcurrentOrders))
+			case 1: // MT5
+				a = adapter.NewMT5Adapter(db.Name, db.Host, db.Server, db.Port, db.Login, db.Password, int(cfg.Risk.MaxConcurrentOrders))
+			default:
+				slog.Warn("unknown platform in db broker", "broker", db.Name, "platform", db.Platform)
+				continue
 			}
+			token, connErr := a.Connect(ctx)
+			if connErr != nil {
+				slog.Error("connect db broker", "broker", db.Name, "error", connErr)
+				continue
+			}
+			slog.Info("db broker connected", "broker", db.Name, "token", token)
+			adapters[db.Name] = a
+			if err := a.Subscribe(ctx, allSymbols); err != nil {
+				slog.Warn("subscribe db broker", "broker", db.Name, "error", err)
+			}
+			go a.QuoteStream(ctx, quoteBus)
 		}
 	}
 

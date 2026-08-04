@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"arb/internal/adapter"
+	"arb/internal/store"
 	dashpb "arb/proto/gen/dashboard"
 )
 
@@ -196,6 +197,20 @@ func (s *Server) AddBroker(ctx context.Context, req *dashpb.AddBrokerRequest) (*
 	}
 	go a.QuoteStream(ctx, s.bus)
 
+	if s.store != nil {
+		if err := s.store.SaveBrokerAccount(ctx, store.BrokerAccountRecord{
+			Name:     req.Name,
+			Platform: req.Platform,
+			Host:     req.Host,
+			Server:   req.Server,
+			Port:     req.Port,
+			Login:    req.User,
+			Password: req.Password,
+		}); err != nil {
+			slog.Warn("addBroker persist", "broker", req.Name, "error", err)
+		}
+	}
+
 	slog.Info("broker added", "broker", req.Name, "token", token)
 	return &dashpb.AddBrokerReply{Success: true, Token: token}, nil
 }
@@ -213,6 +228,11 @@ func (s *Server) RemoveBroker(ctx context.Context, req *dashpb.RemoveBrokerReque
 
 	if err := a.Disconnect(); err != nil {
 		slog.Warn("removeBroker disconnect", "broker", req.Name, "error", err)
+	}
+	if s.store != nil {
+		if err := s.store.DeleteBrokerAccount(ctx, req.Name); err != nil {
+			slog.Warn("removeBroker persist", "broker", req.Name, "error", err)
+		}
 	}
 	slog.Info("broker removed", "broker", req.Name)
 	return &dashpb.RemoveBrokerReply{Success: true}, nil

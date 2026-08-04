@@ -49,6 +49,9 @@ func (m *mockAdapter) CancelOrder(context.Context, int64) error { return nil }
 func (m *mockAdapter) CloseOrder(context.Context, int64, decimal.Decimal, float64, int32) (*adapter.OrderResult, error) {
 	return nil, nil
 }
+func (m *mockAdapter) OrderHistory(context.Context, time.Time, time.Time) ([]adapter.Order, error) {
+	return nil, nil
+}
 func (m *mockAdapter) Platform() bus.PlatformType { return bus.PlatformMT5 }
 func (m *mockAdapter) BrokerName() string         { return m.broker }
 
