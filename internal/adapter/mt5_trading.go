@@ -150,11 +150,18 @@ func (a *MT5Adapter) OpenOrders(ctx context.Context) ([]Order, error) {
 			continue
 		}
 		orders = append(orders, Order{
-			Ticket:  o.Ticket,
-			Symbol:  safeSymbol(o.Symbol),
-			Type:    fromMT5Op(o.OrderType),
-			Lots:    decimalutil.FromFloat64(o.Lots, 2),
-			Comment: o.Comment,
+			Ticket:     o.Ticket,
+			Symbol:     safeSymbol(o.Symbol),
+			Type:       fromMT5Op(o.OrderType),
+			Lots:       decimalutil.FromFloat64(o.Lots, 2),
+			OpenPrice:  o.OpenPrice,
+			StopLoss:   o.StopLoss,
+			TakeProfit: o.TakeProfit,
+			Profit:     o.Profit,
+			Swap:       o.Swap,
+			Commission: o.Commission,
+			Comment:    o.Comment,
+			OpenTime:   o.OpenTime.AsTime(),
 		})
 	}
 	return orders, nil

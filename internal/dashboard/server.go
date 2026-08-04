@@ -274,11 +274,18 @@ func (s *Server) buildPositionWatch(ctx context.Context) *dashpb.PositionWatchRe
 					side = "Sell"
 				}
 				bp.Positions = append(bp.Positions, &dashpb.PositionWatchReply_Position{
-					Ticket:  o.Ticket,
-					Symbol:  o.Symbol,
-					Side:    side,
-					Lots:    float64(o.Lots.InexactFloat64()),
-					Comment: o.Comment,
+					Ticket:         o.Ticket,
+					Symbol:         o.Symbol,
+					Side:           side,
+					Lots:           float64(o.Lots.InexactFloat64()),
+					OpenPrice:      o.OpenPrice,
+					StopLoss:       o.StopLoss,
+					TakeProfit:     o.TakeProfit,
+					FloatingPnl:    o.Profit,
+					SwapAccrued:    o.Swap,
+					Commission:     o.Commission,
+					OpenTimeUnixMs: o.OpenTime.UnixMilli(),
+					Comment:        o.Comment,
 				})
 			}
 		}

@@ -85,7 +85,11 @@ type Order struct {
 	State      OrderState
 	OpenPrice  float64
 	ClosePrice float64
+	StopLoss   float64
+	TakeProfit float64
 	Profit     float64
+	Swap       float64
+	Commission float64
 	Comment    string
 	OpenTime   time.Time
 	CloseTime  time.Time

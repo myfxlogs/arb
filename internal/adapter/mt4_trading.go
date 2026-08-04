@@ -131,11 +131,18 @@ func (a *MT4Adapter) OpenOrders(ctx context.Context) ([]Order, error) {
 			continue
 		}
 		orders = append(orders, Order{
-			Ticket:  int64(o.Ticket),
-			Symbol:  o.Symbol,
-			Type:    fromMT4Op(o.Type),
-			Lots:    decimalutil.FromFloat64(o.Lots, 2),
-			Comment: o.Comment,
+			Ticket:     int64(o.Ticket),
+			Symbol:     o.Symbol,
+			Type:       fromMT4Op(o.Type),
+			Lots:       decimalutil.FromFloat64(o.Lots, 2),
+			OpenPrice:  o.OpenPrice,
+			StopLoss:   o.StopLoss,
+			TakeProfit: o.TakeProfit,
+			Profit:     o.Profit,
+			Swap:       o.Swap,
+			Commission: o.Commission,
+			Comment:    o.Comment,
+			OpenTime:   o.OpenTime.AsTime(),
 		})
 	}
 	return orders, nil
