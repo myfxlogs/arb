@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"arb/internal/bus"
@@ -64,9 +65,11 @@ func (a *MT4Adapter) Platform() bus.PlatformType { return bus.PlatformMT4 }
 func (a *MT4Adapter) Connect(ctx context.Context) (string, error) {
 	a.rsm.setState(stateConnecting)
 
-	addr := fmt.Sprintf("%s:%d", a.host, a.port)
+	// Dial mtapi.io gateway, NOT the broker server directly.
+	// The broker host:port is passed in ConnectRequest.
+	gateway := "mt4grpc3.mtapi.io:443"
 	tlsCfg := &tls.Config{MinVersion: tls.VersionTLS13}
-	conn, err := grpc.DialContext(ctx, addr,
+	conn, err := grpc.DialContext(ctx, gateway,
 		grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg)),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                30 * time.Second,
@@ -76,7 +79,7 @@ func (a *MT4Adapter) Connect(ctx context.Context) (string, error) {
 	)
 	if err != nil {
 		a.rsm.setState(stateDisconnected)
-		return "", fmt.Errorf("mt4 dial %s: %w", addr, err)
+		return "", fmt.Errorf("mt4 dial %s: %w", gateway, err)
 	}
 	a.conn = conn
 	a.connMgr = mt4.NewConnectionClient(conn)
@@ -94,16 +97,18 @@ func (a *MT4Adapter) Connect(ctx context.Context) (string, error) {
 	a.token = token
 	a.rsm.setState(stateConnected)
 	a.rsm.resetRetries()
-	slog.Info("MT4 connected", "broker", a.brokerName, "host", addr)
+	slog.Info("MT4 connected", "broker", a.brokerName, "gateway", gateway, "brokerHost", a.host)
 	return token, nil
 }
 
 func (a *MT4Adapter) authenticate(ctx context.Context) (string, error) {
+	tempID := "mdgw-" + strconv.FormatInt(a.user, 10)
 	if a.server != "" {
 		resp, err := a.connMgr.ConnectEx(ctx, &mt4.ConnectExRequest{
 			User:     int32(a.user),
 			Password: a.password,
 			Server:   a.server,
+			Id:       &tempID,
 		})
 		if err != nil {
 			return "", err
@@ -118,6 +123,7 @@ func (a *MT4Adapter) authenticate(ctx context.Context) (string, error) {
 		Password: a.password,
 		Host:     a.host,
 		Port:     a.port,
+		Id:       &tempID,
 	})
 	if err != nil {
 		return "", err

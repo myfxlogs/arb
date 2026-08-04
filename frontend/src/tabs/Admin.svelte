@@ -10,21 +10,24 @@
   let brokersLoaded = $state(false)
   let selectedBroker = $state(-1)
 
-  // Wizard state
+  // Wizard state (3-step flow matching ant frontend)
   let showWizard = $state(false)
-  let wizardStep = $state(0)
+  let wizardStep = $state(0) // 0=search, 1=credentials, 2=confirm
   let wizardPlatform = $state('MT5')
   let wizardKeyword = $state('')
   let wizardStatus = $state('')
   let searchResult = $state(null)
   let wizardCompanies = $state([])
-  let wizardCompany = $state('')
+  let wizardCompany = $state('') // selected company_name
   let wizardServers = $state([])
-  let wizardServer = $state('')
+  let wizardServer = $state('') // selected server name
+  let selectedServerObj = $state(null) // full server object with access
   let wizardUser = $state('')
   let wizardPassword = $state('')
   let wizardName = $state('')
   let serverFilter = $state('')
+  let wizardLoading = $state(false)
+  let wizardError = $state('')
 
   async function refreshStatus() {
     statusLoaded = false
@@ -107,94 +110,89 @@
 
   // === Wizard ===
 
+  function friendlyError(msg) {
+    if (!msg) return ''
+    if (msg.includes('SERVICE_NOT_AVAILABLE') || msg.includes('code=11'))
+      return '经纪商服务器不可用，请稍后重试'
+    if (msg.includes('INVALID_ACCOUNT') || msg.includes('code=1001'))
+      return '账号或密码错误'
+    if (msg.includes('connection failed') || msg.includes('connect'))
+      return '连接失败，请检查服务器和网络'
+    if (msg.includes('timeout') || msg.includes('Timed out'))
+      return '连接超时，请稍后重试'
+    return msg
+  }
+
   async function wizardSearch() {
+    if (!wizardKeyword.trim()) { wizardStatus = '请输入经纪商关键词'; return }
     wizardStatus = '搜索中...'
     wizardCompanies = []
     wizardCompany = ''
+    wizardServers = []
+    wizardServer = ''
+    selectedServerObj = null
     const platform = wizardPlatform === 'MT5' ? 1 : 0
     try {
       const reply = await backend.searchBroker({ company: wizardKeyword, platform })
-      if (reply.error) {
-        wizardStatus = reply.error
-        return
-      }
+      if (reply.error) { wizardStatus = reply.error; return }
       searchResult = reply
       if (!reply.companies || reply.companies.length === 0) {
         wizardStatus = '未找到匹配的经纪商'
         return
       }
-      wizardCompanies = reply.companies.map(c => `${c.company_name} (${c.servers.length}个服务器)`)
-      wizardCompany = wizardCompanies[0]
+      wizardCompanies = reply.companies.map(c => c.company_name)
       wizardStatus = `找到 ${reply.companies.length} 个经纪商`
     } catch (err) {
       wizardStatus = `搜索失败: ${err}`
     }
   }
 
-  function onCompanyChange(selected) {
+  function onCompanyChange(companyName) {
     if (!searchResult) return
-    for (const c of searchResult.companies) {
-      const label = `${c.company_name} (${c.servers.length}个服务器)`
-      if (label !== selected) continue
-      const servers = c.servers.map(s => s.name).sort()
-      wizardServers = servers
-      if (servers.length > 0) wizardServer = servers[0]
-      return
-    }
+    const c = searchResult.companies.find(c => c.company_name === companyName)
+    if (!c) return
+    wizardServers = [...c.servers].sort((a, b) => a.name.localeCompare(b.name))
+    wizardServer = ''
+    selectedServerObj = null
+  }
+
+  function onServerChange(serverName) {
+    selectedServerObj = wizardServers.find(s => s.name === serverName) || null
+    if (selectedServerObj && !wizardName) wizardName = selectedServerObj.name
   }
 
   function wizardNext() {
     if (wizardStep === 0) {
-      if (!searchResult || wizardCompanies.length === 0) {
-        alert('请先搜索并选择经纪商公司')
-        return
-      }
-      if (!wizardCompany) {
-        alert('请选择一个公司')
-        return
-      }
-      onCompanyChange(wizardCompany)
+      if (!wizardCompany) { alert('请选择经纪商公司'); return }
+      if (!wizardServer || !selectedServerObj) { alert('请选择服务器'); return }
+      if (!selectedServerObj.access) { alert('该服务器无可用地址'); return }
     } else if (wizardStep === 1) {
-      if (!wizardServer) {
-        alert('请选择一个服务器')
-        return
-      }
+      if (!wizardUser.trim()) { alert('请输入交易账号'); return }
+      if (!/^\d+$/.test(wizardUser.trim())) { alert('交易账号只能包含数字'); return }
+      if (!wizardPassword) { alert('请输入密码'); return }
+      wizardError = ''
     }
     wizardStep++
   }
 
   function wizardPrev() {
     if (wizardStep > 0) wizardStep--
+    wizardError = ''
   }
 
   async function wizardSubmit() {
-    if (!wizardUser) { alert('请输入交易账号'); return }
-    if (!wizardPassword) { alert('请输入密码'); return }
-
+    wizardLoading = true
+    wizardError = ''
     const platform = wizardPlatform === 'MT5' ? 1 : 0
-    let companyName = ''
-    for (const c of searchResult.companies) {
-      const label = `${c.company_name} (${c.servers.length}个服务器)`
-      if (label === wizardCompany) { companyName = c.company_name; break }
-    }
-
+    const companyName = wizardCompany
+    const serverName = wizardServer
     let host = ''
     let port = 443
-    let serverName = wizardServer
-    for (const c of searchResult.companies) {
-      if (c.company_name !== companyName) continue
-      for (const s of c.servers) {
-        if (s.name === wizardServer) {
-          if (s.access) {
-            const parts = s.access.split(':')
-            host = parts[0]
-            if (parts.length > 1) port = parseInt(parts[1]) || 443
-          }
-          break
-        }
-      }
+    if (selectedServerObj && selectedServerObj.access) {
+      const parts = selectedServerObj.access.split(':')
+      host = parts[0]
+      if (parts.length > 1) port = parseInt(parts[1]) || 443
     }
-
     const name = wizardName || companyName
     try {
       const reply = await backend.addBroker({
@@ -206,13 +204,18 @@
         password: wizardPassword,
         server: serverName,
       })
-      if (!reply.success) { alert(reply.error); return }
-      alert(`经纪商 ${name} 添加成功`)
+      if (!reply.success) {
+        wizardError = friendlyError(reply.error)
+        wizardLoading = false
+        return
+      }
+      wizardLoading = false
       showWizard = false
       resetWizard()
       refreshBrokers()
     } catch (err) {
-      alert(`错误: ${err}`)
+      wizardError = friendlyError(String(err))
+      wizardLoading = false
     }
   }
 
@@ -225,10 +228,13 @@
     wizardCompany = ''
     wizardServers = []
     wizardServer = ''
+    selectedServerObj = null
     wizardUser = ''
     wizardPassword = ''
     wizardName = ''
     serverFilter = ''
+    wizardLoading = false
+    wizardError = ''
   }
 
   refreshStatus()
@@ -334,63 +340,111 @@
     <div class="modal-content" role="dialog" tabindex="-1" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
       <div class="modal-title">添加经纪商</div>
 
-      <div class="wizard-step-title">
-        步骤 {wizardStep + 1}/3 —
-        {wizardStep === 0 ? '搜索经纪商' : wizardStep === 1 ? '选择服务器' : '输入账号'}
+      <!-- Step indicator -->
+      <div class="step-indicator">
+        {#each ['搜索', '凭据', '确认'] as label, i}
+          <div class="step-item">
+            <div class="step-circle" class:active={wizardStep >= i} class:done={wizardStep > i}>
+              {#if wizardStep > i}✓{:else}{i + 1}{/if}
+            </div>
+            <span class="step-label" class:active={wizardStep >= i}>{label}</span>
+          </div>
+          {#if i < 2}<div class="step-line" class:active={wizardStep > i}></div>{/if}
+        {/each}
       </div>
 
+      <!-- Step 0: Search + company + server -->
       {#if wizardStep === 0}
         <div class="form-group">
-          <span class="form-label">选择平台</span>
-          <select class="form-select" bind:value={wizardPlatform}>
-            <option value="MT4">MT4</option>
-            <option value="MT5">MT5</option>
-          </select>
+          <span class="form-label">平台</span>
+          <div class="platform-tabs">
+            {#each ['MT4', 'MT5'] as p}
+              <button class="platform-tab" class:active={wizardPlatform === p}
+                onclick={() => { wizardPlatform = p; wizardCompanies = []; wizardCompany = ''; wizardServers = []; wizardServer = ''; selectedServerObj = null; searchResult = null; wizardStatus = '' }}>
+                {p}
+              </button>
+            {/each}
+          </div>
         </div>
         <div class="form-group">
           <span class="form-label">经纪商关键词</span>
-          <input class="form-input" bind:value={wizardKeyword} placeholder="如 OctaFX, RoboForex" />
+          <div style="display: flex; gap: 8px;">
+            <input class="form-input" bind:value={wizardKeyword} placeholder="如 OctaFX, RoboForex, Exness"
+              onkeydown={(e) => e.key === 'Enter' && wizardSearch()} />
+            <button class="btn btn-primary" onclick={wizardSearch}>搜索</button>
+          </div>
         </div>
-        <button class="btn btn-primary" onclick={wizardSearch}>搜索</button>
         {#if wizardStatus}
           <div style="margin-top: 8px; font-size: 13px; color: var(--text-dim);">{wizardStatus}</div>
         {/if}
         {#if wizardCompanies.length > 0}
           <div class="form-group" style="margin-top: 12px;">
-            <span class="form-label">选择公司</span>
+            <span class="form-label">公司</span>
             <select class="form-select" bind:value={wizardCompany} onchange={(e) => onCompanyChange(e.target.value)}>
+              <option value="">请选择...</option>
               {#each wizardCompanies as c}
                 <option value={c}>{c}</option>
               {/each}
             </select>
           </div>
         {/if}
-      {:else if wizardStep === 1}
-        <div class="form-group">
-          <span class="form-label">选择服务器 ({wizardServers.length} 个)</span>
-          {#if wizardServers.length > 10}
-            <input class="form-input" bind:value={serverFilter} placeholder="过滤服务器名称..." style="margin-bottom: 8px;" />
+        {#if wizardServers.length > 0}
+          <div class="form-group">
+            <span class="form-label">服务器 ({wizardServers.length} 个)</span>
+            {#if wizardServers.length > 10}
+              <input class="form-input" bind:value={serverFilter} placeholder="过滤服务器名称..." style="margin-bottom: 8px;" />
+            {/if}
+            <select class="form-select" bind:value={wizardServer} onchange={(e) => onServerChange(e.target.value)}>
+              <option value="">请选择...</option>
+              {#each wizardServers.filter(s => !serverFilter || s.name.toLowerCase().includes(serverFilter.toLowerCase())) as s}
+                <option value={s.name}>{s.name}</option>
+              {/each}
+            </select>
+          </div>
+          {#if selectedServerObj}
+            <div style="margin-top: 6px; font-size: 12px; color: var(--text-dim);">地址: {selectedServerObj.access}</div>
           {/if}
-          <select class="form-select" bind:value={wizardServer}>
-            {#each wizardServers.filter(s => !serverFilter || s.toLowerCase().includes(serverFilter.toLowerCase())) as s}
-              <option value={s}>{s}</option>
-            {/each}
-          </select>
+        {/if}
+
+      <!-- Step 1: Credentials -->
+      {:else if wizardStep === 1}
+        <div class="server-info-box">
+          <div style="font-weight: 600;">{wizardServer}</div>
+          <div style="font-size: 13px; color: var(--text-dim);">{wizardCompany} · {wizardPlatform}</div>
         </div>
-        <div style="margin-top: 8px; font-size: 13px; color: var(--text-dim);">已选择: {wizardServer}</div>
-      {:else}
         <div class="form-group">
           <span class="form-label">交易账号</span>
-          <input class="form-input" bind:value={wizardUser} placeholder="交易账号" />
+          <input class="form-input" bind:value={wizardUser} placeholder="交易账号（纯数字）" />
+          {#if wizardUser && !/^\d+$/.test(wizardUser)}
+            <div style="margin-top: 4px; font-size: 12px; color: var(--red);">账号只能包含数字</div>
+          {/if}
         </div>
         <div class="form-group">
           <span class="form-label">密码</span>
           <input class="form-input" type="text" bind:value={wizardPassword} placeholder="密码（明文显示）" />
+          <div style="margin-top: 4px; font-size: 12px; color: var(--text-dim);">mtapi 要求明文传输密码</div>
         </div>
         <div class="form-group">
           <span class="form-label">自定义名称（可选）</span>
-          <input class="form-input" bind:value={wizardName} placeholder="留空则用公司名" />
+          <input class="form-input" bind:value={wizardName} placeholder="留空则用服务器名" />
         </div>
+
+      <!-- Step 2: Confirm -->
+      {:else}
+        <div class="server-info-box">
+          <div style="font-weight: 600;">{wizardServer}</div>
+          <div style="font-size: 13px; color: var(--text-dim);">{wizardCompany} · {wizardPlatform} · {wizardUser}</div>
+          {#if selectedServerObj}
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">{selectedServerObj.access}</div>
+          {/if}
+        </div>
+
+        {#if wizardError}
+          <div class="wizard-error">
+            <span style="font-size: 16px;">⚠</span>
+            <span>{wizardError}</span>
+          </div>
+        {/if}
       {/if}
 
       <div class="wizard-nav">
@@ -398,9 +452,12 @@
           <button class="btn btn-secondary" onclick={wizardPrev}>上一步</button>
         {/if}
         {#if wizardStep < 2}
-          <button class="btn btn-primary" onclick={wizardNext}>下一步</button>
+          <button class="btn btn-primary" onclick={wizardNext}
+            disabled={wizardStep === 0 && !selectedServerObj}>下一步</button>
         {:else}
-          <button class="btn btn-primary" onclick={wizardSubmit}>确认添加</button>
+          <button class="btn btn-primary" onclick={wizardSubmit} disabled={wizardLoading}>
+            {wizardLoading ? '连接中...' : '确认添加'}
+          </button>
         {/if}
       </div>
     </div>
@@ -448,11 +505,93 @@
     font-weight: 700;
     margin-bottom: 20px;
   }
-  .wizard-step-title {
-    font-size: 15px;
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 24px;
+  }
+  .step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .step-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
     font-weight: 600;
+    background: rgba(220, 226, 234, 0.5);
+    color: var(--text-dim);
+  }
+  .step-circle.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .step-circle.done {
+    background: var(--accent);
+    color: #fff;
+  }
+  .step-label {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .step-label.active {
+    color: var(--text);
+  }
+  .step-line {
+    width: 40px;
+    height: 2px;
+    background: rgba(220, 226, 234, 0.5);
+    margin: 0 4px;
     margin-bottom: 20px;
+  }
+  .step-line.active {
+    background: var(--accent);
+  }
+  .platform-tabs {
+    display: flex;
+    gap: 8px;
+  }
+  .platform-tab {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+  .platform-tab.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
     color: var(--accent);
+  }
+  .server-info-box {
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    margin-bottom: 16px;
+  }
+  .wizard-error {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(229, 57, 53, 0.05);
+    border: 1px solid rgba(229, 57, 53, 0.15);
+    color: var(--red);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
   }
   .wizard-nav {
     display: flex;
