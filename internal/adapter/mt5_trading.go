@@ -39,7 +39,7 @@ func (a *MT5Adapter) PlaceOrder(ctx context.Context, req OrderRequest) (*OrderRe
 		r.Slippage = proto.Uint64(uint64(req.Slippage))
 	}
 
-	resp, err := a.trading.OrderSend(ctx, r)
+	resp, err := a.trading.OrderSend(a.withSessionMD(ctx), r)
 	if err != nil {
 		return nil, fmt.Errorf("mt5 orderSend: %w", err)
 	}
@@ -60,7 +60,7 @@ func (a *MT5Adapter) CancelOrder(ctx context.Context, ticket int64) error {
 	if !a.rsm.canPlaceOrder() {
 		return ErrNotConnected
 	}
-	_, err := a.trading.OrderClose(ctx, &mt5.OrderCloseRequest{
+	_, err := a.trading.OrderClose(a.withSessionMD(ctx), &mt5.OrderCloseRequest{
 		Id:     a.token,
 		Ticket: ticket,
 	})
@@ -85,7 +85,7 @@ func (a *MT5Adapter) CloseOrder(ctx context.Context, ticket int64, lots decimal.
 	if slippage > 0 {
 		req.Slippage = proto.Uint64(uint64(slippage))
 	}
-	resp, err := a.trading.OrderClose(ctx, req)
+	resp, err := a.trading.OrderClose(a.withSessionMD(ctx), req)
 	if err != nil {
 		return nil, fmt.Errorf("mt5 orderClose: %w", err)
 	}
@@ -101,17 +101,19 @@ func (a *MT5Adapter) CloseOrder(ctx context.Context, ticket int64, lots decimal.
 	}, nil
 }
 
-// AccountSummary returns the MT5 account summary.
 func (a *MT5Adapter) AccountSummary(ctx context.Context) (*Account, error) {
 	if !a.rsm.canPlaceOrder() {
 		return nil, ErrNotConnected
 	}
-	resp, err := a.mt5.AccountSummary(ctx, &mt5.AccountSummaryRequest{Id: a.token})
+	resp, err := a.mt5.AccountSummary(a.withSessionMD(ctx), &mt5.AccountSummaryRequest{Id: a.token})
 	if err != nil {
 		return nil, err
 	}
 	if resp.Error != nil && resp.Error.Code != mt5.ErrorCode_DONE {
 		return nil, fmt.Errorf("mt5: %s", resp.Error.Message)
+	}
+	if resp.Result == nil {
+		return &Account{}, nil
 	}
 	s := resp.Result
 	return &Account{
@@ -128,7 +130,7 @@ func (a *MT5Adapter) OpenOrders(ctx context.Context) ([]Order, error) {
 	if !a.rsm.canPlaceOrder() {
 		return nil, ErrNotConnected
 	}
-	resp, err := a.mt5.OpenedOrders(ctx, &mt5.OpenedOrdersRequest{Id: a.token})
+	resp, err := a.mt5.OpenedOrders(a.withSessionMD(ctx), &mt5.OpenedOrdersRequest{Id: a.token})
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +158,7 @@ func (a *MT5Adapter) AllSymbols(ctx context.Context) ([]string, error) {
 	if !a.rsm.canPlaceOrder() {
 		return nil, ErrNotConnected
 	}
-	resp, err := a.mt5.SymbolList(ctx, &mt5.SymbolListRequest{Id: a.token})
+	resp, err := a.mt5.SymbolList(a.withSessionMD(ctx), &mt5.SymbolListRequest{Id: a.token})
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +175,7 @@ func (a *MT5Adapter) SymbolDigits(ctx context.Context, symbols []string) (map[st
 	}
 	result := make(map[string]int32, len(symbols))
 	for _, sym := range symbols {
-		resp, err := a.mt5.SymbolParams(ctx, &mt5.SymbolParamsRequest{Id: a.token, Symbol: sym})
+		resp, err := a.mt5.SymbolParams(a.withSessionMD(ctx), &mt5.SymbolParamsRequest{Id: a.token, Symbol: sym})
 		if err != nil {
 			slog.Warn("mt5 symbolParams", "symbol", sym, "error", err)
 			continue

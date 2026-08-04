@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/metadata"
 )
 
 // MT5Adapter connects to an MT5 broker via mtapi.io gRPC proxy.
@@ -63,16 +64,15 @@ func NewMT5Adapter(brokerName, host, server string, port int32, user int64, pass
 func (a *MT5Adapter) BrokerName() string         { return a.brokerName }
 func (a *MT5Adapter) Platform() bus.PlatformType { return bus.PlatformMT5 }
 
-// Connect dials the mtapi.io gRPC proxy and authenticates.
 func (a *MT5Adapter) Connect(ctx context.Context) (string, error) {
 	a.rsm.setState(stateConnecting)
 
-	// Dial mtapi.io gateway, NOT the broker server directly.
-	// The broker host:port is passed in ConnectRequest.
 	gateway := "mt5grpc3.mtapi.io:443"
 	tlsCfg := &tls.Config{MinVersion: tls.VersionTLS13}
 	conn, err := grpc.DialContext(ctx, gateway,
 		grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg)),
+		grpc.WithBlock(),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(16*1024*1024)),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                30 * time.Second,
 			Timeout:             10 * time.Second,
@@ -96,6 +96,11 @@ func (a *MT5Adapter) Connect(ctx context.Context) (string, error) {
 		conn.Close()
 		return "", fmt.Errorf("mt5 auth %s: %w", a.brokerName, err)
 	}
+	if token == "" {
+		a.rsm.setState(stateDisconnected)
+		conn.Close()
+		return "", fmt.Errorf("mt5 auth %s: empty token", a.brokerName)
+	}
 	a.token = token
 	a.rsm.setState(stateConnected)
 	a.rsm.resetRetries()
@@ -103,11 +108,19 @@ func (a *MT5Adapter) Connect(ctx context.Context) (string, error) {
 	return token, nil
 }
 
+// withSessionMD returns a context with gRPC metadata headers set.
+// All post-connect RPCs must use this — mtapi.io routes by the `id` header.
+func (a *MT5Adapter) withSessionMD(ctx context.Context) context.Context {
+	md := metadata.New(map[string]string{"id": a.token})
+	return metadata.NewOutgoingContext(ctx, md)
+}
+
 // authenticate calls Connect or ConnectEx depending on whether a server name is set.
 func (a *MT5Adapter) authenticate(ctx context.Context) (string, error) {
 	tempID := "mdgw-" + strconv.FormatInt(a.user, 10)
+	loginCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{"id": tempID}))
 	if a.server != "" {
-		resp, err := a.connMgr.ConnectEx(ctx, &mt5.ConnectExRequest{
+		resp, err := a.connMgr.ConnectEx(loginCtx, &mt5.ConnectExRequest{
 			User:     uint64(a.user),
 			Password: a.password,
 			Server:   a.server,
@@ -121,7 +134,7 @@ func (a *MT5Adapter) authenticate(ctx context.Context) (string, error) {
 		}
 		return resp.Result, nil
 	}
-	resp, err := a.connMgr.Connect(ctx, &mt5.ConnectRequest{
+	resp, err := a.connMgr.Connect(loginCtx, &mt5.ConnectRequest{
 		User:     uint64(a.user),
 		Password: a.password,
 		Host:     a.host,
@@ -146,19 +159,18 @@ func (a *MT5Adapter) Disconnect() error {
 	return nil
 }
 
-// HealthCheck verifies the connection is alive.
 func (a *MT5Adapter) HealthCheck(ctx context.Context) error {
 	if !a.rsm.isConnected() {
 		return ErrNotConnected
 	}
-	_, err := a.connMgr.CheckConnect(ctx, &mt5.CheckConnectRequest{Id: a.token})
+	_, err := a.connMgr.CheckConnect(a.withSessionMD(ctx), &mt5.CheckConnectRequest{Id: a.token})
 	return err
 }
 
 // Subscribe subscribes to real-time quotes for the given symbols.
 func (a *MT5Adapter) Subscribe(ctx context.Context, symbols []string) error {
 	for _, sym := range symbols {
-		_, err := a.subs.Subscribe(ctx, &mt5.SubscribeRequest{
+		_, err := a.subs.Subscribe(a.withSessionMD(ctx), &mt5.SubscribeRequest{
 			Id:     a.token,
 			Symbol: sym,
 		})
@@ -181,7 +193,7 @@ func (a *MT5Adapter) QuoteStream(ctx context.Context, b *bus.QuoteBus) {
 				return
 			}
 		}
-		stream, err := a.streams.OnQuote(ctx, &mt5.OnQuoteRequest{Id: a.token})
+		stream, err := a.streams.OnQuote(a.withSessionMD(ctx), &mt5.OnQuoteRequest{Id: a.token})
 		if err != nil {
 			slog.Warn("MT5 OnQuote stream error", "broker", a.brokerName, "error", err)
 			if err := a.reconnect(ctx); err != nil {

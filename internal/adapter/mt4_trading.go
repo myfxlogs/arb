@@ -23,7 +23,7 @@ func (a *MT4Adapter) PlaceOrder(ctx context.Context, req OrderRequest) (*OrderRe
 		return nil, ctx.Err()
 	}
 
-	resp, err := a.trading.OrderSend(ctx, &mt4.OrderSendRequest{
+	resp, err := a.trading.OrderSend(a.withSessionMD(ctx), &mt4.OrderSendRequest{
 		Id:        a.token,
 		Symbol:    req.Symbol,
 		Operation: toMT4Op(req.Operation),
@@ -50,7 +50,7 @@ func (a *MT4Adapter) CancelOrder(ctx context.Context, ticket int64) error {
 	if !a.rsm.canPlaceOrder() {
 		return ErrNotConnected
 	}
-	_, err := a.trading.OrderDelete(ctx, &mt4.OrderDeleteRequest{
+	_, err := a.trading.OrderDelete(a.withSessionMD(ctx), &mt4.OrderDeleteRequest{
 		Id:     a.token,
 		Ticket: int32(ticket),
 	})
@@ -61,7 +61,7 @@ func (a *MT4Adapter) CloseOrder(ctx context.Context, ticket int64, lots decimal.
 	if !a.rsm.canPlaceOrder() {
 		return nil, ErrNotConnected
 	}
-	resp, err := a.trading.OrderClose(ctx, &mt4.OrderCloseRequest{
+	resp, err := a.trading.OrderClose(a.withSessionMD(ctx), &mt4.OrderCloseRequest{
 		Id:       a.token,
 		Ticket:   int32(ticket),
 		Lots:     decimalutil.ToFloat64(lots),
@@ -87,12 +87,15 @@ func (a *MT4Adapter) AccountSummary(ctx context.Context) (*Account, error) {
 	if !a.rsm.canPlaceOrder() {
 		return nil, ErrNotConnected
 	}
-	resp, err := a.mt4.AccountSummary(ctx, &mt4.AccountSummaryRequest{Id: a.token})
+	resp, err := a.mt4.AccountSummary(a.withSessionMD(ctx), &mt4.AccountSummaryRequest{Id: a.token})
 	if err != nil {
 		return nil, err
 	}
 	if resp.Error != nil && resp.Error.Code != mt4.ErrorCode_INTERNAL_ERROR {
 		return nil, fmt.Errorf("mt4: %s", resp.Error.Message)
+	}
+	if resp.Result == nil {
+		return &Account{}, nil
 	}
 	s := resp.Result
 	return &Account{
@@ -108,7 +111,7 @@ func (a *MT4Adapter) OpenOrders(ctx context.Context) ([]Order, error) {
 	if !a.rsm.canPlaceOrder() {
 		return nil, ErrNotConnected
 	}
-	resp, err := a.mt4.OpenedOrders(ctx, &mt4.OpenedOrdersRequest{Id: a.token})
+	resp, err := a.mt4.OpenedOrders(a.withSessionMD(ctx), &mt4.OpenedOrdersRequest{Id: a.token})
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +138,7 @@ func (a *MT4Adapter) AllSymbols(ctx context.Context) ([]string, error) {
 	if !a.rsm.canPlaceOrder() {
 		return nil, ErrNotConnected
 	}
-	resp, err := a.mt4.Symbols(ctx, &mt4.SymbolsRequest{Id: a.token})
+	resp, err := a.mt4.Symbols(a.withSessionMD(ctx), &mt4.SymbolsRequest{Id: a.token})
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +154,7 @@ func (a *MT4Adapter) SymbolDigits(ctx context.Context, symbols []string) (map[st
 	}
 	result := make(map[string]int32, len(symbols))
 	for _, sym := range symbols {
-		resp, err := a.mt4.SymbolParams(ctx, &mt4.SymbolParamsRequest{Id: a.token, Symbol: sym})
+		resp, err := a.mt4.SymbolParams(a.withSessionMD(ctx), &mt4.SymbolParamsRequest{Id: a.token, Symbol: sym})
 		if err != nil {
 			slog.Warn("mt4 symbolParams", "symbol", sym, "error", err)
 			continue

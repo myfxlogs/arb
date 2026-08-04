@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/metadata"
 )
 
 // MT4Adapter connects to an MT4 broker via mtapi.io gRPC proxy.
@@ -65,12 +66,12 @@ func (a *MT4Adapter) Platform() bus.PlatformType { return bus.PlatformMT4 }
 func (a *MT4Adapter) Connect(ctx context.Context) (string, error) {
 	a.rsm.setState(stateConnecting)
 
-	// Dial mtapi.io gateway, NOT the broker server directly.
-	// The broker host:port is passed in ConnectRequest.
 	gateway := "mt4grpc3.mtapi.io:443"
 	tlsCfg := &tls.Config{MinVersion: tls.VersionTLS13}
 	conn, err := grpc.DialContext(ctx, gateway,
 		grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg)),
+		grpc.WithBlock(),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(16*1024*1024)),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                30 * time.Second,
 			Timeout:             10 * time.Second,
@@ -94,6 +95,11 @@ func (a *MT4Adapter) Connect(ctx context.Context) (string, error) {
 		conn.Close()
 		return "", fmt.Errorf("mt4 auth %s: %w", a.brokerName, err)
 	}
+	if token == "" {
+		a.rsm.setState(stateDisconnected)
+		conn.Close()
+		return "", fmt.Errorf("mt4 auth %s: empty token", a.brokerName)
+	}
 	a.token = token
 	a.rsm.setState(stateConnected)
 	a.rsm.resetRetries()
@@ -101,10 +107,18 @@ func (a *MT4Adapter) Connect(ctx context.Context) (string, error) {
 	return token, nil
 }
 
+// withSessionMD returns a context with gRPC metadata headers set.
+// All post-connect RPCs must use this — mtapi.io routes by the `id` header.
+func (a *MT4Adapter) withSessionMD(ctx context.Context) context.Context {
+	md := metadata.New(map[string]string{"id": a.token})
+	return metadata.NewOutgoingContext(ctx, md)
+}
+
 func (a *MT4Adapter) authenticate(ctx context.Context) (string, error) {
 	tempID := "mdgw-" + strconv.FormatInt(a.user, 10)
+	loginCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{"id": tempID}))
 	if a.server != "" {
-		resp, err := a.connMgr.ConnectEx(ctx, &mt4.ConnectExRequest{
+		resp, err := a.connMgr.ConnectEx(loginCtx, &mt4.ConnectExRequest{
 			User:     int32(a.user),
 			Password: a.password,
 			Server:   a.server,
@@ -118,7 +132,7 @@ func (a *MT4Adapter) authenticate(ctx context.Context) (string, error) {
 		}
 		return resp.Result, nil
 	}
-	resp, err := a.connMgr.Connect(ctx, &mt4.ConnectRequest{
+	resp, err := a.connMgr.Connect(loginCtx, &mt4.ConnectRequest{
 		User:     int32(a.user),
 		Password: a.password,
 		Host:     a.host,
@@ -146,12 +160,12 @@ func (a *MT4Adapter) HealthCheck(ctx context.Context) error {
 	if !a.rsm.isConnected() {
 		return ErrNotConnected
 	}
-	_, err := a.connMgr.CheckConnect(ctx, &mt4.CheckConnectRequest{Id: a.token})
+	_, err := a.connMgr.CheckConnect(a.withSessionMD(ctx), &mt4.CheckConnectRequest{Id: a.token})
 	return err
 }
 
 func (a *MT4Adapter) Subscribe(ctx context.Context, symbols []string) error {
-	_, err := a.subs.SubscribeMany(ctx, &mt4.SubscribeManyRequest{
+	_, err := a.subs.SubscribeMany(a.withSessionMD(ctx), &mt4.SubscribeManyRequest{
 		Id:      a.token,
 		Symbols: symbols,
 	})
@@ -175,7 +189,7 @@ func (a *MT4Adapter) runOnQuote(ctx context.Context, b *bus.QuoteBus) {
 				return
 			}
 		}
-		stream, err := a.streams.OnQuote(ctx, &mt4.OnQuoteRequest{Id: a.token})
+		stream, err := a.streams.OnQuote(a.withSessionMD(ctx), &mt4.OnQuoteRequest{Id: a.token})
 		if err != nil {
 			slog.Warn("MT4 OnQuote error", "broker", a.brokerName, "error", err)
 			if err := a.reconnect(ctx); err != nil {
@@ -218,7 +232,7 @@ func (a *MT4Adapter) runOnOrderUpdate(ctx context.Context) {
 				return
 			}
 		}
-		stream, err := a.streams.OnOrderUpdate(ctx, &mt4.OnOrderUpdateRequest{Id: a.token})
+		stream, err := a.streams.OnOrderUpdate(a.withSessionMD(ctx), &mt4.OnOrderUpdateRequest{Id: a.token})
 		if err != nil {
 			if err := a.reconnect(ctx); err != nil {
 				return
@@ -244,7 +258,7 @@ func (a *MT4Adapter) runOnOrderProfit(ctx context.Context) {
 				return
 			}
 		}
-		stream, err := a.streams.OnOrderProfit(ctx, &mt4.OnOrderProfitRequest{Id: a.token})
+		stream, err := a.streams.OnOrderProfit(a.withSessionMD(ctx), &mt4.OnOrderProfitRequest{Id: a.token})
 		if err != nil {
 			if err := a.reconnect(ctx); err != nil {
 				return
