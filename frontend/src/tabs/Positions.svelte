@@ -49,10 +49,28 @@
     {#each data.broker_positions as bp}
       <Card style="margin-bottom: 16px;">
         <div class="broker-header">
-          <span class="broker-name">{bp.broker_name}</span>
+          <div class="broker-title">
+            <span class="broker-name">{bp.broker_name}</span>
+            {#if bp.platform}
+              <span class="badge badge-blue">{bp.platform}</span>
+            {/if}
+            {#if bp.leverage}
+              <span class="stat">1:{bp.leverage}</span>
+            {/if}
+          </div>
           <div class="broker-stats">
+            <span class="stat">余额: <strong>{fmt(bp.balance)}</strong></span>
             <span class="stat">净值: <strong>{fmt(bp.equity)}</strong></span>
+            <span class="stat">浮盈: <strong style="color:{pnlColor(bp.total_floating_pnl)}">{fmt(bp.total_floating_pnl)}</strong></span>
+            <span class="stat">保证金: <strong>{fmt(bp.margin_used)}</strong></span>
             <span class="stat">可用: <strong>{fmt(bp.margin_free)}</strong></span>
+            <span class="stat">保证金率: <strong>{bp.margin_level_pct ? bp.margin_level_pct.toFixed(1) + '%' : '-'}</strong></span>
+            {#if bp.credit}
+              <span class="stat">信用: <strong>{fmt(bp.credit)}</strong></span>
+            {/if}
+            {#if bp.currency}
+              <span class="stat">{bp.currency}</span>
+            {/if}
           </div>
         </div>
 
@@ -98,6 +116,11 @@
     align-items: center;
     margin-bottom: 12px;
   }
+  .broker-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .broker-name {
     font-size: 15px;
     font-weight: 600;
@@ -107,6 +130,11 @@
     gap: 16px;
     font-size: 13px;
     color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+  .badge-blue {
+    background: var(--accent-dim);
+    color: var(--accent);
   }
   .no-positions {
     padding: 16px;

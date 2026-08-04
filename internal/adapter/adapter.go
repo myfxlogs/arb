@@ -91,9 +91,15 @@ type Order struct {
 
 // Account holds account summary data.
 type Account struct {
-	Balance    decimal.Decimal
-	Equity     decimal.Decimal
-	Margin     decimal.Decimal
-	FreeMargin decimal.Decimal
-	Currency   string
+	Balance     decimal.Decimal
+	Equity      decimal.Decimal
+	Margin      decimal.Decimal
+	FreeMargin  decimal.Decimal
+	Currency    string
+	Credit      float64
+	Profit      float64
+	MarginLevel float64
+	Leverage    int32
+	Company     string
+	Platform    string
 }

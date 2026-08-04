@@ -101,10 +101,10 @@ func (s *Server) GetSignalHistory(ctx context.Context, req *dashpb.SignalHistory
 	items := make([]*dashpb.SignalHistoryReply_SignalItem, 0, len(signals))
 	for _, sig := range signals {
 		items = append(items, &dashpb.SignalHistoryReply_SignalItem{
-			Id:        sig.ID,
-			Strategy:  sig.Strategy,
-			LegsJson:  sig.Legs,
-			Executed:  sig.Status == "executed",
+			Id:       sig.ID,
+			Strategy: sig.Strategy,
+			LegsJson: sig.Legs,
+			Executed: sig.Status == "executed",
 		})
 	}
 	return &dashpb.SignalHistoryReply{Items: items}, nil
@@ -128,11 +128,11 @@ func (s *Server) GetOrderHistory(ctx context.Context, req *dashpb.OrderHistoryRe
 	items := make([]*dashpb.OrderHistoryReply_OrderItem, 0, len(orders))
 	for _, o := range orders {
 		item := &dashpb.OrderHistoryReply_OrderItem{
-			ClientId: o.ClientID,
-			Broker:   o.Broker,
-			Symbol:   o.Symbol,
-			Side:     o.Side,
-			Volume:   o.Volume,
+			ClientId:  o.ClientID,
+			Broker:    o.Broker,
+			Symbol:    o.Symbol,
+			Side:      o.Side,
+			Volume:    o.Volume,
 			OpenPrice: o.Price,
 		}
 		if o.Ticket != nil {
@@ -157,8 +157,8 @@ func (s *Server) GetDailySummary(ctx context.Context, req *dashpb.DailySummaryRe
 	items := make([]*dashpb.DailySummaryReply_DailyItem, 0, len(summaries))
 	for _, ds := range summaries {
 		items = append(items, &dashpb.DailySummaryReply_DailyItem{
-			Date:    ds.Day.Format("2006-01-02"),
-			Pnl:     ds.TotalPnL,
+			Date: ds.Day.Format("2006-01-02"),
+			Pnl:  ds.TotalPnL,
 		})
 	}
 	return &dashpb.DailySummaryReply{Items: items}, nil
@@ -178,6 +178,14 @@ func (s *Server) GetAccountSnapshots(ctx context.Context, req *dashpb.AccountSna
 		} else {
 			item.Equity = float64(acct.Equity.InexactFloat64())
 			item.FreeMargin = float64(acct.FreeMargin.InexactFloat64())
+			item.Balance = float64(acct.Balance.InexactFloat64())
+			item.Margin = float64(acct.Margin.InexactFloat64())
+			item.Credit = acct.Credit
+			item.Profit = acct.Profit
+			item.MarginLevel = acct.MarginLevel
+			item.Leverage = acct.Leverage
+			item.Currency = acct.Currency
+			item.Platform = acct.Platform
 		}
 		orders, err := a.OpenOrders(ctx)
 		if err == nil {

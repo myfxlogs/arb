@@ -127,6 +127,9 @@ message PositionWatchReply {
     double total_floating_pnl = 8;
     string currency = 9;
     repeated Position positions = 10;
+    double credit = 11;
+    int32 leverage = 12;
+    string platform = 13;
   }
 
   message Position {
@@ -279,6 +282,14 @@ message AccountSnapshotReply {
     double equity = 3;
     double free_margin = 4;
     int32 open_positions = 5;
+    double balance = 6;
+    double margin = 7;
+    double credit = 8;
+    double profit = 9;
+    double margin_level = 10;
+    int32 leverage = 11;
+    string currency = 12;
+    string platform = 13;
   }
 }
 

@@ -18,24 +18,24 @@ import (
 type Server struct {
 	dashpb.UnimplementedDashboardServiceServer
 
-	mu        sync.RWMutex
-	bus       *bus.QuoteBus
-	adapters  map[string]adapter.PlatformAdapter
-	store     *store.Store
-	kill      *risk.KillSwitch
-	breaker   *risk.CircuitBreaker
-	symbols   map[string]bool
-	strategies map[string]*strategyState
-	quoteCache *quoteCache
+	mu                  sync.RWMutex
+	bus                 *bus.QuoteBus
+	adapters            map[string]adapter.PlatformAdapter
+	store               *store.Store
+	kill                *risk.KillSwitch
+	breaker             *risk.CircuitBreaker
+	symbols             map[string]bool
+	strategies          map[string]*strategyState
+	quoteCache          *quoteCache
 	maxConcurrentOrders int
 }
 
 type strategyState struct {
-	enabled          bool
-	consecutiveLoss  int32
-	windowPnL        float64
-	tradesToday      int32
-	pnlToday         float64
+	enabled         bool
+	consecutiveLoss int32
+	windowPnL       float64
+	tradesToday     int32
+	pnlToday        float64
 }
 
 // Deps holds dependencies for the dashboard server.
@@ -56,9 +56,9 @@ func NewServer(deps Deps) *Server {
 		syms[s] = true
 	}
 	strats := map[string]*strategyState{
-		"triangular":      {enabled: true},
-		"cross_exchange":  {enabled: false},
-		"statistical":     {enabled: false},
+		"triangular":     {enabled: true},
+		"cross_exchange": {enabled: false},
+		"statistical":    {enabled: false},
 	}
 	return &Server{
 		bus:                 deps.Bus,
@@ -202,13 +202,13 @@ func (s *Server) buildSpreadMatrix() *dashpb.SpreadMatrixReply {
 				netProfitBps = (bestBid[sym] - bestAsk[sym]) / bestAsk[sym] * 10000
 			}
 			cells = append(cells, &dashpb.SpreadMatrixReply_SpreadCell{
-				Symbol:                 sym,
-				Bid:                    q.bid,
-				Ask:                    q.ask,
-				SpreadToBestAskBps:     spreadToBestAskBps,
-				SpreadToBestBidBps:     spreadToBestBidBps,
-				IsArbitrageable:        isArb,
-				EstimatedNetProfitBps:  netProfitBps,
+				Symbol:                sym,
+				Bid:                   q.bid,
+				Ask:                   q.ask,
+				SpreadToBestAskBps:    spreadToBestAskBps,
+				SpreadToBestBidBps:    spreadToBestBidBps,
+				IsArbitrageable:       isArb,
+				EstimatedNetProfitBps: netProfitBps,
 			})
 			if q.bid > bestBidVal {
 				bestBidVal = q.bid
@@ -259,6 +259,11 @@ func (s *Server) buildPositionWatch(ctx context.Context) *dashpb.PositionWatchRe
 			bp.MarginUsed = float64(acct.Margin.InexactFloat64())
 			bp.MarginFree = float64(acct.FreeMargin.InexactFloat64())
 			bp.Currency = acct.Currency
+			bp.Credit = acct.Credit
+			bp.TotalFloatingPnl = acct.Profit
+			bp.MarginLevelPct = acct.MarginLevel
+			bp.Leverage = acct.Leverage
+			bp.Platform = acct.Platform
 		}
 		orders, err := a.OpenOrders(ctx)
 		if err == nil {
@@ -268,11 +273,11 @@ func (s *Server) buildPositionWatch(ctx context.Context) *dashpb.PositionWatchRe
 					side = "Sell"
 				}
 				bp.Positions = append(bp.Positions, &dashpb.PositionWatchReply_Position{
-					Ticket:   o.Ticket,
-					Symbol:   o.Symbol,
-					Side:     side,
-					Lots:     float64(o.Lots.InexactFloat64()),
-					Comment:  o.Comment,
+					Ticket:  o.Ticket,
+					Symbol:  o.Symbol,
+					Side:    side,
+					Lots:    float64(o.Lots.InexactFloat64()),
+					Comment: o.Comment,
 				})
 			}
 		}

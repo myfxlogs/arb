@@ -313,9 +313,15 @@
       <thead>
         <tr>
           <th>名称</th>
+          <th>平台</th>
           <th>已连接</th>
+          <th>余额</th>
           <th>净值</th>
-          <th>可用保证金</th>
+          <th>浮盈</th>
+          <th>保证金</th>
+          <th>可用</th>
+          <th>保证金率</th>
+          <th>杠杆</th>
         </tr>
       </thead>
       <tbody>
@@ -325,13 +331,19 @@
             style="cursor: pointer; background: {selectedBroker === i ? 'var(--accent-dim)' : ''}"
           >
             <td>{b.broker_name}</td>
+            <td>{b.platform || '-'}</td>
             <td>
               <span class="badge" class:badge-green={b.is_connected} class:badge-red={!b.is_connected}>
                 {b.is_connected ? '在线' : '离线'}
               </span>
             </td>
+            <td>{b.balance ? b.balance.toFixed(2) : '-'}</td>
             <td>{b.equity ? b.equity.toFixed(2) : '-'}</td>
+            <td style="color: {b.profit > 0 ? 'var(--green)' : b.profit < 0 ? 'var(--red)' : ''}">{b.profit ? b.profit.toFixed(2) : '-'}</td>
+            <td>{b.margin ? b.margin.toFixed(2) : '-'}</td>
             <td>{b.free_margin ? b.free_margin.toFixed(2) : '-'}</td>
+            <td>{b.margin_level ? b.margin_level.toFixed(1) + '%' : '-'}</td>
+            <td>{b.leverage ? '1:' + b.leverage : '-'}</td>
           </tr>
         {/each}
       </tbody>

@@ -100,11 +100,16 @@ func (a *MT4Adapter) AccountSummary(ctx context.Context) (*Account, error) {
 	}
 	s := resp.Result
 	return &Account{
-		Balance:    decimalutil.FromFloat64(s.Balance, 2),
-		Equity:     decimalutil.FromFloat64(s.Equity, 2),
-		Margin:     decimalutil.FromFloat64(s.Margin, 2),
-		FreeMargin: decimalutil.FromFloat64(s.FreeMargin, 2),
-		Currency:   s.Currency,
+		Balance:     decimalutil.FromFloat64(s.Balance, 2),
+		Equity:      decimalutil.FromFloat64(s.Equity, 2),
+		Margin:      decimalutil.FromFloat64(s.Margin, 2),
+		FreeMargin:  decimalutil.FromFloat64(s.FreeMargin, 2),
+		Currency:    s.Currency,
+		Credit:      s.Credit,
+		Profit:      s.Profit,
+		MarginLevel: s.MarginLevel,
+		Leverage:    int32(s.Leverage),
+		Platform:    "MT4",
 	}, nil
 }
 
