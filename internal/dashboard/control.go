@@ -269,6 +269,8 @@ func (s *Server) GetBrokerOrderHistory(ctx context.Context, req *dashpb.BrokerOr
 			ClosePrice:  o.ClosePrice,
 			Profit:      o.Profit,
 			Comment:     o.Comment,
+			OpenTimeUnixMs:  o.OpenTime.UnixMilli(),
+			CloseTimeUnixMs: o.CloseTime.UnixMilli(),
 		})
 	}
 	return &dashpb.BrokerOrderHistoryReply{Orders: items}, nil

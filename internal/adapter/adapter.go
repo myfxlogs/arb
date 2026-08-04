@@ -87,6 +87,8 @@ type Order struct {
 	ClosePrice float64
 	Profit     float64
 	Comment    string
+	OpenTime   time.Time
+	CloseTime  time.Time
 }
 
 // Account holds account summary data.
@@ -102,4 +104,5 @@ type Account struct {
 	Leverage    int32
 	Company     string
 	Platform    string
+	Login       int64
 }

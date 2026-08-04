@@ -110,6 +110,7 @@ func (a *MT4Adapter) AccountSummary(ctx context.Context) (*Account, error) {
 		MarginLevel: s.MarginLevel,
 		Leverage:    int32(s.Leverage),
 		Platform:    "MT4",
+		Login:       a.user,
 	}, nil
 }
 
@@ -169,6 +170,8 @@ func (a *MT4Adapter) OrderHistory(ctx context.Context, from, to time.Time) ([]Or
 			ClosePrice: o.ClosePrice,
 			Profit:     o.Profit,
 			Comment:    o.Comment,
+			OpenTime:   o.OpenTime.AsTime(),
+			CloseTime:  o.CloseTime.AsTime(),
 		})
 	}
 	return orders, nil

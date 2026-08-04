@@ -264,6 +264,7 @@ func (s *Server) buildPositionWatch(ctx context.Context) *dashpb.PositionWatchRe
 			bp.MarginLevelPct = acct.MarginLevel
 			bp.Leverage = acct.Leverage
 			bp.Platform = acct.Platform
+			bp.Login = acct.Login
 		}
 		orders, err := a.OpenOrders(ctx)
 		if err == nil {

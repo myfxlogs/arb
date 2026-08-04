@@ -130,6 +130,7 @@ message PositionWatchReply {
     double credit = 11;
     int32 leverage = 12;
     string platform = 13;
+    int64 login = 14;
   }
 
   message Position {
@@ -290,6 +291,7 @@ message AccountSnapshotReply {
     int32 leverage = 11;
     string currency = 12;
     string platform = 13;
+    int64 login = 14;
   }
 }
 

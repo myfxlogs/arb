@@ -186,6 +186,7 @@ func (s *Server) GetAccountSnapshots(ctx context.Context, req *dashpb.AccountSna
 			item.Leverage = acct.Leverage
 			item.Currency = acct.Currency
 			item.Platform = acct.Platform
+			item.Login = acct.Login
 		}
 		orders, err := a.OpenOrders(ctx)
 		if err == nil {

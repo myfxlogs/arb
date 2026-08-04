@@ -1,5 +1,6 @@
 <script>
   import { backend } from '../lib/backend.js'
+  import { positions } from '../lib/stores.js'
   import Card from '../components/Card.svelte'
   import Skeleton from '../components/Skeleton.svelte'
 
@@ -53,6 +54,27 @@
     }
     brokersLoaded = true
   }
+
+  // Live-update brokers from PositionWatch stream
+  positions.subscribe((v) => {
+    if (v && v.broker_positions) {
+      brokers = v.broker_positions.map(bp => ({
+        broker_name: bp.broker_name,
+        is_connected: bp.is_connected,
+        equity: bp.equity,
+        balance: bp.balance,
+        profit: bp.total_floating_pnl,
+        margin: bp.margin_used,
+        free_margin: bp.margin_free,
+        margin_level: bp.margin_level_pct,
+        leverage: bp.leverage,
+        platform: bp.platform,
+        login: bp.login,
+        open_positions: bp.positions ? bp.positions.length : 0,
+      }))
+      brokersLoaded = true
+    }
+  })
 
   async function kill() {
     if (!confirm('确认平仓所有持仓并停止交易？')) return
@@ -312,6 +334,7 @@
     <table class="data-table">
       <thead>
         <tr>
+          <th>账号</th>
           <th>名称</th>
           <th>平台</th>
           <th>已连接</th>
@@ -322,6 +345,7 @@
           <th>可用</th>
           <th>保证金率</th>
           <th>杠杆</th>
+          <th>持仓</th>
         </tr>
       </thead>
       <tbody>
@@ -330,6 +354,7 @@
             onclick={() => selectedBroker = i}
             style="cursor: pointer; background: {selectedBroker === i ? 'var(--accent-dim)' : ''}"
           >
+            <td>{b.login || '-'}</td>
             <td>{b.broker_name}</td>
             <td>{b.platform || '-'}</td>
             <td>
@@ -344,6 +369,7 @@
             <td>{b.free_margin ? b.free_margin.toFixed(2) : '-'}</td>
             <td>{b.margin_level ? b.margin_level.toFixed(1) + '%' : '-'}</td>
             <td>{b.leverage ? '1:' + b.leverage : '-'}</td>
+            <td>{b.open_positions || 0}</td>
           </tr>
         {/each}
       </tbody>

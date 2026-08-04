@@ -5,10 +5,10 @@
   import Skeleton from '../components/Skeleton.svelte'
 
   let loaded = $state(false)
-  let data = $state({ brokerPositions: [] })
+  let data = $state({ broker_positions: [] })
 
   positions.subscribe((v) => {
-    if (v && v.brokerPositions) {
+    if (v && v.broker_positions) {
       data = v
       loaded = true
     }
@@ -51,6 +51,9 @@
         <div class="broker-header">
           <div class="broker-title">
             <span class="broker-name">{bp.broker_name}</span>
+            {#if bp.login}
+              <span class="stat">#{bp.login}</span>
+            {/if}
             {#if bp.platform}
               <span class="badge badge-blue">{bp.platform}</span>
             {/if}
@@ -92,7 +95,7 @@
                 <tr>
                   <td>{pos.ticket}</td>
                   <td>{pos.symbol}</td>
-                  <td><span class="badge" class:badge-green={pos.side === 'BUY'} class:badge-red={pos.side === 'SELL'}>{pos.side}</span></td>
+                  <td><span class="badge" class:badge-green={pos.side === 'Buy'} class:badge-red={pos.side === 'Sell'}>{pos.side}</span></td>
                   <td>{fmt(pos.lots)}</td>
                   <td>{pos.open_price ? pos.open_price.toFixed(5) : '-'}</td>
                   <td>{pos.current_price ? pos.current_price.toFixed(5) : '-'}</td>
