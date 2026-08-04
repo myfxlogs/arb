@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"time"
 
 	"arb/internal/bus"
 	"github.com/shopspring/decimal"
@@ -18,6 +19,7 @@ type PlatformAdapter interface {
 
 	AccountSummary(ctx context.Context) (*Account, error)
 	OpenOrders(ctx context.Context) ([]Order, error)
+	OrderHistory(ctx context.Context, from, to time.Time) ([]Order, error)
 	AllSymbols(ctx context.Context) ([]string, error)
 	SymbolDigits(ctx context.Context, symbols []string) (map[string]int32, error)
 
@@ -76,12 +78,15 @@ func (r *OrderResult) IsFullFill() bool {
 
 // Order represents an open or historical order.
 type Order struct {
-	Ticket  int64
-	Symbol  string
-	Type    OrderOperation
-	Lots    decimal.Decimal
-	State   OrderState
-	Comment string
+	Ticket     int64
+	Symbol     string
+	Type       OrderOperation
+	Lots       decimal.Decimal
+	State      OrderState
+	OpenPrice  float64
+	ClosePrice float64
+	Profit     float64
+	Comment    string
 }
 
 // Account holds account summary data.

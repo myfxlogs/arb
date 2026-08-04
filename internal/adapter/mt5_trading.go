@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"arb/internal/decimalutil"
 	mt5 "arb/proto/gen/mtapi/mt5"
@@ -148,6 +149,40 @@ func (a *MT5Adapter) OpenOrders(ctx context.Context) ([]Order, error) {
 			Type:    fromMT5Op(o.OrderType),
 			Lots:    decimalutil.FromFloat64(o.Lots, 2),
 			Comment: o.Comment,
+		})
+	}
+	return orders, nil
+}
+
+func (a *MT5Adapter) OrderHistory(ctx context.Context, from, to time.Time) ([]Order, error) {
+	if !a.rsm.canPlaceOrder() {
+		return nil, ErrNotConnected
+	}
+	resp, err := a.mt5.OrderHistory(a.withSessionMD(ctx), &mt5.OrderHistoryRequest{
+		Id:   a.token,
+		From: from.Format("2006-01-02T15:04:05"),
+		To:   to.Format("2006-01-02T15:04:05"),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil && resp.Error.Code != mt5.ErrorCode_DONE {
+		return nil, fmt.Errorf("mt5: %s", resp.Error.Message)
+	}
+	orders := make([]Order, 0, len(resp.Result))
+	for _, o := range resp.Result {
+		if classifyMT5OrderType(o.OrderType) == "BALANCE" || classifyMT5OrderType(o.OrderType) == "CREDIT" {
+			continue
+		}
+		orders = append(orders, Order{
+			Ticket:     o.Ticket,
+			Symbol:     safeSymbol(o.Symbol),
+			Type:       fromMT5Op(o.OrderType),
+			Lots:       decimalutil.FromFloat64(o.Lots, 2),
+			OpenPrice:  o.OpenPrice,
+			ClosePrice: o.ClosePrice,
+			Profit:     o.Profit,
+			Comment:    o.Comment,
 		})
 	}
 	return orders, nil

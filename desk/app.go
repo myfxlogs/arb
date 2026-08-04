@@ -212,6 +212,11 @@ func (a *App) RemoveBroker(req *dashpb.RemoveBrokerRequest) (*dashpb.RemoveBroke
 	return a.client.RemoveBroker(a.ctx, req)
 }
 
+// GetBrokerOrderHistory fetches historical orders from a specific broker.
+func (a *App) GetBrokerOrderHistory(req *dashpb.BrokerOrderHistoryRequest) (*dashpb.BrokerOrderHistoryReply, error) {
+	return a.client.GetBrokerOrderHistory(a.ctx, req)
+}
+
 // SubscribeSymbols subscribes to symbols.
 func (a *App) SubscribeSymbols(req *dashpb.SubscribeSymbolsRequest) (*dashpb.SubscribeSymbolsReply, error) {
 	return a.client.SubscribeSymbols(a.ctx, req)

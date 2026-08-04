@@ -25,7 +25,6 @@
   let wizardUser = $state('')
   let wizardPassword = $state('')
   let wizardName = $state('')
-  let serverFilter = $state('')
   let wizardLoading = $state(false)
   let wizardError = $state('')
 
@@ -213,6 +212,13 @@
       showWizard = false
       resetWizard()
       refreshBrokers()
+
+      const now = Date.now()
+      backend.getBrokerOrderHistory({
+        broker_name: name,
+        from_unix_ms: now - 30 * 24 * 60 * 60 * 1000,
+        to_unix_ms: now,
+      }).catch((e) => console.warn('order history:', e))
     } catch (err) {
       wizardError = friendlyError(String(err))
       wizardLoading = false
@@ -232,7 +238,6 @@
     wizardUser = ''
     wizardPassword = ''
     wizardName = ''
-    serverFilter = ''
     wizardLoading = false
     wizardError = ''
   }
@@ -391,19 +396,13 @@
         {#if wizardServers.length > 0}
           <div class="form-group">
             <span class="form-label">服务器 ({wizardServers.length} 个)</span>
-            {#if wizardServers.length > 10}
-              <input class="form-input" bind:value={serverFilter} placeholder="过滤服务器名称..." style="margin-bottom: 8px;" />
-            {/if}
             <select class="form-select" bind:value={wizardServer} onchange={(e) => onServerChange(e.target.value)}>
               <option value="">请选择...</option>
-              {#each wizardServers.filter(s => !serverFilter || s.name.toLowerCase().includes(serverFilter.toLowerCase())) as s}
+              {#each wizardServers as s}
                 <option value={s.name}>{s.name}</option>
               {/each}
             </select>
           </div>
-          {#if selectedServerObj}
-            <div style="margin-top: 6px; font-size: 12px; color: var(--text-dim);">地址: {selectedServerObj.access}</div>
-          {/if}
         {/if}
 
       <!-- Step 1: Credentials -->
@@ -421,8 +420,7 @@
         </div>
         <div class="form-group">
           <span class="form-label">密码</span>
-          <input class="form-input" type="text" bind:value={wizardPassword} placeholder="密码（明文显示）" />
-          <div style="margin-top: 4px; font-size: 12px; color: var(--text-dim);">mtapi 要求明文传输密码</div>
+          <input class="form-input" type="text" bind:value={wizardPassword} placeholder="密码" />
         </div>
         <div class="form-group">
           <span class="form-label">自定义名称（可选）</span>
@@ -434,9 +432,6 @@
         <div class="server-info-box">
           <div style="font-weight: 600;">{wizardServer}</div>
           <div style="font-size: 13px; color: var(--text-dim);">{wizardCompany} · {wizardPlatform} · {wizardUser}</div>
-          {#if selectedServerObj}
-            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">{selectedServerObj.access}</div>
-          {/if}
         </div>
 
         {#if wizardError}

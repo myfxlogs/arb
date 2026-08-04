@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"arb/internal/decimalutil"
 	mt4 "arb/proto/gen/mtapi/mt4"
@@ -129,6 +130,40 @@ func (a *MT4Adapter) OpenOrders(ctx context.Context) ([]Order, error) {
 			Type:    fromMT4Op(o.Type),
 			Lots:    decimalutil.FromFloat64(o.Lots, 2),
 			Comment: o.Comment,
+		})
+	}
+	return orders, nil
+}
+
+func (a *MT4Adapter) OrderHistory(ctx context.Context, from, to time.Time) ([]Order, error) {
+	if !a.rsm.canPlaceOrder() {
+		return nil, ErrNotConnected
+	}
+	resp, err := a.mt4.OrderHistory(a.withSessionMD(ctx), &mt4.OrderHistoryRequest{
+		Id:   a.token,
+		From: from.Format("2006-01-02T15:04:05"),
+		To:   to.Format("2006-01-02T15:04:05"),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if resp.Error != nil && resp.Error.Code != mt4.ErrorCode_INTERNAL_ERROR {
+		return nil, fmt.Errorf("mt4: %s", resp.Error.Message)
+	}
+	orders := make([]Order, 0, len(resp.Result))
+	for _, o := range resp.Result {
+		if classifyMT4OrderType(o.Type) == "BALANCE" || classifyMT4OrderType(o.Type) == "CREDIT" {
+			continue
+		}
+		orders = append(orders, Order{
+			Ticket:     int64(o.Ticket),
+			Symbol:     o.Symbol,
+			Type:       fromMT4Op(o.Type),
+			Lots:       decimalutil.FromFloat64(o.Lots, 2),
+			OpenPrice:  o.OpenPrice,
+			ClosePrice: o.ClosePrice,
+			Profit:     o.Profit,
+			Comment:    o.Comment,
 		})
 	}
 	return orders, nil

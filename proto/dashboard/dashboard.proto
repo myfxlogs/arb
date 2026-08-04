@@ -60,6 +60,7 @@ service DashboardService {
   rpc SearchBroker(SearchBrokerRequest) returns (SearchBrokerReply);
   rpc AddBroker(AddBrokerRequest) returns (AddBrokerReply);
   rpc RemoveBroker(RemoveBrokerRequest) returns (RemoveBrokerReply);
+  rpc GetBrokerOrderHistory(BrokerOrderHistoryRequest) returns (BrokerOrderHistoryReply);
 }
 
 // ============================================================
@@ -408,6 +409,30 @@ message RemoveBrokerRequest {
 message RemoveBrokerReply {
   bool success = 1;
   string error = 2;
+}
+
+message BrokerOrderHistoryRequest {
+  string broker_name = 1;
+  int64 from_unix_ms = 2;
+  int64 to_unix_ms = 3;
+}
+
+message BrokerOrderHistoryReply {
+  repeated BrokerOrder orders = 1;
+  string error = 2;
+
+  message BrokerOrder {
+    int64 ticket = 1;
+    string symbol = 2;
+    string side = 3;          // "Buy" | "Sell"
+    double lots = 4;
+    double open_price = 5;
+    double close_price = 6;
+    double profit = 7;
+    int64 open_time_unix_ms = 8;
+    int64 close_time_unix_ms = 9;
+    string comment = 10;
+  }
 }
 
 // ============================================================

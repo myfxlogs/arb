@@ -3,6 +3,7 @@ package dashboard
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"arb/internal/adapter"
 	dashpb "arb/proto/gen/dashboard"
@@ -215,4 +216,40 @@ func (s *Server) RemoveBroker(ctx context.Context, req *dashpb.RemoveBrokerReque
 	}
 	slog.Info("broker removed", "broker", req.Name)
 	return &dashpb.RemoveBrokerReply{Success: true}, nil
+}
+
+// GetBrokerOrderHistory fetches historical orders from a specific broker's MT server.
+func (s *Server) GetBrokerOrderHistory(ctx context.Context, req *dashpb.BrokerOrderHistoryRequest) (*dashpb.BrokerOrderHistoryReply, error) {
+	s.mu.RLock()
+	a, exists := s.adapters[req.BrokerName]
+	s.mu.RUnlock()
+	if !exists {
+		return &dashpb.BrokerOrderHistoryReply{Error: "broker not found"}, nil
+	}
+
+	from := time.UnixMilli(req.FromUnixMs)
+	to := time.UnixMilli(req.ToUnixMs)
+	orders, err := a.OrderHistory(ctx, from, to)
+	if err != nil {
+		return &dashpb.BrokerOrderHistoryReply{Error: err.Error()}, nil
+	}
+
+	items := make([]*dashpb.BrokerOrderHistoryReply_BrokerOrder, 0, len(orders))
+	for _, o := range orders {
+		side := "Buy"
+		if o.Type == adapter.OpSell {
+			side = "Sell"
+		}
+		items = append(items, &dashpb.BrokerOrderHistoryReply_BrokerOrder{
+			Ticket:      o.Ticket,
+			Symbol:      o.Symbol,
+			Side:        side,
+			Lots:        float64(o.Lots.InexactFloat64()),
+			OpenPrice:   o.OpenPrice,
+			ClosePrice:  o.ClosePrice,
+			Profit:      o.Profit,
+			Comment:     o.Comment,
+		})
+	}
+	return &dashpb.BrokerOrderHistoryReply{Orders: items}, nil
 }
