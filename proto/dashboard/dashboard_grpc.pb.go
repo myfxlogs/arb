@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v5.29.3
-// source: dashboard.proto
+// source: proto/dashboard/dashboard.proto
 
 package dashboard
 
@@ -43,6 +43,7 @@ const (
 	DashboardService_AddBroker_FullMethodName                 = "/arb.dashboard.DashboardService/AddBroker"
 	DashboardService_RemoveBroker_FullMethodName              = "/arb.dashboard.DashboardService/RemoveBroker"
 	DashboardService_GetBrokerOrderHistory_FullMethodName     = "/arb.dashboard.DashboardService/GetBrokerOrderHistory"
+	DashboardService_GetBrokerSymbols_FullMethodName          = "/arb.dashboard.DashboardService/GetBrokerSymbols"
 )
 
 // DashboardServiceClient is the client API for DashboardService service.
@@ -92,6 +93,7 @@ type DashboardServiceClient interface {
 	AddBroker(ctx context.Context, in *AddBrokerRequest, opts ...grpc.CallOption) (*AddBrokerReply, error)
 	RemoveBroker(ctx context.Context, in *RemoveBrokerRequest, opts ...grpc.CallOption) (*RemoveBrokerReply, error)
 	GetBrokerOrderHistory(ctx context.Context, in *BrokerOrderHistoryRequest, opts ...grpc.CallOption) (*BrokerOrderHistoryReply, error)
+	GetBrokerSymbols(ctx context.Context, in *BrokerSymbolsRequest, opts ...grpc.CallOption) (*BrokerSymbolsReply, error)
 }
 
 type dashboardServiceClient struct {
@@ -369,6 +371,16 @@ func (c *dashboardServiceClient) GetBrokerOrderHistory(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *dashboardServiceClient) GetBrokerSymbols(ctx context.Context, in *BrokerSymbolsRequest, opts ...grpc.CallOption) (*BrokerSymbolsReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BrokerSymbolsReply)
+	err := c.cc.Invoke(ctx, DashboardService_GetBrokerSymbols_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DashboardServiceServer is the server API for DashboardService service.
 // All implementations must embed UnimplementedDashboardServiceServer
 // for forward compatibility.
@@ -416,6 +428,7 @@ type DashboardServiceServer interface {
 	AddBroker(context.Context, *AddBrokerRequest) (*AddBrokerReply, error)
 	RemoveBroker(context.Context, *RemoveBrokerRequest) (*RemoveBrokerReply, error)
 	GetBrokerOrderHistory(context.Context, *BrokerOrderHistoryRequest) (*BrokerOrderHistoryReply, error)
+	GetBrokerSymbols(context.Context, *BrokerSymbolsRequest) (*BrokerSymbolsReply, error)
 	mustEmbedUnimplementedDashboardServiceServer()
 }
 
@@ -497,6 +510,9 @@ func (UnimplementedDashboardServiceServer) RemoveBroker(context.Context, *Remove
 }
 func (UnimplementedDashboardServiceServer) GetBrokerOrderHistory(context.Context, *BrokerOrderHistoryRequest) (*BrokerOrderHistoryReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetBrokerOrderHistory not implemented")
+}
+func (UnimplementedDashboardServiceServer) GetBrokerSymbols(context.Context, *BrokerSymbolsRequest) (*BrokerSymbolsReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetBrokerSymbols not implemented")
 }
 func (UnimplementedDashboardServiceServer) mustEmbedUnimplementedDashboardServiceServer() {}
 func (UnimplementedDashboardServiceServer) testEmbeddedByValue()                          {}
@@ -930,6 +946,24 @@ func _DashboardService_GetBrokerOrderHistory_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DashboardService_GetBrokerSymbols_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BrokerSymbolsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DashboardServiceServer).GetBrokerSymbols(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DashboardService_GetBrokerSymbols_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DashboardServiceServer).GetBrokerSymbols(ctx, req.(*BrokerSymbolsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DashboardService_ServiceDesc is the grpc.ServiceDesc for DashboardService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1021,6 +1055,10 @@ var DashboardService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetBrokerOrderHistory",
 			Handler:    _DashboardService_GetBrokerOrderHistory_Handler,
 		},
+		{
+			MethodName: "GetBrokerSymbols",
+			Handler:    _DashboardService_GetBrokerSymbols_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -1039,5 +1077,5 @@ var DashboardService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "dashboard.proto",
+	Metadata: "proto/dashboard/dashboard.proto",
 }

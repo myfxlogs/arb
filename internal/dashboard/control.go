@@ -275,3 +275,17 @@ func (s *Server) GetBrokerOrderHistory(ctx context.Context, req *dashpb.BrokerOr
 	}
 	return &dashpb.BrokerOrderHistoryReply{Orders: items}, nil
 }
+
+func (s *Server) GetBrokerSymbols(ctx context.Context, req *dashpb.BrokerSymbolsRequest) (*dashpb.BrokerSymbolsReply, error) {
+s.mu.RLock()
+a, exists := s.adapters[req.BrokerName]
+s.mu.RUnlock()
+if !exists {
+return &dashpb.BrokerSymbolsReply{Error: "broker not found"}, nil
+}
+symbols, err := a.AllSymbols(ctx)
+if err != nil {
+return &dashpb.BrokerSymbolsReply{Error: err.Error()}, nil
+}
+return &dashpb.BrokerSymbolsReply{Symbols: symbols}, nil
+}

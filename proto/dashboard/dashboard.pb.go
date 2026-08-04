@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v5.29.3
-// source: dashboard.proto
+// source: proto/dashboard/dashboard.proto
 
 package dashboard
 
@@ -30,7 +30,7 @@ type SpreadMatrixRequest struct {
 
 func (x *SpreadMatrixRequest) Reset() {
 	*x = SpreadMatrixRequest{}
-	mi := &file_dashboard_proto_msgTypes[0]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -42,7 +42,7 @@ func (x *SpreadMatrixRequest) String() string {
 func (*SpreadMatrixRequest) ProtoMessage() {}
 
 func (x *SpreadMatrixRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[0]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -55,7 +55,7 @@ func (x *SpreadMatrixRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SpreadMatrixRequest.ProtoReflect.Descriptor instead.
 func (*SpreadMatrixRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *SpreadMatrixRequest) GetRefreshIntervalMs() int32 {
@@ -78,7 +78,7 @@ type SpreadMatrixReply struct {
 
 func (x *SpreadMatrixReply) Reset() {
 	*x = SpreadMatrixReply{}
-	mi := &file_dashboard_proto_msgTypes[1]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -90,7 +90,7 @@ func (x *SpreadMatrixReply) String() string {
 func (*SpreadMatrixReply) ProtoMessage() {}
 
 func (x *SpreadMatrixReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[1]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -103,7 +103,7 @@ func (x *SpreadMatrixReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SpreadMatrixReply.ProtoReflect.Descriptor instead.
 func (*SpreadMatrixReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{1}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SpreadMatrixReply) GetTimestampUnixMs() int64 {
@@ -150,7 +150,7 @@ type PositionWatchRequest struct {
 
 func (x *PositionWatchRequest) Reset() {
 	*x = PositionWatchRequest{}
-	mi := &file_dashboard_proto_msgTypes[2]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -162,7 +162,7 @@ func (x *PositionWatchRequest) String() string {
 func (*PositionWatchRequest) ProtoMessage() {}
 
 func (x *PositionWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[2]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -175,7 +175,7 @@ func (x *PositionWatchRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PositionWatchRequest.ProtoReflect.Descriptor instead.
 func (*PositionWatchRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{2}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PositionWatchRequest) GetRefreshIntervalMs() int32 {
@@ -195,7 +195,7 @@ type PositionWatchReply struct {
 
 func (x *PositionWatchReply) Reset() {
 	*x = PositionWatchReply{}
-	mi := &file_dashboard_proto_msgTypes[3]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -207,7 +207,7 @@ func (x *PositionWatchReply) String() string {
 func (*PositionWatchReply) ProtoMessage() {}
 
 func (x *PositionWatchReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[3]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -220,7 +220,7 @@ func (x *PositionWatchReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PositionWatchReply.ProtoReflect.Descriptor instead.
 func (*PositionWatchReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{3}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *PositionWatchReply) GetTimestampUnixMs() int64 {
@@ -254,7 +254,7 @@ type ManualOrderRequest struct {
 
 func (x *ManualOrderRequest) Reset() {
 	*x = ManualOrderRequest{}
-	mi := &file_dashboard_proto_msgTypes[4]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -266,7 +266,7 @@ func (x *ManualOrderRequest) String() string {
 func (*ManualOrderRequest) ProtoMessage() {}
 
 func (x *ManualOrderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[4]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -279,7 +279,7 @@ func (x *ManualOrderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManualOrderRequest.ProtoReflect.Descriptor instead.
 func (*ManualOrderRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{4}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ManualOrderRequest) GetBrokerName() string {
@@ -357,7 +357,7 @@ type ManualOrderReply struct {
 
 func (x *ManualOrderReply) Reset() {
 	*x = ManualOrderReply{}
-	mi := &file_dashboard_proto_msgTypes[5]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -369,7 +369,7 @@ func (x *ManualOrderReply) String() string {
 func (*ManualOrderReply) ProtoMessage() {}
 
 func (x *ManualOrderReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[5]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -382,7 +382,7 @@ func (x *ManualOrderReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManualOrderReply.ProtoReflect.Descriptor instead.
 func (*ManualOrderReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{5}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ManualOrderReply) GetClientId() string {
@@ -426,7 +426,7 @@ type ClosePositionRequest struct {
 
 func (x *ClosePositionRequest) Reset() {
 	*x = ClosePositionRequest{}
-	mi := &file_dashboard_proto_msgTypes[6]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -438,7 +438,7 @@ func (x *ClosePositionRequest) String() string {
 func (*ClosePositionRequest) ProtoMessage() {}
 
 func (x *ClosePositionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[6]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -451,7 +451,7 @@ func (x *ClosePositionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClosePositionRequest.ProtoReflect.Descriptor instead.
 func (*ClosePositionRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{6}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ClosePositionRequest) GetBrokerName() string {
@@ -501,7 +501,7 @@ type ClosePositionReply struct {
 
 func (x *ClosePositionReply) Reset() {
 	*x = ClosePositionReply{}
-	mi := &file_dashboard_proto_msgTypes[7]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -513,7 +513,7 @@ func (x *ClosePositionReply) String() string {
 func (*ClosePositionReply) ProtoMessage() {}
 
 func (x *ClosePositionReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[7]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -526,7 +526,7 @@ func (x *ClosePositionReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClosePositionReply.ProtoReflect.Descriptor instead.
 func (*ClosePositionReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{7}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ClosePositionReply) GetClientId() string {
@@ -567,7 +567,7 @@ type CancelOrderRequest struct {
 
 func (x *CancelOrderRequest) Reset() {
 	*x = CancelOrderRequest{}
-	mi := &file_dashboard_proto_msgTypes[8]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -579,7 +579,7 @@ func (x *CancelOrderRequest) String() string {
 func (*CancelOrderRequest) ProtoMessage() {}
 
 func (x *CancelOrderRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[8]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -592,7 +592,7 @@ func (x *CancelOrderRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelOrderRequest.ProtoReflect.Descriptor instead.
 func (*CancelOrderRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{8}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *CancelOrderRequest) GetBrokerName() string {
@@ -619,7 +619,7 @@ type CancelOrderReply struct {
 
 func (x *CancelOrderReply) Reset() {
 	*x = CancelOrderReply{}
-	mi := &file_dashboard_proto_msgTypes[9]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -631,7 +631,7 @@ func (x *CancelOrderReply) String() string {
 func (*CancelOrderReply) ProtoMessage() {}
 
 func (x *CancelOrderReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[9]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -644,7 +644,7 @@ func (x *CancelOrderReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelOrderReply.ProtoReflect.Descriptor instead.
 func (*CancelOrderReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{9}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CancelOrderReply) GetSuccess() bool {
@@ -673,7 +673,7 @@ type SignalHistoryRequest struct {
 
 func (x *SignalHistoryRequest) Reset() {
 	*x = SignalHistoryRequest{}
-	mi := &file_dashboard_proto_msgTypes[10]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -685,7 +685,7 @@ func (x *SignalHistoryRequest) String() string {
 func (*SignalHistoryRequest) ProtoMessage() {}
 
 func (x *SignalHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[10]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -698,7 +698,7 @@ func (x *SignalHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalHistoryRequest.ProtoReflect.Descriptor instead.
 func (*SignalHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{10}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SignalHistoryRequest) GetFromUnixMs() int64 {
@@ -738,7 +738,7 @@ type SignalHistoryReply struct {
 
 func (x *SignalHistoryReply) Reset() {
 	*x = SignalHistoryReply{}
-	mi := &file_dashboard_proto_msgTypes[11]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -750,7 +750,7 @@ func (x *SignalHistoryReply) String() string {
 func (*SignalHistoryReply) ProtoMessage() {}
 
 func (x *SignalHistoryReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[11]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -763,7 +763,7 @@ func (x *SignalHistoryReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalHistoryReply.ProtoReflect.Descriptor instead.
 func (*SignalHistoryReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{11}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SignalHistoryReply) GetItems() []*SignalHistoryReply_SignalItem {
@@ -785,7 +785,7 @@ type OrderHistoryRequest struct {
 
 func (x *OrderHistoryRequest) Reset() {
 	*x = OrderHistoryRequest{}
-	mi := &file_dashboard_proto_msgTypes[12]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -797,7 +797,7 @@ func (x *OrderHistoryRequest) String() string {
 func (*OrderHistoryRequest) ProtoMessage() {}
 
 func (x *OrderHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[12]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -810,7 +810,7 @@ func (x *OrderHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrderHistoryRequest.ProtoReflect.Descriptor instead.
 func (*OrderHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{12}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *OrderHistoryRequest) GetFromUnixMs() int64 {
@@ -850,7 +850,7 @@ type OrderHistoryReply struct {
 
 func (x *OrderHistoryReply) Reset() {
 	*x = OrderHistoryReply{}
-	mi := &file_dashboard_proto_msgTypes[13]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -862,7 +862,7 @@ func (x *OrderHistoryReply) String() string {
 func (*OrderHistoryReply) ProtoMessage() {}
 
 func (x *OrderHistoryReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[13]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -875,7 +875,7 @@ func (x *OrderHistoryReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrderHistoryReply.ProtoReflect.Descriptor instead.
 func (*OrderHistoryReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{13}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *OrderHistoryReply) GetItems() []*OrderHistoryReply_OrderItem {
@@ -896,7 +896,7 @@ type DailySummaryRequest struct {
 
 func (x *DailySummaryRequest) Reset() {
 	*x = DailySummaryRequest{}
-	mi := &file_dashboard_proto_msgTypes[14]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -908,7 +908,7 @@ func (x *DailySummaryRequest) String() string {
 func (*DailySummaryRequest) ProtoMessage() {}
 
 func (x *DailySummaryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[14]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -921,7 +921,7 @@ func (x *DailySummaryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DailySummaryRequest.ProtoReflect.Descriptor instead.
 func (*DailySummaryRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{14}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *DailySummaryRequest) GetFromUnixMs() int64 {
@@ -954,7 +954,7 @@ type DailySummaryReply struct {
 
 func (x *DailySummaryReply) Reset() {
 	*x = DailySummaryReply{}
-	mi := &file_dashboard_proto_msgTypes[15]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -966,7 +966,7 @@ func (x *DailySummaryReply) String() string {
 func (*DailySummaryReply) ProtoMessage() {}
 
 func (x *DailySummaryReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[15]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -979,7 +979,7 @@ func (x *DailySummaryReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DailySummaryReply.ProtoReflect.Descriptor instead.
 func (*DailySummaryReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{15}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *DailySummaryReply) GetItems() []*DailySummaryReply_DailyItem {
@@ -997,7 +997,7 @@ type AccountSnapshotRequest struct {
 
 func (x *AccountSnapshotRequest) Reset() {
 	*x = AccountSnapshotRequest{}
-	mi := &file_dashboard_proto_msgTypes[16]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1009,7 +1009,7 @@ func (x *AccountSnapshotRequest) String() string {
 func (*AccountSnapshotRequest) ProtoMessage() {}
 
 func (x *AccountSnapshotRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[16]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1022,7 +1022,7 @@ func (x *AccountSnapshotRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountSnapshotRequest.ProtoReflect.Descriptor instead.
 func (*AccountSnapshotRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{16}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{16}
 }
 
 type AccountSnapshotReply struct {
@@ -1034,7 +1034,7 @@ type AccountSnapshotReply struct {
 
 func (x *AccountSnapshotReply) Reset() {
 	*x = AccountSnapshotReply{}
-	mi := &file_dashboard_proto_msgTypes[17]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1046,7 +1046,7 @@ func (x *AccountSnapshotReply) String() string {
 func (*AccountSnapshotReply) ProtoMessage() {}
 
 func (x *AccountSnapshotReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[17]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1059,7 +1059,7 @@ func (x *AccountSnapshotReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountSnapshotReply.ProtoReflect.Descriptor instead.
 func (*AccountSnapshotReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{17}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *AccountSnapshotReply) GetItems() []*AccountSnapshotReply_AccountSnapshotItem {
@@ -1077,7 +1077,7 @@ type KillRequest struct {
 
 func (x *KillRequest) Reset() {
 	*x = KillRequest{}
-	mi := &file_dashboard_proto_msgTypes[18]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1089,7 +1089,7 @@ func (x *KillRequest) String() string {
 func (*KillRequest) ProtoMessage() {}
 
 func (x *KillRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[18]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1102,7 +1102,7 @@ func (x *KillRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KillRequest.ProtoReflect.Descriptor instead.
 func (*KillRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{18}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{18}
 }
 
 type KillReply struct {
@@ -1117,7 +1117,7 @@ type KillReply struct {
 
 func (x *KillReply) Reset() {
 	*x = KillReply{}
-	mi := &file_dashboard_proto_msgTypes[19]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1129,7 +1129,7 @@ func (x *KillReply) String() string {
 func (*KillReply) ProtoMessage() {}
 
 func (x *KillReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[19]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1142,7 +1142,7 @@ func (x *KillReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KillReply.ProtoReflect.Descriptor instead.
 func (*KillReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{19}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *KillReply) GetSuccess() bool {
@@ -1181,7 +1181,7 @@ type ResumeRequest struct {
 
 func (x *ResumeRequest) Reset() {
 	*x = ResumeRequest{}
-	mi := &file_dashboard_proto_msgTypes[20]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1193,7 +1193,7 @@ func (x *ResumeRequest) String() string {
 func (*ResumeRequest) ProtoMessage() {}
 
 func (x *ResumeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[20]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1206,7 +1206,7 @@ func (x *ResumeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeRequest.ProtoReflect.Descriptor instead.
 func (*ResumeRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{20}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{20}
 }
 
 type ResumeReply struct {
@@ -1218,7 +1218,7 @@ type ResumeReply struct {
 
 func (x *ResumeReply) Reset() {
 	*x = ResumeReply{}
-	mi := &file_dashboard_proto_msgTypes[21]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1230,7 +1230,7 @@ func (x *ResumeReply) String() string {
 func (*ResumeReply) ProtoMessage() {}
 
 func (x *ResumeReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[21]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1243,7 +1243,7 @@ func (x *ResumeReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeReply.ProtoReflect.Descriptor instead.
 func (*ResumeReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{21}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ResumeReply) GetSuccess() bool {
@@ -1262,7 +1262,7 @@ type SubscribeSymbolsRequest struct {
 
 func (x *SubscribeSymbolsRequest) Reset() {
 	*x = SubscribeSymbolsRequest{}
-	mi := &file_dashboard_proto_msgTypes[22]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1274,7 +1274,7 @@ func (x *SubscribeSymbolsRequest) String() string {
 func (*SubscribeSymbolsRequest) ProtoMessage() {}
 
 func (x *SubscribeSymbolsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[22]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1287,7 +1287,7 @@ func (x *SubscribeSymbolsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeSymbolsRequest.ProtoReflect.Descriptor instead.
 func (*SubscribeSymbolsRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{22}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *SubscribeSymbolsRequest) GetSymbols() []string {
@@ -1307,7 +1307,7 @@ type SubscribeSymbolsReply struct {
 
 func (x *SubscribeSymbolsReply) Reset() {
 	*x = SubscribeSymbolsReply{}
-	mi := &file_dashboard_proto_msgTypes[23]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1319,7 +1319,7 @@ func (x *SubscribeSymbolsReply) String() string {
 func (*SubscribeSymbolsReply) ProtoMessage() {}
 
 func (x *SubscribeSymbolsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[23]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1332,7 +1332,7 @@ func (x *SubscribeSymbolsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeSymbolsReply.ProtoReflect.Descriptor instead.
 func (*SubscribeSymbolsReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{23}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *SubscribeSymbolsReply) GetSuccess() bool {
@@ -1358,7 +1358,7 @@ type UnsubscribeSymbolsRequest struct {
 
 func (x *UnsubscribeSymbolsRequest) Reset() {
 	*x = UnsubscribeSymbolsRequest{}
-	mi := &file_dashboard_proto_msgTypes[24]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1370,7 +1370,7 @@ func (x *UnsubscribeSymbolsRequest) String() string {
 func (*UnsubscribeSymbolsRequest) ProtoMessage() {}
 
 func (x *UnsubscribeSymbolsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[24]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1383,7 +1383,7 @@ func (x *UnsubscribeSymbolsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnsubscribeSymbolsRequest.ProtoReflect.Descriptor instead.
 func (*UnsubscribeSymbolsRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{24}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *UnsubscribeSymbolsRequest) GetSymbols() []string {
@@ -1403,7 +1403,7 @@ type UnsubscribeSymbolsReply struct {
 
 func (x *UnsubscribeSymbolsReply) Reset() {
 	*x = UnsubscribeSymbolsReply{}
-	mi := &file_dashboard_proto_msgTypes[25]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1415,7 +1415,7 @@ func (x *UnsubscribeSymbolsReply) String() string {
 func (*UnsubscribeSymbolsReply) ProtoMessage() {}
 
 func (x *UnsubscribeSymbolsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[25]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1428,7 +1428,7 @@ func (x *UnsubscribeSymbolsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnsubscribeSymbolsReply.ProtoReflect.Descriptor instead.
 func (*UnsubscribeSymbolsReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{25}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *UnsubscribeSymbolsReply) GetSuccess() bool {
@@ -1453,7 +1453,7 @@ type ListSymbolsRequest struct {
 
 func (x *ListSymbolsRequest) Reset() {
 	*x = ListSymbolsRequest{}
-	mi := &file_dashboard_proto_msgTypes[26]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1465,7 +1465,7 @@ func (x *ListSymbolsRequest) String() string {
 func (*ListSymbolsRequest) ProtoMessage() {}
 
 func (x *ListSymbolsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[26]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1478,7 +1478,7 @@ func (x *ListSymbolsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSymbolsRequest.ProtoReflect.Descriptor instead.
 func (*ListSymbolsRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{26}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{26}
 }
 
 type ListSymbolsReply struct {
@@ -1490,7 +1490,7 @@ type ListSymbolsReply struct {
 
 func (x *ListSymbolsReply) Reset() {
 	*x = ListSymbolsReply{}
-	mi := &file_dashboard_proto_msgTypes[27]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1502,7 +1502,7 @@ func (x *ListSymbolsReply) String() string {
 func (*ListSymbolsReply) ProtoMessage() {}
 
 func (x *ListSymbolsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[27]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1515,7 +1515,7 @@ func (x *ListSymbolsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSymbolsReply.ProtoReflect.Descriptor instead.
 func (*ListSymbolsReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{27}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *ListSymbolsReply) GetSymbols() []string {
@@ -1534,7 +1534,7 @@ type StrategyStatusRequest struct {
 
 func (x *StrategyStatusRequest) Reset() {
 	*x = StrategyStatusRequest{}
-	mi := &file_dashboard_proto_msgTypes[28]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1546,7 +1546,7 @@ func (x *StrategyStatusRequest) String() string {
 func (*StrategyStatusRequest) ProtoMessage() {}
 
 func (x *StrategyStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[28]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1559,7 +1559,7 @@ func (x *StrategyStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StrategyStatusRequest.ProtoReflect.Descriptor instead.
 func (*StrategyStatusRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{28}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *StrategyStatusRequest) GetStrategy() string {
@@ -1578,7 +1578,7 @@ type StrategyStatusReply struct {
 
 func (x *StrategyStatusReply) Reset() {
 	*x = StrategyStatusReply{}
-	mi := &file_dashboard_proto_msgTypes[29]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1590,7 +1590,7 @@ func (x *StrategyStatusReply) String() string {
 func (*StrategyStatusReply) ProtoMessage() {}
 
 func (x *StrategyStatusReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[29]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1603,7 +1603,7 @@ func (x *StrategyStatusReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StrategyStatusReply.ProtoReflect.Descriptor instead.
 func (*StrategyStatusReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{29}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *StrategyStatusReply) GetItems() []*StrategyStatusReply_StrategyItem {
@@ -1622,7 +1622,7 @@ type ResumeStrategyRequest struct {
 
 func (x *ResumeStrategyRequest) Reset() {
 	*x = ResumeStrategyRequest{}
-	mi := &file_dashboard_proto_msgTypes[30]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1634,7 +1634,7 @@ func (x *ResumeStrategyRequest) String() string {
 func (*ResumeStrategyRequest) ProtoMessage() {}
 
 func (x *ResumeStrategyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[30]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1647,7 +1647,7 @@ func (x *ResumeStrategyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeStrategyRequest.ProtoReflect.Descriptor instead.
 func (*ResumeStrategyRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{30}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *ResumeStrategyRequest) GetStrategy() string {
@@ -1667,7 +1667,7 @@ type ResumeStrategyReply struct {
 
 func (x *ResumeStrategyReply) Reset() {
 	*x = ResumeStrategyReply{}
-	mi := &file_dashboard_proto_msgTypes[31]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1679,7 +1679,7 @@ func (x *ResumeStrategyReply) String() string {
 func (*ResumeStrategyReply) ProtoMessage() {}
 
 func (x *ResumeStrategyReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[31]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1692,7 +1692,7 @@ func (x *ResumeStrategyReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResumeStrategyReply.ProtoReflect.Descriptor instead.
 func (*ResumeStrategyReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{31}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *ResumeStrategyReply) GetSuccess() bool {
@@ -1717,7 +1717,7 @@ type ResetCBRequest struct {
 
 func (x *ResetCBRequest) Reset() {
 	*x = ResetCBRequest{}
-	mi := &file_dashboard_proto_msgTypes[32]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1729,7 +1729,7 @@ func (x *ResetCBRequest) String() string {
 func (*ResetCBRequest) ProtoMessage() {}
 
 func (x *ResetCBRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[32]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1742,7 +1742,7 @@ func (x *ResetCBRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetCBRequest.ProtoReflect.Descriptor instead.
 func (*ResetCBRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{32}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{32}
 }
 
 type ResetCBReply struct {
@@ -1754,7 +1754,7 @@ type ResetCBReply struct {
 
 func (x *ResetCBReply) Reset() {
 	*x = ResetCBReply{}
-	mi := &file_dashboard_proto_msgTypes[33]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1766,7 +1766,7 @@ func (x *ResetCBReply) String() string {
 func (*ResetCBReply) ProtoMessage() {}
 
 func (x *ResetCBReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[33]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1779,7 +1779,7 @@ func (x *ResetCBReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetCBReply.ProtoReflect.Descriptor instead.
 func (*ResetCBReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{33}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ResetCBReply) GetSuccess() bool {
@@ -1799,7 +1799,7 @@ type SearchBrokerRequest struct {
 
 func (x *SearchBrokerRequest) Reset() {
 	*x = SearchBrokerRequest{}
-	mi := &file_dashboard_proto_msgTypes[34]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1811,7 +1811,7 @@ func (x *SearchBrokerRequest) String() string {
 func (*SearchBrokerRequest) ProtoMessage() {}
 
 func (x *SearchBrokerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[34]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1824,7 +1824,7 @@ func (x *SearchBrokerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchBrokerRequest.ProtoReflect.Descriptor instead.
 func (*SearchBrokerRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{34}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *SearchBrokerRequest) GetCompany() string {
@@ -1851,7 +1851,7 @@ type SearchBrokerReply struct {
 
 func (x *SearchBrokerReply) Reset() {
 	*x = SearchBrokerReply{}
-	mi := &file_dashboard_proto_msgTypes[35]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1863,7 +1863,7 @@ func (x *SearchBrokerReply) String() string {
 func (*SearchBrokerReply) ProtoMessage() {}
 
 func (x *SearchBrokerReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[35]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1876,7 +1876,7 @@ func (x *SearchBrokerReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchBrokerReply.ProtoReflect.Descriptor instead.
 func (*SearchBrokerReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{35}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *SearchBrokerReply) GetCompanies() []*SearchBrokerReply_BrokerCompany {
@@ -1908,7 +1908,7 @@ type AddBrokerRequest struct {
 
 func (x *AddBrokerRequest) Reset() {
 	*x = AddBrokerRequest{}
-	mi := &file_dashboard_proto_msgTypes[36]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1920,7 +1920,7 @@ func (x *AddBrokerRequest) String() string {
 func (*AddBrokerRequest) ProtoMessage() {}
 
 func (x *AddBrokerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[36]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1933,7 +1933,7 @@ func (x *AddBrokerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddBrokerRequest.ProtoReflect.Descriptor instead.
 func (*AddBrokerRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{36}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *AddBrokerRequest) GetName() string {
@@ -1996,7 +1996,7 @@ type AddBrokerReply struct {
 
 func (x *AddBrokerReply) Reset() {
 	*x = AddBrokerReply{}
-	mi := &file_dashboard_proto_msgTypes[37]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2008,7 +2008,7 @@ func (x *AddBrokerReply) String() string {
 func (*AddBrokerReply) ProtoMessage() {}
 
 func (x *AddBrokerReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[37]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2021,7 +2021,7 @@ func (x *AddBrokerReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddBrokerReply.ProtoReflect.Descriptor instead.
 func (*AddBrokerReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{37}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *AddBrokerReply) GetSuccess() bool {
@@ -2054,7 +2054,7 @@ type RemoveBrokerRequest struct {
 
 func (x *RemoveBrokerRequest) Reset() {
 	*x = RemoveBrokerRequest{}
-	mi := &file_dashboard_proto_msgTypes[38]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2066,7 +2066,7 @@ func (x *RemoveBrokerRequest) String() string {
 func (*RemoveBrokerRequest) ProtoMessage() {}
 
 func (x *RemoveBrokerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[38]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2079,7 +2079,7 @@ func (x *RemoveBrokerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveBrokerRequest.ProtoReflect.Descriptor instead.
 func (*RemoveBrokerRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{38}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *RemoveBrokerRequest) GetName() string {
@@ -2099,7 +2099,7 @@ type RemoveBrokerReply struct {
 
 func (x *RemoveBrokerReply) Reset() {
 	*x = RemoveBrokerReply{}
-	mi := &file_dashboard_proto_msgTypes[39]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2111,7 +2111,7 @@ func (x *RemoveBrokerReply) String() string {
 func (*RemoveBrokerReply) ProtoMessage() {}
 
 func (x *RemoveBrokerReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[39]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2124,7 +2124,7 @@ func (x *RemoveBrokerReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveBrokerReply.ProtoReflect.Descriptor instead.
 func (*RemoveBrokerReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{39}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *RemoveBrokerReply) GetSuccess() bool {
@@ -2152,7 +2152,7 @@ type BrokerOrderHistoryRequest struct {
 
 func (x *BrokerOrderHistoryRequest) Reset() {
 	*x = BrokerOrderHistoryRequest{}
-	mi := &file_dashboard_proto_msgTypes[40]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2164,7 +2164,7 @@ func (x *BrokerOrderHistoryRequest) String() string {
 func (*BrokerOrderHistoryRequest) ProtoMessage() {}
 
 func (x *BrokerOrderHistoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[40]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2177,7 +2177,7 @@ func (x *BrokerOrderHistoryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BrokerOrderHistoryRequest.ProtoReflect.Descriptor instead.
 func (*BrokerOrderHistoryRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{40}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *BrokerOrderHistoryRequest) GetBrokerName() string {
@@ -2211,7 +2211,7 @@ type BrokerOrderHistoryReply struct {
 
 func (x *BrokerOrderHistoryReply) Reset() {
 	*x = BrokerOrderHistoryReply{}
-	mi := &file_dashboard_proto_msgTypes[41]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2223,7 +2223,7 @@ func (x *BrokerOrderHistoryReply) String() string {
 func (*BrokerOrderHistoryReply) ProtoMessage() {}
 
 func (x *BrokerOrderHistoryReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[41]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2236,7 +2236,7 @@ func (x *BrokerOrderHistoryReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BrokerOrderHistoryReply.ProtoReflect.Descriptor instead.
 func (*BrokerOrderHistoryReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{41}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *BrokerOrderHistoryReply) GetOrders() []*BrokerOrderHistoryReply_BrokerOrder {
@@ -2263,7 +2263,7 @@ type ToggleStrategyRequest struct {
 
 func (x *ToggleStrategyRequest) Reset() {
 	*x = ToggleStrategyRequest{}
-	mi := &file_dashboard_proto_msgTypes[42]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2275,7 +2275,7 @@ func (x *ToggleStrategyRequest) String() string {
 func (*ToggleStrategyRequest) ProtoMessage() {}
 
 func (x *ToggleStrategyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[42]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2288,7 +2288,7 @@ func (x *ToggleStrategyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToggleStrategyRequest.ProtoReflect.Descriptor instead.
 func (*ToggleStrategyRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{42}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *ToggleStrategyRequest) GetStrategy() string {
@@ -2315,7 +2315,7 @@ type ToggleStrategyReply struct {
 
 func (x *ToggleStrategyReply) Reset() {
 	*x = ToggleStrategyReply{}
-	mi := &file_dashboard_proto_msgTypes[43]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2327,7 +2327,7 @@ func (x *ToggleStrategyReply) String() string {
 func (*ToggleStrategyReply) ProtoMessage() {}
 
 func (x *ToggleStrategyReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[43]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2340,7 +2340,7 @@ func (x *ToggleStrategyReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToggleStrategyReply.ProtoReflect.Descriptor instead.
 func (*ToggleStrategyReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{43}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *ToggleStrategyReply) GetSuccess() bool {
@@ -2365,7 +2365,7 @@ type KillSwitchStatusRequest struct {
 
 func (x *KillSwitchStatusRequest) Reset() {
 	*x = KillSwitchStatusRequest{}
-	mi := &file_dashboard_proto_msgTypes[44]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2377,7 +2377,7 @@ func (x *KillSwitchStatusRequest) String() string {
 func (*KillSwitchStatusRequest) ProtoMessage() {}
 
 func (x *KillSwitchStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[44]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2390,7 +2390,7 @@ func (x *KillSwitchStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KillSwitchStatusRequest.ProtoReflect.Descriptor instead.
 func (*KillSwitchStatusRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{44}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{44}
 }
 
 type KillSwitchStatusReply struct {
@@ -2404,7 +2404,7 @@ type KillSwitchStatusReply struct {
 
 func (x *KillSwitchStatusReply) Reset() {
 	*x = KillSwitchStatusReply{}
-	mi := &file_dashboard_proto_msgTypes[45]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2416,7 +2416,7 @@ func (x *KillSwitchStatusReply) String() string {
 func (*KillSwitchStatusReply) ProtoMessage() {}
 
 func (x *KillSwitchStatusReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[45]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2429,7 +2429,7 @@ func (x *KillSwitchStatusReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KillSwitchStatusReply.ProtoReflect.Descriptor instead.
 func (*KillSwitchStatusReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{45}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *KillSwitchStatusReply) GetActive() bool {
@@ -2463,7 +2463,7 @@ type TailLogsRequest struct {
 
 func (x *TailLogsRequest) Reset() {
 	*x = TailLogsRequest{}
-	mi := &file_dashboard_proto_msgTypes[46]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2475,7 +2475,7 @@ func (x *TailLogsRequest) String() string {
 func (*TailLogsRequest) ProtoMessage() {}
 
 func (x *TailLogsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[46]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2488,7 +2488,7 @@ func (x *TailLogsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailLogsRequest.ProtoReflect.Descriptor instead.
 func (*TailLogsRequest) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{46}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *TailLogsRequest) GetTailLines() int32 {
@@ -2517,7 +2517,7 @@ type TailLogsReply struct {
 
 func (x *TailLogsReply) Reset() {
 	*x = TailLogsReply{}
-	mi := &file_dashboard_proto_msgTypes[47]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2529,7 +2529,7 @@ func (x *TailLogsReply) String() string {
 func (*TailLogsReply) ProtoMessage() {}
 
 func (x *TailLogsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[47]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2542,7 +2542,7 @@ func (x *TailLogsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TailLogsReply.ProtoReflect.Descriptor instead.
 func (*TailLogsReply) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{47}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *TailLogsReply) GetTimestampUnixMs() int64 {
@@ -2573,6 +2573,102 @@ func (x *TailLogsReply) GetMessage() string {
 	return ""
 }
 
+type BrokerSymbolsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BrokerName    string                 `protobuf:"bytes,1,opt,name=broker_name,json=brokerName,proto3" json:"broker_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrokerSymbolsRequest) Reset() {
+	*x = BrokerSymbolsRequest{}
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrokerSymbolsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrokerSymbolsRequest) ProtoMessage() {}
+
+func (x *BrokerSymbolsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrokerSymbolsRequest.ProtoReflect.Descriptor instead.
+func (*BrokerSymbolsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *BrokerSymbolsRequest) GetBrokerName() string {
+	if x != nil {
+		return x.BrokerName
+	}
+	return ""
+}
+
+type BrokerSymbolsReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Symbols       []string               `protobuf:"bytes,1,rep,name=symbols,proto3" json:"symbols,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrokerSymbolsReply) Reset() {
+	*x = BrokerSymbolsReply{}
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrokerSymbolsReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrokerSymbolsReply) ProtoMessage() {}
+
+func (x *BrokerSymbolsReply) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrokerSymbolsReply.ProtoReflect.Descriptor instead.
+func (*BrokerSymbolsReply) Descriptor() ([]byte, []int) {
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *BrokerSymbolsReply) GetSymbols() []string {
+	if x != nil {
+		return x.Symbols
+	}
+	return nil
+}
+
+func (x *BrokerSymbolsReply) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type SpreadMatrixReply_BrokerRow struct {
 	state             protoimpl.MessageState          `protogen:"open.v1"`
 	BrokerName        string                          `protobuf:"bytes,1,opt,name=broker_name,json=brokerName,proto3" json:"broker_name,omitempty"`
@@ -2589,7 +2685,7 @@ type SpreadMatrixReply_BrokerRow struct {
 
 func (x *SpreadMatrixReply_BrokerRow) Reset() {
 	*x = SpreadMatrixReply_BrokerRow{}
-	mi := &file_dashboard_proto_msgTypes[48]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2601,7 +2697,7 @@ func (x *SpreadMatrixReply_BrokerRow) String() string {
 func (*SpreadMatrixReply_BrokerRow) ProtoMessage() {}
 
 func (x *SpreadMatrixReply_BrokerRow) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[48]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2614,7 +2710,7 @@ func (x *SpreadMatrixReply_BrokerRow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SpreadMatrixReply_BrokerRow.ProtoReflect.Descriptor instead.
 func (*SpreadMatrixReply_BrokerRow) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{1, 0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{1, 0}
 }
 
 func (x *SpreadMatrixReply_BrokerRow) GetBrokerName() string {
@@ -2692,7 +2788,7 @@ type SpreadMatrixReply_SpreadCell struct {
 
 func (x *SpreadMatrixReply_SpreadCell) Reset() {
 	*x = SpreadMatrixReply_SpreadCell{}
-	mi := &file_dashboard_proto_msgTypes[49]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2704,7 +2800,7 @@ func (x *SpreadMatrixReply_SpreadCell) String() string {
 func (*SpreadMatrixReply_SpreadCell) ProtoMessage() {}
 
 func (x *SpreadMatrixReply_SpreadCell) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[49]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2717,7 +2813,7 @@ func (x *SpreadMatrixReply_SpreadCell) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SpreadMatrixReply_SpreadCell.ProtoReflect.Descriptor instead.
 func (*SpreadMatrixReply_SpreadCell) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{1, 1}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{1, 1}
 }
 
 func (x *SpreadMatrixReply_SpreadCell) GetSymbol() string {
@@ -2791,7 +2887,7 @@ type PositionWatchReply_BrokerPosition struct {
 
 func (x *PositionWatchReply_BrokerPosition) Reset() {
 	*x = PositionWatchReply_BrokerPosition{}
-	mi := &file_dashboard_proto_msgTypes[50]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2803,7 +2899,7 @@ func (x *PositionWatchReply_BrokerPosition) String() string {
 func (*PositionWatchReply_BrokerPosition) ProtoMessage() {}
 
 func (x *PositionWatchReply_BrokerPosition) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[50]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2816,7 +2912,7 @@ func (x *PositionWatchReply_BrokerPosition) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use PositionWatchReply_BrokerPosition.ProtoReflect.Descriptor instead.
 func (*PositionWatchReply_BrokerPosition) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{3, 0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{3, 0}
 }
 
 func (x *PositionWatchReply_BrokerPosition) GetBrokerName() string {
@@ -2938,7 +3034,7 @@ type PositionWatchReply_Position struct {
 
 func (x *PositionWatchReply_Position) Reset() {
 	*x = PositionWatchReply_Position{}
-	mi := &file_dashboard_proto_msgTypes[51]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2950,7 +3046,7 @@ func (x *PositionWatchReply_Position) String() string {
 func (*PositionWatchReply_Position) ProtoMessage() {}
 
 func (x *PositionWatchReply_Position) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[51]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2963,7 +3059,7 @@ func (x *PositionWatchReply_Position) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PositionWatchReply_Position.ProtoReflect.Descriptor instead.
 func (*PositionWatchReply_Position) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{3, 1}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{3, 1}
 }
 
 func (x *PositionWatchReply_Position) GetTicket() int64 {
@@ -3072,7 +3168,7 @@ type SignalHistoryReply_SignalItem struct {
 
 func (x *SignalHistoryReply_SignalItem) Reset() {
 	*x = SignalHistoryReply_SignalItem{}
-	mi := &file_dashboard_proto_msgTypes[52]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3084,7 +3180,7 @@ func (x *SignalHistoryReply_SignalItem) String() string {
 func (*SignalHistoryReply_SignalItem) ProtoMessage() {}
 
 func (x *SignalHistoryReply_SignalItem) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[52]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3097,7 +3193,7 @@ func (x *SignalHistoryReply_SignalItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalHistoryReply_SignalItem.ProtoReflect.Descriptor instead.
 func (*SignalHistoryReply_SignalItem) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{11, 0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{11, 0}
 }
 
 func (x *SignalHistoryReply_SignalItem) GetId() string {
@@ -3170,7 +3266,7 @@ type OrderHistoryReply_OrderItem struct {
 
 func (x *OrderHistoryReply_OrderItem) Reset() {
 	*x = OrderHistoryReply_OrderItem{}
-	mi := &file_dashboard_proto_msgTypes[53]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3182,7 +3278,7 @@ func (x *OrderHistoryReply_OrderItem) String() string {
 func (*OrderHistoryReply_OrderItem) ProtoMessage() {}
 
 func (x *OrderHistoryReply_OrderItem) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[53]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3195,7 +3291,7 @@ func (x *OrderHistoryReply_OrderItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrderHistoryReply_OrderItem.ProtoReflect.Descriptor instead.
 func (*OrderHistoryReply_OrderItem) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{13, 0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{13, 0}
 }
 
 func (x *OrderHistoryReply_OrderItem) GetClientId() string {
@@ -3302,7 +3398,7 @@ type DailySummaryReply_DailyItem struct {
 
 func (x *DailySummaryReply_DailyItem) Reset() {
 	*x = DailySummaryReply_DailyItem{}
-	mi := &file_dashboard_proto_msgTypes[54]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3314,7 +3410,7 @@ func (x *DailySummaryReply_DailyItem) String() string {
 func (*DailySummaryReply_DailyItem) ProtoMessage() {}
 
 func (x *DailySummaryReply_DailyItem) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[54]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3327,7 +3423,7 @@ func (x *DailySummaryReply_DailyItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DailySummaryReply_DailyItem.ProtoReflect.Descriptor instead.
 func (*DailySummaryReply_DailyItem) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{15, 0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{15, 0}
 }
 
 func (x *DailySummaryReply_DailyItem) GetDate() string {
@@ -3387,7 +3483,7 @@ type AccountSnapshotReply_AccountSnapshotItem struct {
 
 func (x *AccountSnapshotReply_AccountSnapshotItem) Reset() {
 	*x = AccountSnapshotReply_AccountSnapshotItem{}
-	mi := &file_dashboard_proto_msgTypes[55]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3399,7 +3495,7 @@ func (x *AccountSnapshotReply_AccountSnapshotItem) String() string {
 func (*AccountSnapshotReply_AccountSnapshotItem) ProtoMessage() {}
 
 func (x *AccountSnapshotReply_AccountSnapshotItem) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[55]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3412,7 +3508,7 @@ func (x *AccountSnapshotReply_AccountSnapshotItem) ProtoReflect() protoreflect.M
 
 // Deprecated: Use AccountSnapshotReply_AccountSnapshotItem.ProtoReflect.Descriptor instead.
 func (*AccountSnapshotReply_AccountSnapshotItem) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{17, 0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{17, 0}
 }
 
 func (x *AccountSnapshotReply_AccountSnapshotItem) GetBrokerName() string {
@@ -3528,7 +3624,7 @@ type StrategyStatusReply_StrategyItem struct {
 
 func (x *StrategyStatusReply_StrategyItem) Reset() {
 	*x = StrategyStatusReply_StrategyItem{}
-	mi := &file_dashboard_proto_msgTypes[56]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3540,7 +3636,7 @@ func (x *StrategyStatusReply_StrategyItem) String() string {
 func (*StrategyStatusReply_StrategyItem) ProtoMessage() {}
 
 func (x *StrategyStatusReply_StrategyItem) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[56]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3553,7 +3649,7 @@ func (x *StrategyStatusReply_StrategyItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StrategyStatusReply_StrategyItem.ProtoReflect.Descriptor instead.
 func (*StrategyStatusReply_StrategyItem) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{29, 0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{29, 0}
 }
 
 func (x *StrategyStatusReply_StrategyItem) GetName() string {
@@ -3615,7 +3711,7 @@ type SearchBrokerReply_BrokerCompany struct {
 
 func (x *SearchBrokerReply_BrokerCompany) Reset() {
 	*x = SearchBrokerReply_BrokerCompany{}
-	mi := &file_dashboard_proto_msgTypes[57]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3627,7 +3723,7 @@ func (x *SearchBrokerReply_BrokerCompany) String() string {
 func (*SearchBrokerReply_BrokerCompany) ProtoMessage() {}
 
 func (x *SearchBrokerReply_BrokerCompany) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[57]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3640,7 +3736,7 @@ func (x *SearchBrokerReply_BrokerCompany) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchBrokerReply_BrokerCompany.ProtoReflect.Descriptor instead.
 func (*SearchBrokerReply_BrokerCompany) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{35, 0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{35, 0}
 }
 
 func (x *SearchBrokerReply_BrokerCompany) GetCompanyName() string {
@@ -3667,7 +3763,7 @@ type SearchBrokerReply_BrokerServer struct {
 
 func (x *SearchBrokerReply_BrokerServer) Reset() {
 	*x = SearchBrokerReply_BrokerServer{}
-	mi := &file_dashboard_proto_msgTypes[58]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3679,7 +3775,7 @@ func (x *SearchBrokerReply_BrokerServer) String() string {
 func (*SearchBrokerReply_BrokerServer) ProtoMessage() {}
 
 func (x *SearchBrokerReply_BrokerServer) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[58]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3692,7 +3788,7 @@ func (x *SearchBrokerReply_BrokerServer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchBrokerReply_BrokerServer.ProtoReflect.Descriptor instead.
 func (*SearchBrokerReply_BrokerServer) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{35, 1}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{35, 1}
 }
 
 func (x *SearchBrokerReply_BrokerServer) GetName() string {
@@ -3727,7 +3823,7 @@ type BrokerOrderHistoryReply_BrokerOrder struct {
 
 func (x *BrokerOrderHistoryReply_BrokerOrder) Reset() {
 	*x = BrokerOrderHistoryReply_BrokerOrder{}
-	mi := &file_dashboard_proto_msgTypes[59]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3739,7 +3835,7 @@ func (x *BrokerOrderHistoryReply_BrokerOrder) String() string {
 func (*BrokerOrderHistoryReply_BrokerOrder) ProtoMessage() {}
 
 func (x *BrokerOrderHistoryReply_BrokerOrder) ProtoReflect() protoreflect.Message {
-	mi := &file_dashboard_proto_msgTypes[59]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3752,7 +3848,7 @@ func (x *BrokerOrderHistoryReply_BrokerOrder) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use BrokerOrderHistoryReply_BrokerOrder.ProtoReflect.Descriptor instead.
 func (*BrokerOrderHistoryReply_BrokerOrder) Descriptor() ([]byte, []int) {
-	return file_dashboard_proto_rawDescGZIP(), []int{41, 0}
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{41, 0}
 }
 
 func (x *BrokerOrderHistoryReply_BrokerOrder) GetTicket() int64 {
@@ -3825,11 +3921,11 @@ func (x *BrokerOrderHistoryReply_BrokerOrder) GetComment() string {
 	return ""
 }
 
-var File_dashboard_proto protoreflect.FileDescriptor
+var File_proto_dashboard_dashboard_proto protoreflect.FileDescriptor
 
-const file_dashboard_proto_rawDesc = "" +
+const file_proto_dashboard_dashboard_proto_rawDesc = "" +
 	"\n" +
-	"\x0fdashboard.proto\x12\rarb.dashboard\"E\n" +
+	"\x1fproto/dashboard/dashboard.proto\x12\rarb.dashboard\"E\n" +
 	"\x13SpreadMatrixRequest\x12.\n" +
 	"\x13refresh_interval_ms\x18\x01 \x01(\x05R\x11refreshIntervalMs\"\xde\x06\n" +
 	"\x11SpreadMatrixReply\x12*\n" +
@@ -4134,7 +4230,13 @@ const file_dashboard_proto_rawDesc = "" +
 	"\x11timestamp_unix_ms\x18\x01 \x01(\x03R\x0ftimestampUnixMs\x12\x14\n" +
 	"\x05level\x18\x02 \x01(\tR\x05level\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage2\xe3\x10\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\"7\n" +
+	"\x14BrokerSymbolsRequest\x12\x1f\n" +
+	"\vbroker_name\x18\x01 \x01(\tR\n" +
+	"brokerName\"D\n" +
+	"\x12BrokerSymbolsReply\x12\x18\n" +
+	"\asymbols\x18\x01 \x03(\tR\asymbols\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error2\xbf\x11\n" +
 	"\x10DashboardService\x12V\n" +
 	"\fSpreadMatrix\x12\".arb.dashboard.SpreadMatrixRequest\x1a .arb.dashboard.SpreadMatrixReply0\x01\x12Y\n" +
 	"\rPositionWatch\x12#.arb.dashboard.PositionWatchRequest\x1a!.arb.dashboard.PositionWatchReply0\x01\x12Q\n" +
@@ -4159,22 +4261,23 @@ const file_dashboard_proto_rawDesc = "" +
 	"\fSearchBroker\x12\".arb.dashboard.SearchBrokerRequest\x1a .arb.dashboard.SearchBrokerReply\x12K\n" +
 	"\tAddBroker\x12\x1f.arb.dashboard.AddBrokerRequest\x1a\x1d.arb.dashboard.AddBrokerReply\x12T\n" +
 	"\fRemoveBroker\x12\".arb.dashboard.RemoveBrokerRequest\x1a .arb.dashboard.RemoveBrokerReply\x12i\n" +
-	"\x15GetBrokerOrderHistory\x12(.arb.dashboard.BrokerOrderHistoryRequest\x1a&.arb.dashboard.BrokerOrderHistoryReplyB\x15Z\x13arb/proto/dashboardb\x06proto3"
+	"\x15GetBrokerOrderHistory\x12(.arb.dashboard.BrokerOrderHistoryRequest\x1a&.arb.dashboard.BrokerOrderHistoryReply\x12Z\n" +
+	"\x10GetBrokerSymbols\x12#.arb.dashboard.BrokerSymbolsRequest\x1a!.arb.dashboard.BrokerSymbolsReplyB\x15Z\x13arb/proto/dashboardb\x06proto3"
 
 var (
-	file_dashboard_proto_rawDescOnce sync.Once
-	file_dashboard_proto_rawDescData []byte
+	file_proto_dashboard_dashboard_proto_rawDescOnce sync.Once
+	file_proto_dashboard_dashboard_proto_rawDescData []byte
 )
 
-func file_dashboard_proto_rawDescGZIP() []byte {
-	file_dashboard_proto_rawDescOnce.Do(func() {
-		file_dashboard_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_dashboard_proto_rawDesc), len(file_dashboard_proto_rawDesc)))
+func file_proto_dashboard_dashboard_proto_rawDescGZIP() []byte {
+	file_proto_dashboard_dashboard_proto_rawDescOnce.Do(func() {
+		file_proto_dashboard_dashboard_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_dashboard_dashboard_proto_rawDesc), len(file_proto_dashboard_dashboard_proto_rawDesc)))
 	})
-	return file_dashboard_proto_rawDescData
+	return file_proto_dashboard_dashboard_proto_rawDescData
 }
 
-var file_dashboard_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
-var file_dashboard_proto_goTypes = []any{
+var file_proto_dashboard_dashboard_proto_msgTypes = make([]protoimpl.MessageInfo, 62)
+var file_proto_dashboard_dashboard_proto_goTypes = []any{
 	(*SpreadMatrixRequest)(nil),                      // 0: arb.dashboard.SpreadMatrixRequest
 	(*SpreadMatrixReply)(nil),                        // 1: arb.dashboard.SpreadMatrixReply
 	(*PositionWatchRequest)(nil),                     // 2: arb.dashboard.PositionWatchRequest
@@ -4223,32 +4326,34 @@ var file_dashboard_proto_goTypes = []any{
 	(*KillSwitchStatusReply)(nil),                    // 45: arb.dashboard.KillSwitchStatusReply
 	(*TailLogsRequest)(nil),                          // 46: arb.dashboard.TailLogsRequest
 	(*TailLogsReply)(nil),                            // 47: arb.dashboard.TailLogsReply
-	(*SpreadMatrixReply_BrokerRow)(nil),              // 48: arb.dashboard.SpreadMatrixReply.BrokerRow
-	(*SpreadMatrixReply_SpreadCell)(nil),             // 49: arb.dashboard.SpreadMatrixReply.SpreadCell
-	(*PositionWatchReply_BrokerPosition)(nil),        // 50: arb.dashboard.PositionWatchReply.BrokerPosition
-	(*PositionWatchReply_Position)(nil),              // 51: arb.dashboard.PositionWatchReply.Position
-	(*SignalHistoryReply_SignalItem)(nil),            // 52: arb.dashboard.SignalHistoryReply.SignalItem
-	(*OrderHistoryReply_OrderItem)(nil),              // 53: arb.dashboard.OrderHistoryReply.OrderItem
-	(*DailySummaryReply_DailyItem)(nil),              // 54: arb.dashboard.DailySummaryReply.DailyItem
-	(*AccountSnapshotReply_AccountSnapshotItem)(nil), // 55: arb.dashboard.AccountSnapshotReply.AccountSnapshotItem
-	(*StrategyStatusReply_StrategyItem)(nil),         // 56: arb.dashboard.StrategyStatusReply.StrategyItem
-	(*SearchBrokerReply_BrokerCompany)(nil),          // 57: arb.dashboard.SearchBrokerReply.BrokerCompany
-	(*SearchBrokerReply_BrokerServer)(nil),           // 58: arb.dashboard.SearchBrokerReply.BrokerServer
-	(*BrokerOrderHistoryReply_BrokerOrder)(nil),      // 59: arb.dashboard.BrokerOrderHistoryReply.BrokerOrder
+	(*BrokerSymbolsRequest)(nil),                     // 48: arb.dashboard.BrokerSymbolsRequest
+	(*BrokerSymbolsReply)(nil),                       // 49: arb.dashboard.BrokerSymbolsReply
+	(*SpreadMatrixReply_BrokerRow)(nil),              // 50: arb.dashboard.SpreadMatrixReply.BrokerRow
+	(*SpreadMatrixReply_SpreadCell)(nil),             // 51: arb.dashboard.SpreadMatrixReply.SpreadCell
+	(*PositionWatchReply_BrokerPosition)(nil),        // 52: arb.dashboard.PositionWatchReply.BrokerPosition
+	(*PositionWatchReply_Position)(nil),              // 53: arb.dashboard.PositionWatchReply.Position
+	(*SignalHistoryReply_SignalItem)(nil),            // 54: arb.dashboard.SignalHistoryReply.SignalItem
+	(*OrderHistoryReply_OrderItem)(nil),              // 55: arb.dashboard.OrderHistoryReply.OrderItem
+	(*DailySummaryReply_DailyItem)(nil),              // 56: arb.dashboard.DailySummaryReply.DailyItem
+	(*AccountSnapshotReply_AccountSnapshotItem)(nil), // 57: arb.dashboard.AccountSnapshotReply.AccountSnapshotItem
+	(*StrategyStatusReply_StrategyItem)(nil),         // 58: arb.dashboard.StrategyStatusReply.StrategyItem
+	(*SearchBrokerReply_BrokerCompany)(nil),          // 59: arb.dashboard.SearchBrokerReply.BrokerCompany
+	(*SearchBrokerReply_BrokerServer)(nil),           // 60: arb.dashboard.SearchBrokerReply.BrokerServer
+	(*BrokerOrderHistoryReply_BrokerOrder)(nil),      // 61: arb.dashboard.BrokerOrderHistoryReply.BrokerOrder
 }
-var file_dashboard_proto_depIdxs = []int32{
-	48, // 0: arb.dashboard.SpreadMatrixReply.rows:type_name -> arb.dashboard.SpreadMatrixReply.BrokerRow
-	50, // 1: arb.dashboard.PositionWatchReply.broker_positions:type_name -> arb.dashboard.PositionWatchReply.BrokerPosition
-	52, // 2: arb.dashboard.SignalHistoryReply.items:type_name -> arb.dashboard.SignalHistoryReply.SignalItem
-	53, // 3: arb.dashboard.OrderHistoryReply.items:type_name -> arb.dashboard.OrderHistoryReply.OrderItem
-	54, // 4: arb.dashboard.DailySummaryReply.items:type_name -> arb.dashboard.DailySummaryReply.DailyItem
-	55, // 5: arb.dashboard.AccountSnapshotReply.items:type_name -> arb.dashboard.AccountSnapshotReply.AccountSnapshotItem
-	56, // 6: arb.dashboard.StrategyStatusReply.items:type_name -> arb.dashboard.StrategyStatusReply.StrategyItem
-	57, // 7: arb.dashboard.SearchBrokerReply.companies:type_name -> arb.dashboard.SearchBrokerReply.BrokerCompany
-	59, // 8: arb.dashboard.BrokerOrderHistoryReply.orders:type_name -> arb.dashboard.BrokerOrderHistoryReply.BrokerOrder
-	49, // 9: arb.dashboard.SpreadMatrixReply.BrokerRow.cells:type_name -> arb.dashboard.SpreadMatrixReply.SpreadCell
-	51, // 10: arb.dashboard.PositionWatchReply.BrokerPosition.positions:type_name -> arb.dashboard.PositionWatchReply.Position
-	58, // 11: arb.dashboard.SearchBrokerReply.BrokerCompany.servers:type_name -> arb.dashboard.SearchBrokerReply.BrokerServer
+var file_proto_dashboard_dashboard_proto_depIdxs = []int32{
+	50, // 0: arb.dashboard.SpreadMatrixReply.rows:type_name -> arb.dashboard.SpreadMatrixReply.BrokerRow
+	52, // 1: arb.dashboard.PositionWatchReply.broker_positions:type_name -> arb.dashboard.PositionWatchReply.BrokerPosition
+	54, // 2: arb.dashboard.SignalHistoryReply.items:type_name -> arb.dashboard.SignalHistoryReply.SignalItem
+	55, // 3: arb.dashboard.OrderHistoryReply.items:type_name -> arb.dashboard.OrderHistoryReply.OrderItem
+	56, // 4: arb.dashboard.DailySummaryReply.items:type_name -> arb.dashboard.DailySummaryReply.DailyItem
+	57, // 5: arb.dashboard.AccountSnapshotReply.items:type_name -> arb.dashboard.AccountSnapshotReply.AccountSnapshotItem
+	58, // 6: arb.dashboard.StrategyStatusReply.items:type_name -> arb.dashboard.StrategyStatusReply.StrategyItem
+	59, // 7: arb.dashboard.SearchBrokerReply.companies:type_name -> arb.dashboard.SearchBrokerReply.BrokerCompany
+	61, // 8: arb.dashboard.BrokerOrderHistoryReply.orders:type_name -> arb.dashboard.BrokerOrderHistoryReply.BrokerOrder
+	51, // 9: arb.dashboard.SpreadMatrixReply.BrokerRow.cells:type_name -> arb.dashboard.SpreadMatrixReply.SpreadCell
+	53, // 10: arb.dashboard.PositionWatchReply.BrokerPosition.positions:type_name -> arb.dashboard.PositionWatchReply.Position
+	60, // 11: arb.dashboard.SearchBrokerReply.BrokerCompany.servers:type_name -> arb.dashboard.SearchBrokerReply.BrokerServer
 	0,  // 12: arb.dashboard.DashboardService.SpreadMatrix:input_type -> arb.dashboard.SpreadMatrixRequest
 	2,  // 13: arb.dashboard.DashboardService.PositionWatch:input_type -> arb.dashboard.PositionWatchRequest
 	4,  // 14: arb.dashboard.DashboardService.SubmitOrder:input_type -> arb.dashboard.ManualOrderRequest
@@ -4273,57 +4378,59 @@ var file_dashboard_proto_depIdxs = []int32{
 	36, // 33: arb.dashboard.DashboardService.AddBroker:input_type -> arb.dashboard.AddBrokerRequest
 	38, // 34: arb.dashboard.DashboardService.RemoveBroker:input_type -> arb.dashboard.RemoveBrokerRequest
 	40, // 35: arb.dashboard.DashboardService.GetBrokerOrderHistory:input_type -> arb.dashboard.BrokerOrderHistoryRequest
-	1,  // 36: arb.dashboard.DashboardService.SpreadMatrix:output_type -> arb.dashboard.SpreadMatrixReply
-	3,  // 37: arb.dashboard.DashboardService.PositionWatch:output_type -> arb.dashboard.PositionWatchReply
-	5,  // 38: arb.dashboard.DashboardService.SubmitOrder:output_type -> arb.dashboard.ManualOrderReply
-	7,  // 39: arb.dashboard.DashboardService.ClosePosition:output_type -> arb.dashboard.ClosePositionReply
-	9,  // 40: arb.dashboard.DashboardService.CancelOrder:output_type -> arb.dashboard.CancelOrderReply
-	11, // 41: arb.dashboard.DashboardService.GetSignalHistory:output_type -> arb.dashboard.SignalHistoryReply
-	13, // 42: arb.dashboard.DashboardService.GetOrderHistory:output_type -> arb.dashboard.OrderHistoryReply
-	15, // 43: arb.dashboard.DashboardService.GetDailySummary:output_type -> arb.dashboard.DailySummaryReply
-	17, // 44: arb.dashboard.DashboardService.GetAccountSnapshots:output_type -> arb.dashboard.AccountSnapshotReply
-	19, // 45: arb.dashboard.DashboardService.Kill:output_type -> arb.dashboard.KillReply
-	21, // 46: arb.dashboard.DashboardService.Resume:output_type -> arb.dashboard.ResumeReply
-	23, // 47: arb.dashboard.DashboardService.SubscribeSymbols:output_type -> arb.dashboard.SubscribeSymbolsReply
-	25, // 48: arb.dashboard.DashboardService.UnsubscribeSymbols:output_type -> arb.dashboard.UnsubscribeSymbolsReply
-	27, // 49: arb.dashboard.DashboardService.ListSubscribedSymbols:output_type -> arb.dashboard.ListSymbolsReply
-	29, // 50: arb.dashboard.DashboardService.GetStrategyStatus:output_type -> arb.dashboard.StrategyStatusReply
-	43, // 51: arb.dashboard.DashboardService.ToggleStrategy:output_type -> arb.dashboard.ToggleStrategyReply
-	31, // 52: arb.dashboard.DashboardService.ResumeStrategy:output_type -> arb.dashboard.ResumeStrategyReply
-	33, // 53: arb.dashboard.DashboardService.ResetGlobalCircuitBreaker:output_type -> arb.dashboard.ResetCBReply
-	45, // 54: arb.dashboard.DashboardService.GetKillSwitchStatus:output_type -> arb.dashboard.KillSwitchStatusReply
-	47, // 55: arb.dashboard.DashboardService.TailLogs:output_type -> arb.dashboard.TailLogsReply
-	35, // 56: arb.dashboard.DashboardService.SearchBroker:output_type -> arb.dashboard.SearchBrokerReply
-	37, // 57: arb.dashboard.DashboardService.AddBroker:output_type -> arb.dashboard.AddBrokerReply
-	39, // 58: arb.dashboard.DashboardService.RemoveBroker:output_type -> arb.dashboard.RemoveBrokerReply
-	41, // 59: arb.dashboard.DashboardService.GetBrokerOrderHistory:output_type -> arb.dashboard.BrokerOrderHistoryReply
-	36, // [36:60] is the sub-list for method output_type
-	12, // [12:36] is the sub-list for method input_type
+	48, // 36: arb.dashboard.DashboardService.GetBrokerSymbols:input_type -> arb.dashboard.BrokerSymbolsRequest
+	1,  // 37: arb.dashboard.DashboardService.SpreadMatrix:output_type -> arb.dashboard.SpreadMatrixReply
+	3,  // 38: arb.dashboard.DashboardService.PositionWatch:output_type -> arb.dashboard.PositionWatchReply
+	5,  // 39: arb.dashboard.DashboardService.SubmitOrder:output_type -> arb.dashboard.ManualOrderReply
+	7,  // 40: arb.dashboard.DashboardService.ClosePosition:output_type -> arb.dashboard.ClosePositionReply
+	9,  // 41: arb.dashboard.DashboardService.CancelOrder:output_type -> arb.dashboard.CancelOrderReply
+	11, // 42: arb.dashboard.DashboardService.GetSignalHistory:output_type -> arb.dashboard.SignalHistoryReply
+	13, // 43: arb.dashboard.DashboardService.GetOrderHistory:output_type -> arb.dashboard.OrderHistoryReply
+	15, // 44: arb.dashboard.DashboardService.GetDailySummary:output_type -> arb.dashboard.DailySummaryReply
+	17, // 45: arb.dashboard.DashboardService.GetAccountSnapshots:output_type -> arb.dashboard.AccountSnapshotReply
+	19, // 46: arb.dashboard.DashboardService.Kill:output_type -> arb.dashboard.KillReply
+	21, // 47: arb.dashboard.DashboardService.Resume:output_type -> arb.dashboard.ResumeReply
+	23, // 48: arb.dashboard.DashboardService.SubscribeSymbols:output_type -> arb.dashboard.SubscribeSymbolsReply
+	25, // 49: arb.dashboard.DashboardService.UnsubscribeSymbols:output_type -> arb.dashboard.UnsubscribeSymbolsReply
+	27, // 50: arb.dashboard.DashboardService.ListSubscribedSymbols:output_type -> arb.dashboard.ListSymbolsReply
+	29, // 51: arb.dashboard.DashboardService.GetStrategyStatus:output_type -> arb.dashboard.StrategyStatusReply
+	43, // 52: arb.dashboard.DashboardService.ToggleStrategy:output_type -> arb.dashboard.ToggleStrategyReply
+	31, // 53: arb.dashboard.DashboardService.ResumeStrategy:output_type -> arb.dashboard.ResumeStrategyReply
+	33, // 54: arb.dashboard.DashboardService.ResetGlobalCircuitBreaker:output_type -> arb.dashboard.ResetCBReply
+	45, // 55: arb.dashboard.DashboardService.GetKillSwitchStatus:output_type -> arb.dashboard.KillSwitchStatusReply
+	47, // 56: arb.dashboard.DashboardService.TailLogs:output_type -> arb.dashboard.TailLogsReply
+	35, // 57: arb.dashboard.DashboardService.SearchBroker:output_type -> arb.dashboard.SearchBrokerReply
+	37, // 58: arb.dashboard.DashboardService.AddBroker:output_type -> arb.dashboard.AddBrokerReply
+	39, // 59: arb.dashboard.DashboardService.RemoveBroker:output_type -> arb.dashboard.RemoveBrokerReply
+	41, // 60: arb.dashboard.DashboardService.GetBrokerOrderHistory:output_type -> arb.dashboard.BrokerOrderHistoryReply
+	49, // 61: arb.dashboard.DashboardService.GetBrokerSymbols:output_type -> arb.dashboard.BrokerSymbolsReply
+	37, // [37:62] is the sub-list for method output_type
+	12, // [12:37] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
 	12, // [12:12] is the sub-list for extension extendee
 	0,  // [0:12] is the sub-list for field type_name
 }
 
-func init() { file_dashboard_proto_init() }
-func file_dashboard_proto_init() {
-	if File_dashboard_proto != nil {
+func init() { file_proto_dashboard_dashboard_proto_init() }
+func file_proto_dashboard_dashboard_proto_init() {
+	if File_proto_dashboard_dashboard_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_dashboard_proto_rawDesc), len(file_dashboard_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_dashboard_dashboard_proto_rawDesc), len(file_proto_dashboard_dashboard_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   60,
+			NumMessages:   62,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_dashboard_proto_goTypes,
-		DependencyIndexes: file_dashboard_proto_depIdxs,
-		MessageInfos:      file_dashboard_proto_msgTypes,
+		GoTypes:           file_proto_dashboard_dashboard_proto_goTypes,
+		DependencyIndexes: file_proto_dashboard_dashboard_proto_depIdxs,
+		MessageInfos:      file_proto_dashboard_dashboard_proto_msgTypes,
 	}.Build()
-	File_dashboard_proto = out.File
-	file_dashboard_proto_goTypes = nil
-	file_dashboard_proto_depIdxs = nil
+	File_proto_dashboard_dashboard_proto = out.File
+	file_proto_dashboard_dashboard_proto_goTypes = nil
+	file_proto_dashboard_dashboard_proto_depIdxs = nil
 }

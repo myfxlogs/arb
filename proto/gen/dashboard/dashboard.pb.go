@@ -2573,6 +2573,102 @@ func (x *TailLogsReply) GetMessage() string {
 	return ""
 }
 
+type BrokerSymbolsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	BrokerName    string                 `protobuf:"bytes,1,opt,name=broker_name,json=brokerName,proto3" json:"broker_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrokerSymbolsRequest) Reset() {
+	*x = BrokerSymbolsRequest{}
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrokerSymbolsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrokerSymbolsRequest) ProtoMessage() {}
+
+func (x *BrokerSymbolsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrokerSymbolsRequest.ProtoReflect.Descriptor instead.
+func (*BrokerSymbolsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *BrokerSymbolsRequest) GetBrokerName() string {
+	if x != nil {
+		return x.BrokerName
+	}
+	return ""
+}
+
+type BrokerSymbolsReply struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Symbols       []string               `protobuf:"bytes,1,rep,name=symbols,proto3" json:"symbols,omitempty"`
+	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BrokerSymbolsReply) Reset() {
+	*x = BrokerSymbolsReply{}
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BrokerSymbolsReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BrokerSymbolsReply) ProtoMessage() {}
+
+func (x *BrokerSymbolsReply) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BrokerSymbolsReply.ProtoReflect.Descriptor instead.
+func (*BrokerSymbolsReply) Descriptor() ([]byte, []int) {
+	return file_proto_dashboard_dashboard_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *BrokerSymbolsReply) GetSymbols() []string {
+	if x != nil {
+		return x.Symbols
+	}
+	return nil
+}
+
+func (x *BrokerSymbolsReply) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type SpreadMatrixReply_BrokerRow struct {
 	state             protoimpl.MessageState          `protogen:"open.v1"`
 	BrokerName        string                          `protobuf:"bytes,1,opt,name=broker_name,json=brokerName,proto3" json:"broker_name,omitempty"`
@@ -2589,7 +2685,7 @@ type SpreadMatrixReply_BrokerRow struct {
 
 func (x *SpreadMatrixReply_BrokerRow) Reset() {
 	*x = SpreadMatrixReply_BrokerRow{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[48]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2601,7 +2697,7 @@ func (x *SpreadMatrixReply_BrokerRow) String() string {
 func (*SpreadMatrixReply_BrokerRow) ProtoMessage() {}
 
 func (x *SpreadMatrixReply_BrokerRow) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[48]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2692,7 +2788,7 @@ type SpreadMatrixReply_SpreadCell struct {
 
 func (x *SpreadMatrixReply_SpreadCell) Reset() {
 	*x = SpreadMatrixReply_SpreadCell{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[49]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2704,7 +2800,7 @@ func (x *SpreadMatrixReply_SpreadCell) String() string {
 func (*SpreadMatrixReply_SpreadCell) ProtoMessage() {}
 
 func (x *SpreadMatrixReply_SpreadCell) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[49]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2791,7 +2887,7 @@ type PositionWatchReply_BrokerPosition struct {
 
 func (x *PositionWatchReply_BrokerPosition) Reset() {
 	*x = PositionWatchReply_BrokerPosition{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[50]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2803,7 +2899,7 @@ func (x *PositionWatchReply_BrokerPosition) String() string {
 func (*PositionWatchReply_BrokerPosition) ProtoMessage() {}
 
 func (x *PositionWatchReply_BrokerPosition) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[50]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2938,7 +3034,7 @@ type PositionWatchReply_Position struct {
 
 func (x *PositionWatchReply_Position) Reset() {
 	*x = PositionWatchReply_Position{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[51]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2950,7 +3046,7 @@ func (x *PositionWatchReply_Position) String() string {
 func (*PositionWatchReply_Position) ProtoMessage() {}
 
 func (x *PositionWatchReply_Position) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[51]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3072,7 +3168,7 @@ type SignalHistoryReply_SignalItem struct {
 
 func (x *SignalHistoryReply_SignalItem) Reset() {
 	*x = SignalHistoryReply_SignalItem{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[52]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3084,7 +3180,7 @@ func (x *SignalHistoryReply_SignalItem) String() string {
 func (*SignalHistoryReply_SignalItem) ProtoMessage() {}
 
 func (x *SignalHistoryReply_SignalItem) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[52]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3170,7 +3266,7 @@ type OrderHistoryReply_OrderItem struct {
 
 func (x *OrderHistoryReply_OrderItem) Reset() {
 	*x = OrderHistoryReply_OrderItem{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[53]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3182,7 +3278,7 @@ func (x *OrderHistoryReply_OrderItem) String() string {
 func (*OrderHistoryReply_OrderItem) ProtoMessage() {}
 
 func (x *OrderHistoryReply_OrderItem) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[53]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3302,7 +3398,7 @@ type DailySummaryReply_DailyItem struct {
 
 func (x *DailySummaryReply_DailyItem) Reset() {
 	*x = DailySummaryReply_DailyItem{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[54]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3314,7 +3410,7 @@ func (x *DailySummaryReply_DailyItem) String() string {
 func (*DailySummaryReply_DailyItem) ProtoMessage() {}
 
 func (x *DailySummaryReply_DailyItem) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[54]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3387,7 +3483,7 @@ type AccountSnapshotReply_AccountSnapshotItem struct {
 
 func (x *AccountSnapshotReply_AccountSnapshotItem) Reset() {
 	*x = AccountSnapshotReply_AccountSnapshotItem{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[55]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3399,7 +3495,7 @@ func (x *AccountSnapshotReply_AccountSnapshotItem) String() string {
 func (*AccountSnapshotReply_AccountSnapshotItem) ProtoMessage() {}
 
 func (x *AccountSnapshotReply_AccountSnapshotItem) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[55]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3528,7 +3624,7 @@ type StrategyStatusReply_StrategyItem struct {
 
 func (x *StrategyStatusReply_StrategyItem) Reset() {
 	*x = StrategyStatusReply_StrategyItem{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[56]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3540,7 +3636,7 @@ func (x *StrategyStatusReply_StrategyItem) String() string {
 func (*StrategyStatusReply_StrategyItem) ProtoMessage() {}
 
 func (x *StrategyStatusReply_StrategyItem) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[56]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3615,7 +3711,7 @@ type SearchBrokerReply_BrokerCompany struct {
 
 func (x *SearchBrokerReply_BrokerCompany) Reset() {
 	*x = SearchBrokerReply_BrokerCompany{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[57]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3627,7 +3723,7 @@ func (x *SearchBrokerReply_BrokerCompany) String() string {
 func (*SearchBrokerReply_BrokerCompany) ProtoMessage() {}
 
 func (x *SearchBrokerReply_BrokerCompany) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[57]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3667,7 +3763,7 @@ type SearchBrokerReply_BrokerServer struct {
 
 func (x *SearchBrokerReply_BrokerServer) Reset() {
 	*x = SearchBrokerReply_BrokerServer{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[58]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3679,7 +3775,7 @@ func (x *SearchBrokerReply_BrokerServer) String() string {
 func (*SearchBrokerReply_BrokerServer) ProtoMessage() {}
 
 func (x *SearchBrokerReply_BrokerServer) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[58]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3727,7 +3823,7 @@ type BrokerOrderHistoryReply_BrokerOrder struct {
 
 func (x *BrokerOrderHistoryReply_BrokerOrder) Reset() {
 	*x = BrokerOrderHistoryReply_BrokerOrder{}
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[59]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3739,7 +3835,7 @@ func (x *BrokerOrderHistoryReply_BrokerOrder) String() string {
 func (*BrokerOrderHistoryReply_BrokerOrder) ProtoMessage() {}
 
 func (x *BrokerOrderHistoryReply_BrokerOrder) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_dashboard_dashboard_proto_msgTypes[59]
+	mi := &file_proto_dashboard_dashboard_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4134,7 +4230,13 @@ const file_proto_dashboard_dashboard_proto_rawDesc = "" +
 	"\x11timestamp_unix_ms\x18\x01 \x01(\x03R\x0ftimestampUnixMs\x12\x14\n" +
 	"\x05level\x18\x02 \x01(\tR\x05level\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage2\xe3\x10\n" +
+	"\amessage\x18\x04 \x01(\tR\amessage\"7\n" +
+	"\x14BrokerSymbolsRequest\x12\x1f\n" +
+	"\vbroker_name\x18\x01 \x01(\tR\n" +
+	"brokerName\"D\n" +
+	"\x12BrokerSymbolsReply\x12\x18\n" +
+	"\asymbols\x18\x01 \x03(\tR\asymbols\x12\x14\n" +
+	"\x05error\x18\x02 \x01(\tR\x05error2\xbf\x11\n" +
 	"\x10DashboardService\x12V\n" +
 	"\fSpreadMatrix\x12\".arb.dashboard.SpreadMatrixRequest\x1a .arb.dashboard.SpreadMatrixReply0\x01\x12Y\n" +
 	"\rPositionWatch\x12#.arb.dashboard.PositionWatchRequest\x1a!.arb.dashboard.PositionWatchReply0\x01\x12Q\n" +
@@ -4159,7 +4261,8 @@ const file_proto_dashboard_dashboard_proto_rawDesc = "" +
 	"\fSearchBroker\x12\".arb.dashboard.SearchBrokerRequest\x1a .arb.dashboard.SearchBrokerReply\x12K\n" +
 	"\tAddBroker\x12\x1f.arb.dashboard.AddBrokerRequest\x1a\x1d.arb.dashboard.AddBrokerReply\x12T\n" +
 	"\fRemoveBroker\x12\".arb.dashboard.RemoveBrokerRequest\x1a .arb.dashboard.RemoveBrokerReply\x12i\n" +
-	"\x15GetBrokerOrderHistory\x12(.arb.dashboard.BrokerOrderHistoryRequest\x1a&.arb.dashboard.BrokerOrderHistoryReplyB\x15Z\x13arb/proto/dashboardb\x06proto3"
+	"\x15GetBrokerOrderHistory\x12(.arb.dashboard.BrokerOrderHistoryRequest\x1a&.arb.dashboard.BrokerOrderHistoryReply\x12Z\n" +
+	"\x10GetBrokerSymbols\x12#.arb.dashboard.BrokerSymbolsRequest\x1a!.arb.dashboard.BrokerSymbolsReplyB\x15Z\x13arb/proto/dashboardb\x06proto3"
 
 var (
 	file_proto_dashboard_dashboard_proto_rawDescOnce sync.Once
@@ -4173,7 +4276,7 @@ func file_proto_dashboard_dashboard_proto_rawDescGZIP() []byte {
 	return file_proto_dashboard_dashboard_proto_rawDescData
 }
 
-var file_proto_dashboard_dashboard_proto_msgTypes = make([]protoimpl.MessageInfo, 60)
+var file_proto_dashboard_dashboard_proto_msgTypes = make([]protoimpl.MessageInfo, 62)
 var file_proto_dashboard_dashboard_proto_goTypes = []any{
 	(*SpreadMatrixRequest)(nil),                      // 0: arb.dashboard.SpreadMatrixRequest
 	(*SpreadMatrixReply)(nil),                        // 1: arb.dashboard.SpreadMatrixReply
@@ -4223,32 +4326,34 @@ var file_proto_dashboard_dashboard_proto_goTypes = []any{
 	(*KillSwitchStatusReply)(nil),                    // 45: arb.dashboard.KillSwitchStatusReply
 	(*TailLogsRequest)(nil),                          // 46: arb.dashboard.TailLogsRequest
 	(*TailLogsReply)(nil),                            // 47: arb.dashboard.TailLogsReply
-	(*SpreadMatrixReply_BrokerRow)(nil),              // 48: arb.dashboard.SpreadMatrixReply.BrokerRow
-	(*SpreadMatrixReply_SpreadCell)(nil),             // 49: arb.dashboard.SpreadMatrixReply.SpreadCell
-	(*PositionWatchReply_BrokerPosition)(nil),        // 50: arb.dashboard.PositionWatchReply.BrokerPosition
-	(*PositionWatchReply_Position)(nil),              // 51: arb.dashboard.PositionWatchReply.Position
-	(*SignalHistoryReply_SignalItem)(nil),            // 52: arb.dashboard.SignalHistoryReply.SignalItem
-	(*OrderHistoryReply_OrderItem)(nil),              // 53: arb.dashboard.OrderHistoryReply.OrderItem
-	(*DailySummaryReply_DailyItem)(nil),              // 54: arb.dashboard.DailySummaryReply.DailyItem
-	(*AccountSnapshotReply_AccountSnapshotItem)(nil), // 55: arb.dashboard.AccountSnapshotReply.AccountSnapshotItem
-	(*StrategyStatusReply_StrategyItem)(nil),         // 56: arb.dashboard.StrategyStatusReply.StrategyItem
-	(*SearchBrokerReply_BrokerCompany)(nil),          // 57: arb.dashboard.SearchBrokerReply.BrokerCompany
-	(*SearchBrokerReply_BrokerServer)(nil),           // 58: arb.dashboard.SearchBrokerReply.BrokerServer
-	(*BrokerOrderHistoryReply_BrokerOrder)(nil),      // 59: arb.dashboard.BrokerOrderHistoryReply.BrokerOrder
+	(*BrokerSymbolsRequest)(nil),                     // 48: arb.dashboard.BrokerSymbolsRequest
+	(*BrokerSymbolsReply)(nil),                       // 49: arb.dashboard.BrokerSymbolsReply
+	(*SpreadMatrixReply_BrokerRow)(nil),              // 50: arb.dashboard.SpreadMatrixReply.BrokerRow
+	(*SpreadMatrixReply_SpreadCell)(nil),             // 51: arb.dashboard.SpreadMatrixReply.SpreadCell
+	(*PositionWatchReply_BrokerPosition)(nil),        // 52: arb.dashboard.PositionWatchReply.BrokerPosition
+	(*PositionWatchReply_Position)(nil),              // 53: arb.dashboard.PositionWatchReply.Position
+	(*SignalHistoryReply_SignalItem)(nil),            // 54: arb.dashboard.SignalHistoryReply.SignalItem
+	(*OrderHistoryReply_OrderItem)(nil),              // 55: arb.dashboard.OrderHistoryReply.OrderItem
+	(*DailySummaryReply_DailyItem)(nil),              // 56: arb.dashboard.DailySummaryReply.DailyItem
+	(*AccountSnapshotReply_AccountSnapshotItem)(nil), // 57: arb.dashboard.AccountSnapshotReply.AccountSnapshotItem
+	(*StrategyStatusReply_StrategyItem)(nil),         // 58: arb.dashboard.StrategyStatusReply.StrategyItem
+	(*SearchBrokerReply_BrokerCompany)(nil),          // 59: arb.dashboard.SearchBrokerReply.BrokerCompany
+	(*SearchBrokerReply_BrokerServer)(nil),           // 60: arb.dashboard.SearchBrokerReply.BrokerServer
+	(*BrokerOrderHistoryReply_BrokerOrder)(nil),      // 61: arb.dashboard.BrokerOrderHistoryReply.BrokerOrder
 }
 var file_proto_dashboard_dashboard_proto_depIdxs = []int32{
-	48, // 0: arb.dashboard.SpreadMatrixReply.rows:type_name -> arb.dashboard.SpreadMatrixReply.BrokerRow
-	50, // 1: arb.dashboard.PositionWatchReply.broker_positions:type_name -> arb.dashboard.PositionWatchReply.BrokerPosition
-	52, // 2: arb.dashboard.SignalHistoryReply.items:type_name -> arb.dashboard.SignalHistoryReply.SignalItem
-	53, // 3: arb.dashboard.OrderHistoryReply.items:type_name -> arb.dashboard.OrderHistoryReply.OrderItem
-	54, // 4: arb.dashboard.DailySummaryReply.items:type_name -> arb.dashboard.DailySummaryReply.DailyItem
-	55, // 5: arb.dashboard.AccountSnapshotReply.items:type_name -> arb.dashboard.AccountSnapshotReply.AccountSnapshotItem
-	56, // 6: arb.dashboard.StrategyStatusReply.items:type_name -> arb.dashboard.StrategyStatusReply.StrategyItem
-	57, // 7: arb.dashboard.SearchBrokerReply.companies:type_name -> arb.dashboard.SearchBrokerReply.BrokerCompany
-	59, // 8: arb.dashboard.BrokerOrderHistoryReply.orders:type_name -> arb.dashboard.BrokerOrderHistoryReply.BrokerOrder
-	49, // 9: arb.dashboard.SpreadMatrixReply.BrokerRow.cells:type_name -> arb.dashboard.SpreadMatrixReply.SpreadCell
-	51, // 10: arb.dashboard.PositionWatchReply.BrokerPosition.positions:type_name -> arb.dashboard.PositionWatchReply.Position
-	58, // 11: arb.dashboard.SearchBrokerReply.BrokerCompany.servers:type_name -> arb.dashboard.SearchBrokerReply.BrokerServer
+	50, // 0: arb.dashboard.SpreadMatrixReply.rows:type_name -> arb.dashboard.SpreadMatrixReply.BrokerRow
+	52, // 1: arb.dashboard.PositionWatchReply.broker_positions:type_name -> arb.dashboard.PositionWatchReply.BrokerPosition
+	54, // 2: arb.dashboard.SignalHistoryReply.items:type_name -> arb.dashboard.SignalHistoryReply.SignalItem
+	55, // 3: arb.dashboard.OrderHistoryReply.items:type_name -> arb.dashboard.OrderHistoryReply.OrderItem
+	56, // 4: arb.dashboard.DailySummaryReply.items:type_name -> arb.dashboard.DailySummaryReply.DailyItem
+	57, // 5: arb.dashboard.AccountSnapshotReply.items:type_name -> arb.dashboard.AccountSnapshotReply.AccountSnapshotItem
+	58, // 6: arb.dashboard.StrategyStatusReply.items:type_name -> arb.dashboard.StrategyStatusReply.StrategyItem
+	59, // 7: arb.dashboard.SearchBrokerReply.companies:type_name -> arb.dashboard.SearchBrokerReply.BrokerCompany
+	61, // 8: arb.dashboard.BrokerOrderHistoryReply.orders:type_name -> arb.dashboard.BrokerOrderHistoryReply.BrokerOrder
+	51, // 9: arb.dashboard.SpreadMatrixReply.BrokerRow.cells:type_name -> arb.dashboard.SpreadMatrixReply.SpreadCell
+	53, // 10: arb.dashboard.PositionWatchReply.BrokerPosition.positions:type_name -> arb.dashboard.PositionWatchReply.Position
+	60, // 11: arb.dashboard.SearchBrokerReply.BrokerCompany.servers:type_name -> arb.dashboard.SearchBrokerReply.BrokerServer
 	0,  // 12: arb.dashboard.DashboardService.SpreadMatrix:input_type -> arb.dashboard.SpreadMatrixRequest
 	2,  // 13: arb.dashboard.DashboardService.PositionWatch:input_type -> arb.dashboard.PositionWatchRequest
 	4,  // 14: arb.dashboard.DashboardService.SubmitOrder:input_type -> arb.dashboard.ManualOrderRequest
@@ -4273,32 +4378,34 @@ var file_proto_dashboard_dashboard_proto_depIdxs = []int32{
 	36, // 33: arb.dashboard.DashboardService.AddBroker:input_type -> arb.dashboard.AddBrokerRequest
 	38, // 34: arb.dashboard.DashboardService.RemoveBroker:input_type -> arb.dashboard.RemoveBrokerRequest
 	40, // 35: arb.dashboard.DashboardService.GetBrokerOrderHistory:input_type -> arb.dashboard.BrokerOrderHistoryRequest
-	1,  // 36: arb.dashboard.DashboardService.SpreadMatrix:output_type -> arb.dashboard.SpreadMatrixReply
-	3,  // 37: arb.dashboard.DashboardService.PositionWatch:output_type -> arb.dashboard.PositionWatchReply
-	5,  // 38: arb.dashboard.DashboardService.SubmitOrder:output_type -> arb.dashboard.ManualOrderReply
-	7,  // 39: arb.dashboard.DashboardService.ClosePosition:output_type -> arb.dashboard.ClosePositionReply
-	9,  // 40: arb.dashboard.DashboardService.CancelOrder:output_type -> arb.dashboard.CancelOrderReply
-	11, // 41: arb.dashboard.DashboardService.GetSignalHistory:output_type -> arb.dashboard.SignalHistoryReply
-	13, // 42: arb.dashboard.DashboardService.GetOrderHistory:output_type -> arb.dashboard.OrderHistoryReply
-	15, // 43: arb.dashboard.DashboardService.GetDailySummary:output_type -> arb.dashboard.DailySummaryReply
-	17, // 44: arb.dashboard.DashboardService.GetAccountSnapshots:output_type -> arb.dashboard.AccountSnapshotReply
-	19, // 45: arb.dashboard.DashboardService.Kill:output_type -> arb.dashboard.KillReply
-	21, // 46: arb.dashboard.DashboardService.Resume:output_type -> arb.dashboard.ResumeReply
-	23, // 47: arb.dashboard.DashboardService.SubscribeSymbols:output_type -> arb.dashboard.SubscribeSymbolsReply
-	25, // 48: arb.dashboard.DashboardService.UnsubscribeSymbols:output_type -> arb.dashboard.UnsubscribeSymbolsReply
-	27, // 49: arb.dashboard.DashboardService.ListSubscribedSymbols:output_type -> arb.dashboard.ListSymbolsReply
-	29, // 50: arb.dashboard.DashboardService.GetStrategyStatus:output_type -> arb.dashboard.StrategyStatusReply
-	43, // 51: arb.dashboard.DashboardService.ToggleStrategy:output_type -> arb.dashboard.ToggleStrategyReply
-	31, // 52: arb.dashboard.DashboardService.ResumeStrategy:output_type -> arb.dashboard.ResumeStrategyReply
-	33, // 53: arb.dashboard.DashboardService.ResetGlobalCircuitBreaker:output_type -> arb.dashboard.ResetCBReply
-	45, // 54: arb.dashboard.DashboardService.GetKillSwitchStatus:output_type -> arb.dashboard.KillSwitchStatusReply
-	47, // 55: arb.dashboard.DashboardService.TailLogs:output_type -> arb.dashboard.TailLogsReply
-	35, // 56: arb.dashboard.DashboardService.SearchBroker:output_type -> arb.dashboard.SearchBrokerReply
-	37, // 57: arb.dashboard.DashboardService.AddBroker:output_type -> arb.dashboard.AddBrokerReply
-	39, // 58: arb.dashboard.DashboardService.RemoveBroker:output_type -> arb.dashboard.RemoveBrokerReply
-	41, // 59: arb.dashboard.DashboardService.GetBrokerOrderHistory:output_type -> arb.dashboard.BrokerOrderHistoryReply
-	36, // [36:60] is the sub-list for method output_type
-	12, // [12:36] is the sub-list for method input_type
+	48, // 36: arb.dashboard.DashboardService.GetBrokerSymbols:input_type -> arb.dashboard.BrokerSymbolsRequest
+	1,  // 37: arb.dashboard.DashboardService.SpreadMatrix:output_type -> arb.dashboard.SpreadMatrixReply
+	3,  // 38: arb.dashboard.DashboardService.PositionWatch:output_type -> arb.dashboard.PositionWatchReply
+	5,  // 39: arb.dashboard.DashboardService.SubmitOrder:output_type -> arb.dashboard.ManualOrderReply
+	7,  // 40: arb.dashboard.DashboardService.ClosePosition:output_type -> arb.dashboard.ClosePositionReply
+	9,  // 41: arb.dashboard.DashboardService.CancelOrder:output_type -> arb.dashboard.CancelOrderReply
+	11, // 42: arb.dashboard.DashboardService.GetSignalHistory:output_type -> arb.dashboard.SignalHistoryReply
+	13, // 43: arb.dashboard.DashboardService.GetOrderHistory:output_type -> arb.dashboard.OrderHistoryReply
+	15, // 44: arb.dashboard.DashboardService.GetDailySummary:output_type -> arb.dashboard.DailySummaryReply
+	17, // 45: arb.dashboard.DashboardService.GetAccountSnapshots:output_type -> arb.dashboard.AccountSnapshotReply
+	19, // 46: arb.dashboard.DashboardService.Kill:output_type -> arb.dashboard.KillReply
+	21, // 47: arb.dashboard.DashboardService.Resume:output_type -> arb.dashboard.ResumeReply
+	23, // 48: arb.dashboard.DashboardService.SubscribeSymbols:output_type -> arb.dashboard.SubscribeSymbolsReply
+	25, // 49: arb.dashboard.DashboardService.UnsubscribeSymbols:output_type -> arb.dashboard.UnsubscribeSymbolsReply
+	27, // 50: arb.dashboard.DashboardService.ListSubscribedSymbols:output_type -> arb.dashboard.ListSymbolsReply
+	29, // 51: arb.dashboard.DashboardService.GetStrategyStatus:output_type -> arb.dashboard.StrategyStatusReply
+	43, // 52: arb.dashboard.DashboardService.ToggleStrategy:output_type -> arb.dashboard.ToggleStrategyReply
+	31, // 53: arb.dashboard.DashboardService.ResumeStrategy:output_type -> arb.dashboard.ResumeStrategyReply
+	33, // 54: arb.dashboard.DashboardService.ResetGlobalCircuitBreaker:output_type -> arb.dashboard.ResetCBReply
+	45, // 55: arb.dashboard.DashboardService.GetKillSwitchStatus:output_type -> arb.dashboard.KillSwitchStatusReply
+	47, // 56: arb.dashboard.DashboardService.TailLogs:output_type -> arb.dashboard.TailLogsReply
+	35, // 57: arb.dashboard.DashboardService.SearchBroker:output_type -> arb.dashboard.SearchBrokerReply
+	37, // 58: arb.dashboard.DashboardService.AddBroker:output_type -> arb.dashboard.AddBrokerReply
+	39, // 59: arb.dashboard.DashboardService.RemoveBroker:output_type -> arb.dashboard.RemoveBrokerReply
+	41, // 60: arb.dashboard.DashboardService.GetBrokerOrderHistory:output_type -> arb.dashboard.BrokerOrderHistoryReply
+	49, // 61: arb.dashboard.DashboardService.GetBrokerSymbols:output_type -> arb.dashboard.BrokerSymbolsReply
+	37, // [37:62] is the sub-list for method output_type
+	12, // [12:37] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
 	12, // [12:12] is the sub-list for extension extendee
 	0,  // [0:12] is the sub-list for field type_name
@@ -4315,7 +4422,7 @@ func file_proto_dashboard_dashboard_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_dashboard_dashboard_proto_rawDesc), len(file_proto_dashboard_dashboard_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   60,
+			NumMessages:   62,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

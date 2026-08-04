@@ -101,6 +101,11 @@ export const backend = {
     return b.RemoveBroker(req)
   },
 
+  async getBrokerSymbols(req) {
+    const b = await getBindings()
+    return b.GetBrokerSymbols(req)
+  },
+
   async getBrokerOrderHistory(req) {
     const b = await getBindings()
     return b.GetBrokerOrderHistory(req)

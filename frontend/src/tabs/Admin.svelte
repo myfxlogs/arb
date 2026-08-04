@@ -25,7 +25,6 @@
   let selectedServerObj = $state(null) // full server object with access
   let wizardUser = $state('')
   let wizardPassword = $state('')
-  let wizardName = $state('')
   let wizardLoading = $state(false)
   let wizardError = $state('')
 
@@ -179,7 +178,6 @@
 
   function onServerChange(serverName) {
     selectedServerObj = wizardServers.find(s => s.name === serverName) || null
-    if (selectedServerObj && !wizardName) wizardName = selectedServerObj.name
   }
 
   function wizardNext() {
@@ -188,8 +186,10 @@
       if (!wizardServer || !selectedServerObj) { alert('请选择服务器'); return }
       if (!selectedServerObj.access) { alert('该服务器无可用地址'); return }
     } else if (wizardStep === 1) {
-      if (!wizardUser.trim()) { alert('请输入交易账号'); return }
-      if (!/^\d+$/.test(wizardUser.trim())) { alert('交易账号只能包含数字'); return }
+      const cleanUser = wizardUser.replace(/\s/g, '')
+      if (!cleanUser) { alert('请输入交易账号'); return }
+      if (!/^\d+$/.test(cleanUser)) { alert('交易账号只能包含数字'); return }
+      wizardUser = cleanUser
       if (!wizardPassword) { alert('请输入密码'); return }
       wizardError = ''
     }
@@ -214,7 +214,7 @@
       host = parts[0]
       if (parts.length > 1) port = parseInt(parts[1]) || 443
     }
-    const name = wizardName || companyName
+    const name = `${companyName} · ${wizardUser}`
     try {
       const reply = await backend.addBroker({
         name,
@@ -259,7 +259,6 @@
     selectedServerObj = null
     wizardUser = ''
     wizardPassword = ''
-    wizardName = ''
     wizardLoading = false
     wizardError = ''
   }
@@ -335,7 +334,6 @@
       <thead>
         <tr>
           <th>账号</th>
-          <th>名称</th>
           <th>平台</th>
           <th>已连接</th>
           <th>余额</th>
@@ -355,7 +353,6 @@
             style="cursor: pointer; background: {selectedBroker === i ? 'var(--accent-dim)' : ''}"
           >
             <td>{b.login || '-'}</td>
-            <td>{b.broker_name}</td>
             <td>{b.platform || '-'}</td>
             <td>
               <span class="badge" class:badge-green={b.is_connected} class:badge-red={!b.is_connected}>
@@ -451,7 +448,8 @@
         </div>
         <div class="form-group">
           <span class="form-label">交易账号</span>
-          <input class="form-input" bind:value={wizardUser} placeholder="交易账号（纯数字）" />
+          <input class="form-input" bind:value={wizardUser} placeholder="交易账号（纯数字）"
+            oninput={(e) => { e.target.value = e.target.value.replace(/\s/g, ''); wizardUser = e.target.value }} />
           {#if wizardUser && !/^\d+$/.test(wizardUser)}
             <div style="margin-top: 4px; font-size: 12px; color: var(--red);">账号只能包含数字</div>
           {/if}
@@ -460,11 +458,6 @@
           <span class="form-label">密码</span>
           <input class="form-input" type="text" bind:value={wizardPassword} placeholder="密码" />
         </div>
-        <div class="form-group">
-          <span class="form-label">自定义名称（可选）</span>
-          <input class="form-input" bind:value={wizardName} placeholder="留空则用服务器名" />
-        </div>
-
       <!-- Step 2: Confirm -->
       {:else}
         <div class="server-info-box">
