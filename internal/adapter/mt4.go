@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 
 	"arb/internal/bus"
@@ -117,11 +118,22 @@ func (a *MT4Adapter) withSessionMD(ctx context.Context) context.Context {
 func (a *MT4Adapter) authenticate(ctx context.Context) (string, error) {
 	tempID := "mdgw-" + strconv.FormatInt(a.user, 10)
 	loginCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{"id": tempID}))
+	host := a.host
+	port := a.port
+	if port <= 0 {
+		port = 443
+	}
+	if idx := strings.LastIndex(host, ":"); idx > 0 {
+		if p, err := strconv.ParseInt(host[idx+1:], 10, 32); err == nil && p > 0 && p <= 65535 {
+			port = int32(p)
+			host = host[:idx]
+		}
+	}
 	resp, err := a.connMgr.Connect(loginCtx, &mt4.ConnectRequest{
 		User:     int32(a.user),
 		Password: a.password,
-		Host:     a.host,
-		Port:     a.port,
+		Host:     host,
+		Port:     port,
 		Id:       &tempID,
 	})
 	if err != nil {
