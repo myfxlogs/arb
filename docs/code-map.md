@@ -34,8 +34,9 @@ Layer 5: 入口
   cmd/desk/                          依赖: dashboard(proto client), store
 
 Layer 6: 桌面 UI
-  desk/matrix/  desk/positions/
+  desk/app.go  desk/matrix/  desk/positions/
   desk/trading/ desk/history/ desk/admin/  依赖: dashboard(proto client), store
+  frontend/src/                           依赖: Wails runtime (进程内 IPC)
 ```
 
 ### 依赖关系图（箭头 = 依赖方向）
@@ -67,6 +68,10 @@ Layer 6: 桌面 UI
   desk/*
     ├── dashboard (proto client, gRPC)
     └── store (PG 直连, 历史查询)
+
+  frontend/ (Svelte 5, 构建时编译, 运行时嵌入 Go binary)
+    ├── Wails runtime (进程内 IPC → Go 绑定函数)
+    └── 无直接 gRPC/PG 访问（全部通过 Go 后端）
 ```
 
 ---
@@ -114,17 +119,19 @@ Layer 6: 桌面 UI
 | 包 | 职责 | 暴露 | 不暴露 |
 |----|------|------|--------|
 | `cmd/core` | 守护进程 | `main()` — 唯一入口，串联一切 | — |
-| `cmd/desk` | 桌面应用 | `main()` — Fyne app 启动 | — |
+| `cmd/desk` | 桌面应用 | `main()` — Wails app 启动 | — |
 
 ### Layer 6
 
 | 包 | 职责 | 暴露 | 不暴露 |
 |----|------|------|--------|
-| `desk/matrix` | 价差矩阵 Tab | `New(client) *Matrix` (fyne.CanvasObject) | gRPC stream 细节 |
-| `desk/positions` | 持仓 Tab | `New(client) *Positions` | gRPC stream 细节 |
-| `desk/trading` | 交易 Tab | `New(client) *Trading` | 表单逻辑 |
-| `desk/history` | 历史 Tab | `New(client, pgDSN) *History` | PG 直连查询 |
-| `desk/admin` | 管理 Tab | `New(client) *Admin` | gRPC stream + unary |
+| `desk/app.go` | Wails 应用初始化 + Go 绑定函数 | `NewApp(addr) *App`, `App.Run()` | WebView2 管理 |
+| `desk/matrix` | 价差矩阵 Go 数据层 | `NewMatrixBridge(client) *MatrixBridge` | gRPC stream 细节, Wails Events emit |
+| `desk/positions` | 持仓 Go 数据层 | `NewPositionsBridge(client) *PositionsBridge` | gRPC stream 细节 |
+| `desk/trading` | 交易 Go 数据层 | `NewTradingBridge(client) *TradingBridge` | 表单校验, gRPC unary |
+| `desk/history` | 历史 Go 数据层 | `NewHistoryBridge(client, pgDSN) *HistoryBridge` | PG 直连查询 |
+| `desk/admin` | 管理 Go 数据层 | `NewAdminBridge(client) *AdminBridge` | gRPC stream + unary |
+| `frontend/src/` | Svelte 前端 | `App.svelte` → 5 个 Tab 组件 | Svelte stores, 渲染细节 |
 
 ---
 
@@ -182,14 +189,21 @@ ExecutionPipeline.Execute()
 ```
 desk 启动
   │
-  ├── gRPC Dial("localhost:50051")
-  │     ├── SpreadMatrix stream ──→ matrix Tab (每 100ms 重绘)
-  │     ├── PositionWatch stream ──→ positions Tab (每 500ms 更新)
-  │     ├── SubmitOrder (unary) ←── trading Tab 手动下单
-  │     ├── ClosePosition (unary) ←── trading Tab 手动平仓
-  │     └── GetSignalHistory (unary) ←── history Tab
+  ├── Go 后端 gRPC Dial("localhost:50051")
+  │     ├── SpreadMatrix stream ──→ EventsEmit("spread-matrix") ──→ Svelte Matrix Tab
+  │     ├── PositionWatch stream ──→ EventsEmit("positions") ──→ Svelte Positions Tab
+  │     ├── SubmitOrder (unary) ←── Wails Call ←── Svelte Trading Tab
+  │     ├── ClosePosition (unary) ←── Wails Call ←── Svelte Trading Tab
+  │     └── GetSignalHistory (unary) ←── Wails Call ←── Svelte History Tab
   │
-  └── PG 直连 ──→ history Tab (复杂查询，不走 gRPC)
+  ├── PG 直连 ──→ history Tab (复杂查询，不走 gRPC)
+  │
+  └── Wails 应用启动 → 加载 frontend/dist/ (Svelte 编译产物)
+        │
+        └── WebView2 渲染 5 个 Tab
+              │
+              ├── wails.Call("method", args) → Go 函数 → gRPC/PG
+              └── wails.Events.On("event", callback) ← Go EventsEmit ← gRPC stream
 ```
 
 ---
@@ -333,12 +347,31 @@ Phase 8: 审计 + 入口 + 桌面
   internal/audit/audit_test.go
   cmd/core/main.go
   cmd/desk/main.go
-  desk/app.go
-  desk/matrix/matrix.go
-  desk/positions/positions.go
-  desk/trading/trading.go
-  desk/history/history.go
-  desk/admin/admin.go
+  desk/app.go                         # Wails 应用 + Go 绑定函数
+  desk/matrix/matrix.go               # 价差矩阵 Go 数据层
+  desk/positions/positions.go         # 持仓 Go 数据层
+  desk/trading/trading.go             # 交易 Go 数据层
+  desk/history/history.go             # 历史 Go 数据层
+  desk/admin/admin.go                 # 管理 Go 数据层
+  frontend/                           # Svelte 前端
+    package.json
+    vite.config.js
+    src/
+      App.svelte                      # 根组件 + Tab 容器
+      lib/
+        backend.js                    # 平台无关 IPC 抽象层（★ 强制）
+        stores.js                     # Svelte stores (响应式数据)
+      tabs/
+        Matrix.svelte                 # 价差矩阵 Tab
+        Positions.svelte              # 持仓 Tab
+        Trading.svelte                # 交易 Tab
+        History.svelte                # 历史 Tab
+        Admin.svelte                  # 管理 Tab
+      components/
+        Card.svelte                   # 液态玻璃卡片
+        StatCard.svelte               # 数据卡片
+        Skeleton.svelte               # 骨架屏
+        DataTable.svelte               # 数据表格
 
 Phase 9: 集成
   test/integration/mt5_connect_test.go

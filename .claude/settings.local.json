@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "Bash(grep -n \"^## 四\\\\|^### 4\\\\.\\\\|^---$\" /opt/arb/docs/evaluation-framework.md)",
-      "Bash(grep -n \"^---$\" /opt/arb/docs/evaluation-framework.md)"
+      "Bash(grep -n \"^---$\" /opt/arb/docs/evaluation-framework.md)",
+      "Bash(dpkg -l)",
+      "Bash(go build *)",
+      "Bash(node -e \"console.log\\('node ok'\\)\")",
+      "Bash(npx --yes puppeteer browsers install chrome)",
+      "Bash(cat)",
+      "Bash(/root/.cache/puppeteer/chrome/linux-151.0.7922.47/chrome-linux64/chrome --headless --no-sandbox --disable-gpu --screenshot=/tmp/test-render.png --window-size=1000,400 /tmp/test-render.html)",
+      "Bash(apt-get update *)",
+      "Bash(apt-get install *)",
+      "Bash(python3 *)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(npx playwright *)"
     ]
   }
 }

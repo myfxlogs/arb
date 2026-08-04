@@ -1,8 +1,11 @@
-# 全网套利系统 — 四维评估框架
+# 跨平台跨经纪商套利系统 — 四维评估框架
 
 > 技术栈：Go + mtapi.io (gRPC)  
 > 状态：架构设计阶段  
 > 风险等级：🔴 高 — 上线前必须解决 | 🟡 中 — 纳入迭代计划 | 🟢 低 — 优化项
+>
+> **核心场景**：跨平台（MT4/MT5/Binance）、跨经纪商（15 broker）的套利机会发现与执行。
+> 套利时间跨度从毫秒（三角套利）到数周（期现套利），系统必须同时支持瞬时执行和长期持仓监控。
 
 ---
 
@@ -1383,24 +1386,26 @@ ROE > 20% → 优秀
 
 ## 五、Dashboard & 桌面应用
 
-> **状态：✅ 已决策**  
-> **决策日期：2026-08-03**
+> **状态：✅ 已决策（v4.0 更新：Fyne → Wails v3 + Svelte 5）**  
+> **决策日期：2026-08-03（原始），2026-08-04（v4.0 更新）**
 
 ### 5.0 决策
 
 桌面应用是决策辅助工具，不是自动执行器。Core 执行管线自动下单，Dashboard 提供人工监控和干预通道。两者共享同一个 QuoteBus 和 PG。
 
+**v4.0 变更**：desk 前端从 Fyne (Go GUI) 迁移到 Wails v3 + Svelte 5。原因：Fyne 的 CPU 合成渲染管线无法实现液态玻璃设计所需的核心视觉效果（backdrop-filter 模糊、投影阴影、GPU 加速 CSS transition）。Wails 使用 Windows 系统原生的 WebView2 渲染引擎，上述效果全部是 CSS 原生能力。Go 后端完全复用，gRPC 通信不变。
+
 ### 5.1 架构
 
 ```
-core (守护进程)                     desk (Fyne 桌面)
-  DashboardService (gRPC server)      gRPC client
-    SpreadMatrix stream ──────────────→ 价差矩阵 Tab
-    PositionWatch stream ─────────────→ 持仓 Tab
-    SubmitOrder unary ←─────────────── 手动下单
-    ClosePosition unary ←───────────── 手动平仓
-    GetSignalHistory unary ←────────── 历史查询
-  PostgreSQL ←──────────────────────── 历史 tab (直连)
+core (守护进程)                     desk (Wails v3)
+  DashboardService (gRPC server)      │
+    SpreadMatrix stream ──────────────→ Go 后端 → Wails Events → Svelte 价差矩阵 Tab
+    PositionWatch stream ─────────────→ Go 后端 → Wails Events → Svelte 持仓 Tab
+    SubmitOrder unary ←─────────────── Go 后端 ← Wails Call ← Svelte 交易 Tab
+    ClosePosition unary ←───────────── Go 后端 ← Wails Call ← Svelte 交易 Tab
+    GetSignalHistory unary ←────────── Go 后端 ← Wails Call ← Svelte 历史 Tab
+  PostgreSQL ←──────────────────────── Go 后端 (历史 tab 直连)
 ```
 
 ### 5.2 价差矩阵
@@ -1415,14 +1420,15 @@ core (守护进程)                     desk (Fyne 桌面)
 
 每行显示该 broker 的日 swap 利率（bps），高 swap 行高亮——如截图中"brent 这个品种 cmc 隔夜利息很高"，一眼排除该 broker 与所有其他 broker 的组合。
 
-### 5.3 四个 Tab
+### 5.3 五个 Tab
 
 | Tab | 内容 | 数据源 |
 |-----|------|--------|
-| 价差矩阵 | 15×N 网格，红黄绿色编码，按 broker 分组，swap 高亮 | `SpreadMatrix` gRPC stream |
-| 持仓 | 所有 broker 当前持仓 + 浮动 PnL + 保证金占比 + 总风险敞口 | `PositionWatch` gRPC stream |
-| 交易 | 手动开仓表单（选 broker、品种、方向、量）、ClientID、成交状态 | `SubmitOrder` / `ClosePosition` |
-| 历史 | 信号列表、PnL 时间线、按策略/品种/broker 筛选 | PG 直连 |
+| 价差矩阵 | 15×N 网格，红黄绿色编码，按 broker 分组，swap 高亮 | `SpreadMatrix` gRPC stream → Go → Wails Events |
+| 持仓 | 所有 broker 当前持仓 + 浮动 PnL + 保证金占比 + 总风险敞口 | `PositionWatch` gRPC stream → Go → Wails Events |
+| 交易 | 手动开仓表单（选 broker、品种、方向、量）、ClientID、成交状态 | Wails Call → Go → `SubmitOrder` / `ClosePosition` |
+| 历史 | 信号列表、PnL 时间线、按策略/品种/broker 筛选 | Wails Call → Go → PG 直连 |
+| 管理 | Broker 状态、策略启用/熔断、Kill Switch、实时日志 | Wails Call/Events → Go → gRPC unary + stream |
 
 ### 5.4 PostgreSQL
 
@@ -1482,7 +1488,7 @@ CREATE TABLE daily_summary (
 
 | # | 检查项 | 决策 | 风险 | 状态 |
 |---|--------|------|------|------|
-| 5.0.1 | 前端技术 | Fyne Go GUI，4 个 Tab，直连 gRPC + PG | 🔴 | ✅ |
+| 5.0.1 | 前端技术 | Wails v3 + Svelte 5，5 个 Tab，Go 后端 gRPC + PG，Wails IPC 桥接 | 🔴 | ✅ |
 | 5.0.2 | 价差矩阵 | 15×N 网格，净值 > 成本 = 绿，0~成本 = 黄，<0 = 红 | 🔴 | ✅ |
 | 5.0.3 | DashboardService | gRPC stream 推矩阵和持仓，unary 下单平仓 | 🔴 | ✅ |
 | 5.0.4 | PostgreSQL | tick/信号/订单/日汇总，按月分区，BRIN 索引 | 🔴 | ✅ |
@@ -1538,7 +1544,7 @@ CREATE TABLE daily_summary (
 - [x] 4.3.1 真实成本模型 — 点差 + 手续费 + 滑点 + swap
 - [x] 4.3.4 净收益测算 — ROE > 10% 值得，> 20% 优秀
 - [x] 4.3.5 压力情景 — 4 种情景 + 已有防线映射
-- [x] 5.0.1 前端技术 — Fyne Go GUI，4 Tab
+- [x] 5.0.1 前端技术 — Wails v3 + Svelte 5，5 Tab
 - [x] 5.0.2 价差矩阵 — 15×N 网格，红黄绿编码
 - [x] 5.0.3 DashboardService — gRPC stream + unary
 - [x] 5.0.4 PostgreSQL — 时序分区 + BRIN 索引

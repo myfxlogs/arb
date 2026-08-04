@@ -1,7 +1,7 @@
 # 全网套利系统 — 实现规范
 
 > 对应评估框架全部 73 项，约束文档全部规则  
-> 两个二进制：`core`（守护进程）+ `desk`（Fyne 桌面）  
+> 两个二进制：`core`（守护进程）+ `desk`（Wails v3 桌面）  
 > 本文件是实现的唯一权威参考
 
 ---
@@ -14,7 +14,7 @@ arb/
 │   ├── core/
 │   │   └── main.go                    # 守护进程入口
 │   └── desk/
-│       └── main.go                    # Fyne 桌面应用入口
+│       └── main.go                    # Wails 桌面应用入口
 ├── internal/
 │   ├── adapter/
 │   │   ├── adapter.go                 # PlatformAdapter 接口
@@ -54,15 +54,36 @@ arb/
 │   └── errclass/
 │       └── errclass.go               # MT4/MT5 错误码分类
 ├── desk/
-│   ├── app.go                         # Fyne 应用初始化 + Tab 容器
+│   ├── app.go                         # Wails 应用初始化 + Go 绑定函数
 │   ├── matrix/
-│   │   └── matrix.go                  # 价差矩阵 Tab
+│   │   └── matrix.go                  # 价差矩阵 Go 数据层
 │   ├── positions/
-│   │   └── positions.go              # 持仓 Tab
+│   │   └── positions.go              # 持仓 Go 数据层
 │   ├── trading/
-│   │   └── trading.go                # 交易 Tab
-│   └── history/
-│       └── history.go                # 历史查询 Tab
+│   │   └── trading.go                # 交易 Go 数据层
+│   ├── history/
+│   │   └── history.go                # 历史查询 Go 数据层
+│   └── admin/
+│       └── admin.go                   # 管理 Go 数据层
+├── frontend/                          # Svelte 前端（构建时编译为静态文件）
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── App.svelte                 # 根组件 + 5 Tab 容器
+│       ├── lib/
+│       │   ├── backend.js            # 平台无关 IPC 抽象层（★ 强制，组件不得越过此层直接调 wails.*）
+│       │   └── stores.js             # Svelte stores (响应式状态)
+│       ├── tabs/
+│       │   ├── Matrix.svelte          # 价差矩阵 Tab
+│       │   ├── Positions.svelte       # 持仓 Tab
+│       │   ├── Trading.svelte         # 交易 Tab
+│       │   ├── History.svelte         # 历史 Tab
+│       │   └── Admin.svelte           # 管理 Tab
+│       └── components/
+│           ├── Card.svelte            # 液态玻璃卡片
+│           ├── StatCard.svelte        # 数据卡片
+│           ├── Skeleton.svelte        # 骨架屏动画
+│           └── DataTable.svelte        # 数据表格
 ├── proto/
 │   └── dashboard/
 │       └── dashboard.proto           # DashboardService 定义
@@ -790,186 +811,317 @@ func (l *Logger) Log(e Event) {
 
 ---
 
-## 15. 桌面应用（Fyne）
+## 15. 桌面应用（Wails v3 + Svelte 5）
+
+### 15.1 架构概述
+
+Desk 是 Wails v3 桌面应用。Go 后端负责所有网络 I/O（gRPC 到 Core、PG 直连），Svelte 前端负责 UI 渲染。两端通过 Wails IPC 桥接（进程内函数调用 + 事件推送，非网络协议）。
+
+```
+desk.exe (单进程)
+┌──────────────────────────────────────────────────────┐
+│ Go 后端                                              │
+│ ├── gRPC client ──── gRPC ────→ core:50051          │
+│ ├── PG 直连 (历史查询)                                │
+│ ├── Wails 绑定函数 (供前端调用)                       │
+│ └── Wails EventsEmit (推送实时数据)                   │
+│         ↕ Wails IPC (进程内)                          │
+│ Svelte 前端 (WebView2 渲染)                          │
+│ ├── wails.Call("method", args) → Go 函数             │
+│ └── wails.Events.On("event", cb) ← Go 推送           │
+└──────────────────────────────────────────────────────┘
+```
+
+### 15.2 IPC 抽象层（强制）
+
+**施工 agent 必须遵守**：所有 Svelte 组件**禁止**直接调用 `wails.Call()` / `wails.Events.On()`。
+必须通过 `frontend/src/lib/backend.js` 这一层间接调用。
+
+**设计意图**：
+- `backend.js` 是平台无关的接口定义。桌面端实现为 Wails IPC，未来手机端实现为 Capacitor Plugin / gRPC-Web stub。
+- 换平台时只改 `backend.js`，不改任何组件。
+- 接口命名以业务语义为准（`submitOrder`），不暴露 IPC 机制（不是 `wailsCallSubmitOrder`）。
+
+**接口骨架（施工 agent 按此实现）**：
+
+| 方法 | 方向 | 对应 gRPC |
+|------|------|-----------|
+| `backend.submitOrder(req)` | 前端→Go | `SubmitOrder` unary |
+| `backend.closePosition(ticket)` | 前端→Go | `ClosePosition` unary |
+| `backend.getSignalHistory(query)` | 前端→Go | `GetSignalHistory` unary |
+| `backend.getAccountSnapshots()` | 前端→Go | `GetAccountSnapshots` unary |
+| `backend.toggleStrategy(name, enabled)` | 前端→Go | `ToggleStrategy` unary |
+| `backend.kill()` | 前端→Go | `Kill` unary |
+| `backend.resume()` | 前端→Go | `Resume` unary |
+| `backend.onSpreadMatrix(callback)` | Go→前端 | `SpreadMatrix` stream |
+| `backend.onPositionWatch(callback)` | Go→前端 | `PositionWatch` stream |
+| `backend.onAdminLogs(callback)` | Go→前端 | `TailLogs` stream |
+
+**验收标准**（Claude 审查时检查）：
+- [ ] `grep -r "wails\." frontend/src/tabs/ frontend/src/components/` 返回空
+- [ ] `grep -r "wails\." frontend/src/lib/backend.js` 返回所有引用
+- [ ] 所有方法名是业务动词（`submitOrder`），不含 `wails`/`Call`/`Events` 字样
+
+### 15.3 响应式布局规范（强制）
+
+**施工 agent 必须遵守**：所有 CSS 布局使用 `minmax()` + `auto-fill` 自适应方案，禁止固定宽度。
+这是 `backend.js` 抽象层的视觉对应物——不改代码，自动适配不同屏幕。
+
+```css
+/* ✅ 正确 — 自动适配桌面/平板/手机 */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+/* ❌ 禁止 — 固定列数，手机端崩坏 */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+```
+
+**验收标准**：将浏览器窗口从 1400px 缩到 375px（iPhone SE 宽度），所有 Tab 内容可见、可交互、无水平滚动条。
+
+### 15.4 Go 后端入口 (cmd/desk/main.go)
 
 ```go
 package main
 
-import "fyne.io/fyne/v2"
+import (
+    "github.com/wailsapp/wails/v3/pkg/application"
+    "arb/desk"
+)
 
 func main() {
-    app := fyne.NewApp()
-    window := app.NewWindow("ARB Desk")
+    app := application.New(application.Options{
+        Name:        "ARB Desk",
+        Description: "ARB 交易终端",
+        Width:       1400,
+        Height:      900,
+        Assets:      assets.EmbeddedAssets, // frontend/dist/ → embed.FS
+    })
 
-    // gRPC 连接 core
-    conn, _ := grpc.Dial("localhost:50051",
-        grpc.WithTransportCredentials(insecure.NewCredentials()))
-    client := dashboard.NewDashboardServiceClient(conn)
+    deskApp, _ := desk.NewApp("localhost:50051")
+    deskApp.Bind(app) // 注册 Go 函数到前端
 
-    // 四个 Tab
-    tabs := container.NewAppTabs(
-        container.NewTabItem("价差矩阵", matrix.New(client)),
-        container.NewTabItem("持仓", positions.New(client)),
-        container.NewTabItem("交易", trading.New(client)),
-        container.NewTabItem("历史", history.New(client)),
-    )
-
-    window.SetContent(tabs)
-    window.Resize(fyne.NewSize(1400, 900))
-    window.ShowAndRun()
+    app.Run()
 }
 ```
 
-### 价差矩阵 Tab
+### 15.5 Go 后端绑定层 (desk/app.go)
 
 ```go
+package desk
+
+import (
+    "context"
+    "github.com/wailsapp/wails/v3/pkg/application"
+    dashpb "arb/proto/gen/dashboard"
+)
+
+type App struct {
+    client dashpb.DashboardServiceClient
+    // ... PG pool, etc.
+}
+
+func NewApp(coreAddr string) (*App, error) {
+    conn, _ := grpc.Dial(coreAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+    return &App{client: dashpb.NewDashboardServiceClient(conn)}, nil
+}
+
+// Bind 将所有 Go 方法注册到 Wails 前端。
+func (a *App) Bind(app *application.App) {
+    // 绑定函数（前端通过 wails.Call 调用）
+    app.Bind("SubmitOrder", a.SubmitOrder)
+    app.Bind("ClosePosition", a.ClosePosition)
+    app.Bind("GetSignalHistory", a.GetSignalHistory)
+    app.Bind("GetAccountSnapshots", a.GetAccountSnapshots)
+    app.Bind("ToggleStrategy", a.ToggleStrategy)
+    app.Bind("Kill", a.Kill)
+    app.Bind("Resume", a.Resume)
+
+    // 启动实时推送 goroutine
+    go a.streamSpreadMatrix(app)
+    go a.streamPositionWatch(app)
+}
+```
+
+### 15.6 实时数据推送模式（Go → Svelte）
+
+```go
+// desk/matrix/matrix.go
 package matrix
 
 import (
-    "fyne.io/fyne/v2"
-    "fyne.io/fyne/v2/widget"
-    "fyne.io/fyne/v2/canvas"
-    "image/color"
+    "github.com/wailsapp/wails/v3/pkg/application"
+    dashpb "arb/proto/gen/dashboard"
 )
 
-type Matrix struct {
-    widget.Table
-    client dashboard.DashboardServiceClient
-    data   *dashboard.SpreadMatrixReply
-    mu     sync.RWMutex
+type MatrixBridge struct {
+    client dashpb.DashboardServiceClient
 }
 
-func New(client dashboard.DashboardServiceClient) *Matrix {
-    m := &Matrix{client: client}
-    m.Table = *widget.NewTable(
-        func() (int, int) { return m.rows(), m.cols() },
-        func() fyne.CanvasObject { return canvas.NewText("", color.White) },
-        m.updateCell,
-    )
-    go m.streamLoop()
-    return m
+func NewMatrixBridge(client dashpb.DashboardServiceClient) *MatrixBridge {
+    return &MatrixBridge{client: client}
 }
 
-func (m *Matrix) updateCell(id widget.TableCellID, cell fyne.CanvasObject) {
-    txt := cell.(*canvas.Text)
-    cell := m.data.Rows[id.Row].Cells[id.Col]
-    txt.Text = fmt.Sprintf("%.2f", cell.SpreadToBestAskBps)
-
-    // 颜色编码
-    switch {
-    case cell.IsArbitrageable:
-        txt.Color = color.RGBA{0, 180, 0, 255}   // 绿
-    case cell.EstimatedNetProfitBps > 0:
-        txt.Color = color.RGBA{200, 180, 0, 255}  // 黄
-    default:
-        txt.Color = color.RGBA{200, 60, 60, 255}   // 红
-    }
-    txt.Refresh()
-}
-```
-
-### 管理 Tab（Admin）
-
-第五个 Tab。聚合 broker 状态、策略管理、熔断控制、Kill Switch、实时日志。
-
-```go
-package admin
-
-type Admin struct {
-    widget.List                     // broker+策略状态列表
-    client    dashboard.DashboardServiceClient
-    mu        sync.RWMutex
-}
-
-func New(client dashboard.DashboardServiceClient) *Admin {
-    a := &Admin{client: client}
-    // 布局（从上到下）：
-    //
-    // ┌──────────────────────────────────────────┐
-    // │ 🔴 Kill Switch: ACTIVE                   │  ← 全宽红色横幅，仅激活时显示
-    // ├──────────────────────────────────────────┤
-    // │  Broker     │ 状态  ●/○  │ Equity │ PnL │  ← 可点击展开详情
-    // │  OctaFX     │ Connected  │ $5,230 │ +12 │
-    // │  RoboForex  │ Discon.    │   —   │  —  │
-    // ├──────────────────────────────────────────┤
-    // │  Strategy    │ 启用 │ 熔断 │ 亏损 │ PnL  │
-    // │  Triangular  │  ✅  │  —  │  0   │ +18 │
-    // │  Cross-Exch  │  ✅  │  ■  │  5   │ -42 │  ← 熔断行红色
-    // │  Statistical │  ❌  │  —  │  0   │  0  │  ← 已禁用灰色
-    // ├──────────────────────────────────────────┤
-    // │  [Refresh]  [Kill]  [Resume]             │  ← 操作按钮栏
-    // ├──────────────────────────────────────────┤
-    // │  14:32:01 ERROR octafx reconnect ...    │  ← 日志尾行（只读）
-    // │  14:31:55 INFO  engine  signal detected │
-    // └──────────────────────────────────────────┘
-
-    go a.pollLoop()
-    go a.tailLogs()
-    return a
-}
-
-func (a *Admin) pollLoop() {
-    ticker := time.NewTicker(1 * time.Second)
-    for range ticker.C {
-        a.refreshBrokers()
-        a.refreshStrategies()
-        a.refreshKillSwitch()
-    }
-}
-
-func (a *Admin) refreshBrokers() {
-    snap, _ := a.client.GetAccountSnapshots(ctx, &dashboard.AccountSnapshotRequest{})
-    // 逐行渲染：broker name, ●/○ connected, equity, free_margin
-}
-
-func (a *Admin) refreshStrategies() {
-    status, _ := a.client.GetStrategyStatus(ctx, &dashboard.StrategyStatusRequest{})
-    // 逐行渲染：strategy name, [▶] enabled toggle, circuit_breaker, losses, pnl
-}
-
-func (a *Admin) refreshKillSwitch() {
-    ks, _ := a.client.GetKillSwitchStatus(ctx, &dashboard.KillSwitchStatusRequest{})
-    if ks.Active {
-        a.banner.Show() // 红色横幅
-    } else {
-        a.banner.Hide()
-    }
-}
-
-func (a *Admin) tailLogs() {
-    stream, _ := a.client.TailLogs(ctx, &dashboard.TailLogsRequest{
-        TailLines: 50,
-        LevelFilter: "",
+// StartStream 启动 gRPC stream → Wails Events 推送。
+func (m *MatrixBridge) StartStream(ctx context.Context, app *application.App) {
+    stream, _ := m.client.SpreadMatrix(ctx, &dashpb.SpreadMatrixRequest{
+        RefreshIntervalMs: 100,
     })
     for {
-        msg, _ := stream.Recv()
-        a.logBox.Append(fmt.Sprintf("%s %s %s: %s",
-            msg.Timestamp, msg.Level, msg.Source, msg.Message))
+        msg, err := stream.Recv()
+        if err != nil {
+            return
+        }
+        // gRPC 消息直接通过 Wails Events 推送到 Svelte
+        app.Events().Emit("spread-matrix", msg)
     }
 }
 ```
 
-**操作按钮 → gRPC 映射**：
+### 15.7 Svelte 前端 — 实时数据接收
 
-| 按钮 | gRPC |
-|------|------|
-| 策略启用/禁用 toggle | `ToggleStrategy(name, enabled)` |
-| 重置策略熔断 | `ResumeStrategy(name)` |
-| 重置全局熔断 | `ResetGlobalCircuitBreaker()` |
-| Kill | `Kill()` — 二次确认弹窗 |
-| Resume | `Resume()` — 二次确认弹窗 |
+```js
+// frontend/src/lib/stores.js
+import { writable } from 'svelte/store';
 
-**变更 Desk 主入口**：`tabs` 从 4 个增加到 5 个：
+export const spreadMatrix = writable({ rows: [] });
+
+// 订阅 Wails 事件
+export function initStores() {
+    wails.Events.On('spread-matrix', (data) => {
+        spreadMatrix.set(data);  // Svelte 自动触发最小 DOM 更新
+    });
+}
+```
+
+```svelte
+<!-- frontend/src/tabs/Matrix.svelte -->
+<script>
+  import { spreadMatrix } from '../lib/stores.js';
+  import Card from '../components/Card.svelte';
+</script>
+
+<div class="matrix-grid">
+  {#each $spreadMatrix.rows as row}
+    <Card>
+      <div class="broker-name">{row.brokerName}</div>
+      <div class="cells">
+        {#each row.cells as cell}
+          <div class="cell" class:arb={cell.isArbitrageable}
+               style="color: {cell.isArbitrageable ? '#34c759' :
+                      cell.estimatedNetProfitBps > 0 ? '#ffcc00' : '#ff453a'}">
+            {cell.spreadToBestAskBps.toFixed(2)}
+          </div>
+        {/each}
+      </div>
+    </Card>
+  {/each}
+</div>
+
+<style>
+  .matrix-grid {
+    display: grid;
+    gap: 12px;
+  }
+  .cell {
+    transition: color 0.3s ease;  /* CSS 原生过渡，GPU 加速 */
+  }
+</style>
+```
+
+### 15.8 Svelte 前端 — 用户操作
+
+```svelte
+<!-- frontend/src/tabs/Trading.svelte -->
+<script>
+  let symbol = 'EURUSD';
+  let volume = 0.1;
+
+  async function submitOrder() {
+    const result = await wails.Call('SubmitOrder', {
+      symbol, volume, operation: 'BUY'
+    });
+    if (result.ticket) {
+      notification.success(`Order #${result.ticket} filled`);
+    }
+  }
+</script>
+
+<Card>
+  <input bind:value={symbol} placeholder="Symbol" />
+  <input bind:value={volume} type="number" step="0.01" />
+  <button on:click={submitOrder}> Submit </button>
+</Card>
+```
+
+### 15.9 Wails Call → gRPC unary 映射
+
+| 前端调用 | Go 函数 | gRPC |
+|----------|---------|------|
+| `wails.Call("SubmitOrder", ...)` | `App.SubmitOrder()` | `DashboardService.SubmitOrder` |
+| `wails.Call("ClosePosition", ...)` | `App.ClosePosition()` | `DashboardService.ClosePosition` |
+| `wails.Call("GetSignalHistory", ...)` | `App.GetSignalHistory()` | `DashboardService.GetSignalHistory` |
+| `wails.Call("ToggleStrategy", ...)` | `App.ToggleStrategy()` | `DashboardService.ToggleStrategy` |
+| `wails.Call("Kill")` | `App.Kill()` | `DashboardService.Kill` |
+| `wails.Call("Resume")` | `App.Resume()` | `DashboardService.Resume` |
+
+### 15.10 Wails Events ← gRPC stream 映射
+
+| Go goroutine | gRPC Stream | Wails Event | Svelte Store |
+|-------------|-------------|-------------|-------------|
+| `MatrixBridge.StartStream` | `SpreadMatrix` | `"spread-matrix"` | `spreadMatrix` |
+| `PositionsBridge.StartStream` | `PositionWatch` | `"positions"` | `positions` |
+| `AdminBridge.TailLogs` | `TailLogs` | `"admin-logs"` | `adminLogs` |
+
+### 15.11 Admin Tab — Go 数据层
 
 ```go
-tabs := container.NewAppTabs(
-    container.NewTabItem("价差矩阵", matrix.New(client)),
-    container.NewTabItem("持仓", positions.New(client)),
-    container.NewTabItem("交易", trading.New(client)),
-    container.NewTabItem("历史", history.New(client)),
-    container.NewTabItem("管理", admin.New(client)),    // ← 新增
-)
+// desk/admin/admin.go
+package admin
+
+type AdminBridge struct {
+    client dashpb.DashboardServiceClient
+}
+
+func NewAdminBridge(client dashpb.DashboardServiceClient) *AdminBridge {
+    return &AdminBridge{client: client}
+}
+
+// GetBrokers 供前端调用的绑定函数。
+func (a *AdminBridge) GetBrokers() ([]BrokerStatus, error) {
+    snap, err := a.client.GetAccountSnapshots(context.Background(),
+        &dashpb.AccountSnapshotRequest{})
+    if err != nil {
+        return nil, err
+    }
+    // 转换为前端友好的结构体
+    var brokers []BrokerStatus
+    for _, s := range snap.Snapshots {
+        brokers = append(brokers, BrokerStatus{
+            Name:       s.BrokerName,
+            Connected:  s.IsConnected,
+            Equity:     s.Equity,
+            FreeMargin: s.FreeMargin,
+        })
+    }
+    return brokers, nil
+}
 ```
+
+Admin Tab 的 Svelte 端渲染逻辑与 Fyne 版本相同（broker 状态列表 + 策略列表 + Kill Switch 横幅 + 操作按钮 + 日志尾行），但使用 HTML/CSS 实现液态玻璃卡片、阴影、悬浮动效等视觉效果。
+
+### 15.12 构建流程
+
+```makefile
+.PHONY: build-desk
+
+build-desk:
+	cd frontend && npm install && npm run build     # Svelte → frontend/dist/
+	go build -o bin/arb-desk.exe ./cmd/desk          # Go + embed frontend/dist/
+
+# desk 最终产物：单个 bin/arb-desk.exe (~20MB)
+# 包含：Go 后端 + Svelte 编译产物（嵌入）+ WebView2 loader
+```
+
+WebView2 由 Windows 10/11 系统自带，不打包在 exe 中。Win 7 用户首次运行会自动下载 WebView2 Runtime（一次性）。
 
 ---
 
@@ -1042,7 +1194,7 @@ func main() {
 ## 18. 构建
 
 ```makefile
-.PHONY: test lint proto run-core run-desk
+.PHONY: test lint proto run-core run-desk build-core build-desk
 
 proto:
 	buf generate proto/
@@ -1057,11 +1209,13 @@ run-core:
 	go run ./cmd/core -config=config/default.textproto
 
 run-desk:
+	cd frontend && npm install && npm run build
 	go run ./cmd/desk
 
 build-core:
 	CGO_ENABLED=0 go build -o bin/arb-core ./cmd/core
 
 build-desk:
-	go build -o bin/arb-desk ./cmd/desk
+	cd frontend && npm install && npm run build
+	go build -o bin/arb-desk.exe ./cmd/desk
 ```

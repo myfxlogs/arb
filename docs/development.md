@@ -8,6 +8,7 @@
 
 ```
 Go 1.22+
+Node.js 22+          (desk 前端构建，仅构建时)
 PostgreSQL 15+
 Buf CLI 1.x          (proto 代码生成)
 grpcurl              (调试用)
@@ -32,8 +33,11 @@ psql "postgres://arb:arb@localhost:5432/arb?sslmode=disable" \
 # 生成 proto 代码
 buf generate
 
-# 下载依赖
+# 下载 Go 依赖
 go mod tidy
+
+# 下载前端依赖
+cd frontend && npm install && cd ..
 
 # 运行测试
 go test -race ./...
@@ -41,7 +45,8 @@ go test -race ./...
 # 启动 core（守护进程）
 go run ./cmd/core -config=config/default.textproto
 
-# 启动 desk（桌面应用，在另一个终端）
+# 构建并启动 desk（桌面应用，在另一个终端）
+cd frontend && npm run build && cd ..
 go run ./cmd/desk
 ```
 
@@ -63,7 +68,7 @@ module arb
 go 1.22.0
 
 require (
-    fyne.io/fyne/v2 v2.x
+    github.com/wailsapp/wails/v3 v3.x
     github.com/jackc/pgx/v5 v5.x
     github.com/shopspring/decimal v1.x
     google.golang.org/grpc v1.x
@@ -203,7 +208,8 @@ ARB_OCTAFX_DEMO_PASSWORD=yourpassword
   bus: implement QuoteBus with drain-then-replace
   execute: implement 4-phase execution pipeline
   dashboard: implement SpreadMatrix stream server
-  desk: implement Fyne matrix tab with color coding
+  desk: implement Wails Go backend with gRPC stream bridge
+  frontend: implement Svelte SpreadMatrix tab with liquid glass cards
   store: implement PostgreSQL tick writer with COPY
 ```
 
@@ -284,19 +290,21 @@ Phase 6: Dashboard
   24. 持仓聚合
 
 Phase 7: 桌面
-  25. Fyne 应用骨架 + Tab 容器
-  26. 价差矩阵 Tab
-  27. 持仓 Tab
-  28. 交易 Tab
-  29. 历史查询 Tab
+  25. Wails 应用骨架 + Go 绑定函数 (desk/app.go)
+  26. Svelte 项目初始化 + 液态玻璃主题 (frontend/)
+  27. 价差矩阵 Tab (Go 数据层 + Svelte 渲染)
+  28. 持仓 Tab (Go 数据层 + Svelte 渲染)
+  29. 交易 Tab (Go 数据层 + Svelte 渲染)
+  30. 历史查询 Tab (Go 数据层 + Svelte 渲染)
+  31. 管理 Tab (Go 数据层 + Svelte 渲染)
 
 Phase 8: 入口 + 集成
-  30. cmd/core/main.go
-  31. cmd/desk/main.go
-  32. 配置文件加载
-  33. 审计日志
-  34. 集成测试 + 基准测试
-  35. Dockerfile + Makefile
+  32. cmd/core/main.go
+  33. cmd/desk/main.go
+  34. 配置文件加载
+  35. 审计日志
+  36. 集成测试 + 基准测试
+  37. Dockerfile + Makefile
 ```
 
 ---
@@ -308,7 +316,9 @@ Phase 8: 入口 + 集成
 [ ] 禁止使用 encoding/json
 [ ] 禁止使用任何 HTTP/WebSocket 库
 [ ] 禁止创建 REST API endpoint
-[ ] 禁止引入 TypeScript/JavaScript
+[ ] 禁止在 desk 内启动 HTTP server
+[ ] 禁止前端直接发起网络请求（全部通过 Wails IPC → Go 后端）
+[ ] 禁止引入 TypeScript（Svelte 用 JS）
 [ ] 禁止在 Hot Path 上进行堆分配
 [ ] 禁止使用 sync.Mutex 在热路径
 [ ] 禁止使用 goroutine pool

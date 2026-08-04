@@ -157,7 +157,65 @@ govulncheck ./...                  # 已知漏洞
 
 ---
 
-## 5. 检查清单（施工 agent 自查）
+## 5. 前端测试（desk — Svelte）
+
+### 5.1 组件测试（Vitest + jsdom）
+
+施工 agent 在 `frontend/` 目录下运行 `npx vitest run`。
+
+| 文件 | `frontend/tests/components.test.js` |
+|------|-------------------------------------|
+| 测试 1 | `Card` 组件渲染 → 验证 `.card` CSS class 存在 |
+| 测试 2 | `StatCard` 接收 props → 验证 value/label 文本内容 |
+| 测试 3 | `Skeleton` 组件 → 验证 `.skeleton.animate` 有 `shimmer` animation |
+| 测试 4 | `DataTable` 接收 rows → 验证 `<tr>` 数量匹配 |
+
+| 文件 | `frontend/tests/stores.test.js` |
+|------|---------------------------------|
+| 测试 5 | `spreadMatrix` store 更新 → 订阅者收到新值 |
+| 测试 6 | `positions` store 更新 → 订阅者收到新值 |
+
+### 5.2 E2E 测试（Playwright + headless Chromium）
+
+施工 agent 在 `frontend/` 目录下运行 `npx playwright test`。
+
+| 文件 | `frontend/tests/visual.spec.js` |
+|------|---------------------------------|
+| 测试 7 | 5 个 Tab 全部渲染 |
+| 测试 8 | 统计卡片区域有 4 个 stat-card |
+| 测试 9 | 价差矩阵渲染 broker 卡片 + 品种单元格 |
+| 测试 10 | `.card` 有 `backdrop-filter: blur()` 样式 |
+| 测试 11 | 套利单元格 `color: rgb(52, 199, 89)`（绿色 #34c759） |
+| 测试 12 | 亏损单元格 `color: rgb(255, 69, 58)`（红色 #ff453a） |
+| 测试 13 | hover 时卡片产生 `translateY` transform |
+| 测试 14 | 骨架屏有 `shimmer` 动画 |
+| 测试 15 | 持仓表格渲染订单数据 |
+| 测试 16 | 正 PnL 显示绿色 |
+| 测试 17 | `wails.Call("SubmitOrder", ...)` 返回 ticket > 0 |
+| 测试 18 | `wails.Call("SubmitOrder", {})` 抛出错误 |
+| 测试 19 | 价差矩阵 Tab 截图 > 10KB（非空白） |
+| 测试 20 | 持仓 Tab 截图 > 5KB（非空白） |
+
+### 5.3 IPC 抽象层验收（施工 agent 自查）
+
+```
+[ ] grep -r "wails\." frontend/src/tabs/      → 返回空（组件不直接调 wails）
+[ ] grep -r "wails\." frontend/src/components/ → 返回空
+[ ] grep -r "wails\." frontend/src/lib/backend.js → 所有调用集中在此文件
+[ ] 浏览器窗口 375px 宽度下所有 Tab 内容可见、无水平滚动条
+```
+
+### 5.4 CI 集成
+
+```makefile
+.PHONY: test-frontend
+
+test-frontend:
+	cd frontend && npx vitest run
+	cd frontend && npx playwright test
+```
+
+## 6. 检查清单（施工 agent 自查）
 
 ```
 [ ] 所有测试文件使用 go test -race 通过

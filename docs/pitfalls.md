@@ -100,7 +100,16 @@
 | **根因** | mtapi 作为代理连接 MT 服务器。Dial 目标 = mtapi 网关，Host 字段 = broker 服务器。 |
 | **修复** | `grpc.Dial("mt5grpc3.mtapi.io:443")` + `ConnectRequest{Host: "broker-real-ip"}`。二者永远不同。写入 adapter 实现规范。 |
 
-## 10. MT 密码必须明文 — 加密无意义
+## 10. Fyne 渲染管线无法实现液态玻璃效果
+
+| | |
+|---|---|
+| **发现** | 2026-08-04（架构审查） |
+| **问题** | Fyne 使用 CPU 合成渲染管线，不支持 `backdrop-filter: blur()`（需要采样背后像素做高斯核卷积）、不支持投影阴影（需要高斯模糊 filter）、不支持 GPU 加速的 CSS 过渡动画。 |
+| **根因** | Fyne 的渲染模型是"每个 widget 独立画到单帧缓冲"，没有后处理管线。`canvas.LinearGradient` 只能画简单渐变，无法实现毛玻璃效果需要的背景采样。 |
+| **修复** | 迁移到 Wails v3 + Svelte 5。Go 后端完全复用，UI 渲染层交给 Chromium 引擎（WebView2）。gRPC 通信不变。详见 `docs/constraints.md` §三。 |
+
+## 11. MT 密码必须明文 — 加密无意义
 
 | | |
 |---|---|

@@ -1,9 +1,11 @@
-# 项目约束文档
+# 跨平台跨经纪商套利系统 — 项目约束文档
 
-> 版本：v3.0  
-> 日期：2026-08-03  
+> 版本：v4.0  
+> 日期：2026-08-04  
 > 施工 agent：Claude Code（Sonnet/Haiku mode）  
 > 违反任何一条约束的代码不得合并。
+>
+> **v4.0 重大变更**：desk 前端从 Fyne 迁移到 Wails v3 + Svelte。变更原因见 §三。
 
 ---
 
@@ -26,11 +28,11 @@
 ❌ REST API (HTTP/1.1 + JSON) — 任何场景
 ❌ JSON 序列化 — 任何场景（包括 encoding/json）
 ❌ WebSocket — 任何场景
-❌ gRPC-Web — 不需要，Fyne 桌面应用直接调 gRPC
-❌ 浏览器前端 — 任何场景
+❌ gRPC-Web — 不需要，desk 内部通过 Wails IPC 桥接，core↔desk 走原生 gRPC
 ❌ Server-Sent Events
 ❌ GraphQL
 ❌ 任何文本格式的 RPC
+❌ HTTP 服务器 — desk 不启动任何 HTTP listener
 ```
 
 ---
@@ -54,24 +56,74 @@
 
 ---
 
-## 三、前端
+## 三、桌面应用（Desk）
 
-### 3.1 允许
-
-```
-✅ Fyne (Go GUI) — 桌面窗体应用
-✅ Tab 切换：价差矩阵 / 持仓 / 交易 / 历史
-✅ 直接从 Core 调 gRPC stub（同一个 Go 代码库）
-```
-
-### 3.2 禁止
+### 3.1 架构
 
 ```
-❌ 浏览器 / Electron / WebView
-❌ JavaScript / TypeScript
+desk.exe (单个进程，Wails v3)
+├── Go 后端
+│   ├── gRPC client ──────── gRPC (network) ────→ core:50051
+│   ├── 业务逻辑（数据处理、状态聚合）
+│   └── Wails runtime ────── 进程内 IPC ──────┐
+│                                              │
+└── WebView2 (Windows 系统原生，零额外体积)      │
+    ├── HTML/CSS (液态玻璃、阴影、动画)          │
+    ├── Svelte 5 (编译为 vanilla JS)            │
+    └── wails.Call() / wails.Events.On() ←─────┘
+```
+
+### 3.2 允许
+
+```
+✅ Wails v3 — 桌面壳（Go 后端 + WebView2 前端，单进程）
+✅ Svelte 5 — 前端框架（编译为 vanilla JS，无运行时）
+✅ HTML/CSS — 布局与样式（GPU 加速渲染）
+✅ 5 个 Tab：价差矩阵 / 持仓 / 交易 / 历史 / 管理
+✅ Go 后端通过 gRPC 连接 Core（同一个 Go 代码库）
+✅ Wails IPC — 前端↔后端通信（进程内函数调用，不走网络栈）
+✅ Node.js — 仅构建时依赖，运行时不存在
+```
+
+### 3.3 禁止
+
+```
+❌ 浏览器 / Electron — 臃肿，捆绑 Chromium
+❌ Wails 内启动 HTTP server / REST endpoint / WebSocket
+❌ 前端直接发起网络请求（所有网络 I/O 必须走 Go 后端 → gRPC）
+❌ React / Vue — 运行时框架，体积大，virtual DOM 对实时数据不友好
 ❌ TUI / 终端界面
-❌ Wails / Qt / GTK — CGO 依赖，交叉编译问题
+❌ Qt / GTK — CGO 依赖，交叉编译问题
+❌ TypeScript — Svelte 用 JS，减少构建复杂度
 ```
+
+### 3.4 数据流
+
+```
+实时推送（gRPC server stream → Wails Events）：
+  core gRPC stream
+    │ Go 后端 stream.Recv() loop
+    │ runtime.EventsEmit("spread-matrix", data)   ← 进程内 IPC
+    ▼
+  Svelte: wails.Events.On("spread-matrix", updateStore)
+
+用户操作（Wails Call → gRPC unary）：
+  Svelte: wails.Call("SubmitOrder", {...})        ← 进程内 IPC
+    │ Go 后端函数执行
+    │ gRPC client.SubmitOrder(ctx, req)            ← 网络 gRPC
+    ▼
+  core: DashboardService.SubmitOrder
+```
+
+### 3.5 为什么不是 Fyne
+
+Fyne 的 CPU 合成渲染管线无法实现以下效果（架构层面不可能）：
+- `backdrop-filter: blur()` — 液态玻璃核心效果
+- `box-shadow` 投影阴影 — 无高斯模糊 filter
+- CSS transition 流畅动效 — Fyne 动画 API 是 CPU 驱动
+- Skeleton shimmer 动画 — 无 GPU shader
+
+Wails + WebView2 使用 Chromium 渲染引擎，上述效果全部是 CSS 原生能力，零开发成本。同时 Go 后端完全复用，gRPC 通信不变。唯一新增的是 Svelte 编译步骤（`npm run build`，构建时一次性）。
 
 ---
 
@@ -160,7 +212,7 @@ Go: decimal.Decimal — Warm/Cold Path
 | `shopspring/decimal` | Warm/Cold Path 精度 |
 | `google.golang.org/grpc` | 唯一通信 |
 | `google.golang.org/protobuf` | 序列化 |
-| `fyne.io/fyne/v2` | 桌面 UI |
+| `github.com/wailsapp/wails/v3` | 桌面壳（Go + WebView2） |
 | `github.com/jackc/pgx/v5` | PostgreSQL driver |
 | `golang.org/x/time/rate` | 自适应限流 |
 | `log/slog` | 结构化日志 |
@@ -174,6 +226,7 @@ Go: decimal.Decimal — Warm/Cold Path
 ❌ gin/echo/gorilla/mux（任何 HTTP 框架）
 ❌ go-redis/redis
 ❌ mattn/go-sqlite3、modernc.org/sqlite
+❌ fyne.io/fyne/v2（已迁移到 Wails）
 ```
 
 ---
@@ -183,7 +236,7 @@ Go: decimal.Decimal — Warm/Cold Path
 ```
 cmd/
   core/main.go        # 守护进程入口
-  desk/main.go        # 桌面应用入口
+  desk/main.go        # Wails 桌面应用入口
 internal/
   adapter/            # PlatformAdapter + MT4/MT5 实现
   bus/                # QuoteBus
@@ -196,10 +249,31 @@ internal/
   dashboard/          # DashboardService gRPC server
   store/              # PostgreSQL 读写
 desk/
-  matrix/             # 价差矩阵 Tab
-  positions/          # 持仓 Tab
-  trading/            # 交易 Tab
-  history/            # 历史查询 Tab
+  app.go              # Wails 应用初始化 + Go 后端绑定函数
+  matrix/             # 价差矩阵（Go 数据层）
+  positions/          # 持仓（Go 数据层）
+  trading/            # 交易（Go 数据层）
+  history/            # 历史查询（Go 数据层）
+  admin/              # 管理（Go 数据层）
+frontend/             # Svelte 前端（构建时编译为静态文件）
+  src/
+    App.svelte        # 根组件 + Tab 容器
+    lib/
+      wails.js        # Wails runtime 封装
+      grpc-bridge.js  # Go↔前端数据桥接
+    tabs/
+      Matrix.svelte   # 价差矩阵 Tab
+      Positions.svelte # 持仓 Tab
+      Trading.svelte  # 交易 Tab
+      History.svelte  # 历史 Tab
+      Admin.svelte    # 管理 Tab
+    components/
+      Card.svelte     # 液态玻璃卡片
+      StatCard.svelte # 数据卡片
+      Skeleton.svelte # 骨架屏
+      DataTable.svelte # 数据表格
+  package.json
+  vite.config.js
 proto/
   config/             # 配置 schema
   dashboard/          # DashboardService schema
@@ -210,7 +284,8 @@ migrations/           # PG DDL
 ```
 ✅ 接口：名词（PlatformAdapter, QuoteBus）
 ✅ 方法：动词（Connect, Publish, Evaluate）
-✅ 文件：小写下划线（quote_bus.go）
+✅ Go 文件：小写下划线（quote_bus.go）
+✅ Svelte 组件：PascalCase（Matrix.svelte, StatCard.svelte）
 ❌ 包名包含 util/common/misc/helper
 ❌ 接口名 I 前缀
 ```
@@ -221,16 +296,17 @@ migrations/           # PG DDL
 
 ```
 ✅ Go 1.22+
-✅ Linux amd64
-✅ CGO_ENABLED=0（core）；无 CGO（desk 除外，Fyne 需要）
+✅ Linux amd64 (core)；Windows amd64 (desk)
+✅ CGO_ENABLED=0（core）；desk 通过 Wails 构建，无 CGO 依赖
 ✅ Docker 容器化（core）
-✅ Fyne 桌面应用本地编译安装（desk）
+✅ Wails 构建 desk：npm run build (前端) → go build (后端) → 单 exe
 ✅ TLS 1.3
 ✅ GOTRACEBACK=0
 ✅ ulimit -c 0
 ✅ GOGC=50
 ✅ go test -race 强制
 ✅ CI 跑 govulncheck
+✅ Node.js 22+（仅 desk 构建时，CI runner 预装）
 ```
 
 ---
@@ -240,8 +316,10 @@ migrations/           # PG DDL
 ### 11.1 语言
 
 ```
-✅ 全项目唯一语言：Go
-❌ 禁止 TypeScript/JavaScript/Python/任何第二语言
+✅ 后端：Go（唯一语言）
+✅ 前端：JavaScript (Svelte 5，编译为 vanilla JS)
+❌ 禁止 TypeScript（Svelte 用 JS，减少构建复杂度）
+❌ 禁止 Python/任何其他语言
 ```
 
 ### 11.2 零容忍
