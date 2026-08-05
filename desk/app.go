@@ -219,7 +219,7 @@ func (a *App) GetBrokerOrderHistory(req *dashpb.BrokerOrderHistoryRequest) (*das
 
 // GetBrokerSymbols returns all available symbols for a specific broker.
 func (a *App) GetBrokerSymbols(req *dashpb.BrokerSymbolsRequest) (*dashpb.BrokerSymbolsReply, error) {
-return a.client.GetBrokerSymbols(a.ctx, req)
+	return a.client.GetBrokerSymbols(a.ctx, req)
 }
 
 // SubscribeSymbols subscribes to symbols.

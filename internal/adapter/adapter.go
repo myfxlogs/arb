@@ -12,6 +12,7 @@ import (
 type PlatformAdapter interface {
 	Connect(ctx context.Context) (token string, err error)
 	Disconnect() error
+	Stop()
 	HealthCheck(ctx context.Context) error
 
 	Subscribe(ctx context.Context, symbols []string) error
@@ -29,6 +30,7 @@ type PlatformAdapter interface {
 
 	Platform() bus.PlatformType
 	BrokerName() string
+	SetOnReconnect(fn func(ctx context.Context) error)
 }
 
 // OrderOperation specifies buy or sell.

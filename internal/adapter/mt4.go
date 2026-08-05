@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"arb/internal/bus"
@@ -40,7 +41,11 @@ type MT4Adapter struct {
 	rsm     *reconnectStateMachine
 	execSem chan struct{}
 
+	reconnectMu sync.Mutex
 	onReconnect func(ctx context.Context) error
+
+	stopCtx    context.Context
+	stopCancel context.CancelFunc
 }
 
 // NewMT4Adapter creates a new MT4Adapter.
@@ -55,6 +60,7 @@ func NewMT4Adapter(brokerName, host, server string, port int32, user int64, pass
 		digits:     make(map[string]int32),
 		execSem:    make(chan struct{}, maxConcurrentOrders),
 	}
+	a.stopCtx, a.stopCancel = context.WithCancel(context.Background())
 	a.rsm = newReconnectStateMachine(defaultReconnectConfig(func() {
 		slog.Error("MT4 emergency close", "broker", brokerName)
 	}))
@@ -63,6 +69,13 @@ func NewMT4Adapter(brokerName, host, server string, port int32, user int64, pass
 
 func (a *MT4Adapter) BrokerName() string         { return a.brokerName }
 func (a *MT4Adapter) Platform() bus.PlatformType { return bus.PlatformMT4 }
+func (a *MT4Adapter) SetOnReconnect(fn func(ctx context.Context) error) { a.onReconnect = fn }
+func (a *MT4Adapter) Stop() {
+	if a.stopCancel != nil {
+		a.stopCancel()
+	}
+	a.Disconnect()
+}
 
 func (a *MT4Adapter) Connect(ctx context.Context) (string, error) {
 	a.rsm.setState(stateConnecting)
@@ -181,7 +194,7 @@ func (a *MT4Adapter) QuoteStream(ctx context.Context, b *bus.QuoteBus) {
 
 func (a *MT4Adapter) runOnQuote(ctx context.Context, b *bus.QuoteBus) {
 	for {
-		if err := ctx.Err(); err != nil {
+		if a.stopCtx.Err() != nil || ctx.Err() != nil {
 			return
 		}
 		if !a.rsm.isConnected() {
@@ -225,7 +238,7 @@ func (a *MT4Adapter) runOnQuote(ctx context.Context, b *bus.QuoteBus) {
 
 func (a *MT4Adapter) runOnOrderUpdate(ctx context.Context) {
 	for {
-		if err := ctx.Err(); err != nil {
+		if a.stopCtx.Err() != nil || ctx.Err() != nil {
 			return
 		}
 		if !a.rsm.isConnected() {
@@ -252,7 +265,7 @@ func (a *MT4Adapter) runOnOrderUpdate(ctx context.Context) {
 
 func (a *MT4Adapter) runOnOrderProfit(ctx context.Context) {
 	for {
-		if err := ctx.Err(); err != nil {
+		if a.stopCtx.Err() != nil || ctx.Err() != nil {
 			return
 		}
 		if !a.rsm.isConnected() {
@@ -278,6 +291,11 @@ func (a *MT4Adapter) runOnOrderProfit(ctx context.Context) {
 }
 
 func (a *MT4Adapter) reconnect(ctx context.Context) error {
+	a.reconnectMu.Lock()
+	defer a.reconnectMu.Unlock()
+	if a.rsm.isConnected() {
+		return nil
+	}
 	connectFn := func() error {
 		if a.conn != nil {
 			a.conn.Close()

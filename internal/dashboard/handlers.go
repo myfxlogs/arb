@@ -13,7 +13,9 @@ import (
 
 // SubmitOrder handles manual order submission.
 func (s *Server) SubmitOrder(ctx context.Context, req *dashpb.ManualOrderRequest) (*dashpb.ManualOrderReply, error) {
+	s.mu.RLock()
 	a, ok := s.adapters[req.BrokerName]
+	s.mu.RUnlock()
 	if !ok {
 		return &dashpb.ManualOrderReply{Status: "Rejected", Error: "broker not found"}, nil
 	}
@@ -56,7 +58,9 @@ func (s *Server) SubmitOrder(ctx context.Context, req *dashpb.ManualOrderRequest
 
 // ClosePosition handles manual position close.
 func (s *Server) ClosePosition(ctx context.Context, req *dashpb.ClosePositionRequest) (*dashpb.ClosePositionReply, error) {
+	s.mu.RLock()
 	a, ok := s.adapters[req.BrokerName]
+	s.mu.RUnlock()
 	if !ok {
 		return &dashpb.ClosePositionReply{Status: "Rejected", Error: "broker not found"}, nil
 	}
@@ -73,7 +77,9 @@ func (s *Server) ClosePosition(ctx context.Context, req *dashpb.ClosePositionReq
 
 // CancelOrder handles pending order cancellation.
 func (s *Server) CancelOrder(ctx context.Context, req *dashpb.CancelOrderRequest) (*dashpb.CancelOrderReply, error) {
+	s.mu.RLock()
 	a, ok := s.adapters[req.BrokerName]
+	s.mu.RUnlock()
 	if !ok {
 		return &dashpb.CancelOrderReply{Success: false, Error: "broker not found"}, nil
 	}
@@ -166,8 +172,14 @@ func (s *Server) GetDailySummary(ctx context.Context, req *dashpb.DailySummaryRe
 
 // GetAccountSnapshots returns current account snapshots for all brokers.
 func (s *Server) GetAccountSnapshots(ctx context.Context, req *dashpb.AccountSnapshotRequest) (*dashpb.AccountSnapshotReply, error) {
-	items := make([]*dashpb.AccountSnapshotReply_AccountSnapshotItem, 0, len(s.adapters))
-	for name, a := range s.adapters {
+	s.mu.RLock()
+	adapters := make(map[string]adapter.PlatformAdapter, len(s.adapters))
+	for k, v := range s.adapters {
+		adapters[k] = v
+	}
+	s.mu.RUnlock()
+	items := make([]*dashpb.AccountSnapshotReply_AccountSnapshotItem, 0, len(adapters))
+	for name, a := range adapters {
 		item := &dashpb.AccountSnapshotReply_AccountSnapshotItem{
 			BrokerName:  name,
 			IsConnected: true,

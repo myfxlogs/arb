@@ -1,7 +1,6 @@
 package adapter
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -28,11 +27,4 @@ func LoadCredentials(cfg *configpb.BrokerConfig) (user int64, password string) {
 		password = envPass
 	}
 	return
-}
-
-// envKey returns the environment variable key for a broker credential.
-func envKey(brokerName, suffix string) string {
-	return fmt.Sprintf("ARB_%s_%s",
-		strings.ToUpper(strings.ReplaceAll(brokerName, "-", "_")),
-		suffix)
 }

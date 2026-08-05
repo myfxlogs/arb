@@ -33,10 +33,10 @@ func (s *Server) Kill(ctx context.Context, req *dashpb.KillRequest) (*dashpb.Kil
 			continue
 		}
 		for _, o := range orders {
-			if err := a.CancelOrder(ctx, o.Ticket); err != nil {
-				slog.Warn("kill: cancelOrder", "broker", name, "ticket", o.Ticket, "error", err)
+			if _, err := a.CloseOrder(ctx, o.Ticket, o.Lots, 0, 0); err != nil {
+				slog.Warn("kill: closeOrder", "broker", name, "ticket", o.Ticket, "error", err)
 			} else {
-				ordersCancelled++
+				positionsClosed++
 			}
 		}
 	}
@@ -44,7 +44,7 @@ func (s *Server) Kill(ctx context.Context, req *dashpb.KillRequest) (*dashpb.Kil
 		"positions_closed", positionsClosed, "orders_cancelled", ordersCancelled)
 	return &dashpb.KillReply{
 		Success:         true,
-		OrdersCancelled: ordersCancelled,
+		OrdersCancelled: ordersCancelled + positionsClosed,
 	}, nil
 }
 
@@ -61,31 +61,38 @@ func (s *Server) Resume(ctx context.Context, req *dashpb.ResumeRequest) (*dashpb
 
 // SubscribeSymbols adds symbols to the subscription set.
 func (s *Server) SubscribeSymbols(ctx context.Context, req *dashpb.SubscribeSymbolsRequest) (*dashpb.SubscribeSymbolsReply, error) {
+	s.mu.Lock()
 	for _, sym := range req.Symbols {
 		s.symbols[sym] = true
 	}
+	s.mu.Unlock()
 	return &dashpb.SubscribeSymbolsReply{Success: true}, nil
 }
 
 // UnsubscribeSymbols removes symbols from the subscription set.
 func (s *Server) UnsubscribeSymbols(ctx context.Context, req *dashpb.UnsubscribeSymbolsRequest) (*dashpb.UnsubscribeSymbolsReply, error) {
+	s.mu.Lock()
 	for _, sym := range req.Symbols {
 		delete(s.symbols, sym)
 	}
+	s.mu.Unlock()
 	return &dashpb.UnsubscribeSymbolsReply{Success: true}, nil
 }
 
 // ListSubscribedSymbols returns all subscribed symbols.
 func (s *Server) ListSubscribedSymbols(ctx context.Context, req *dashpb.ListSymbolsRequest) (*dashpb.ListSymbolsReply, error) {
+	s.mu.RLock()
 	syms := make([]string, 0, len(s.symbols))
 	for sym := range s.symbols {
 		syms = append(syms, sym)
 	}
+	s.mu.RUnlock()
 	return &dashpb.ListSymbolsReply{Symbols: syms}, nil
 }
 
 // GetStrategyStatus returns the status of all strategies.
 func (s *Server) GetStrategyStatus(ctx context.Context, req *dashpb.StrategyStatusRequest) (*dashpb.StrategyStatusReply, error) {
+	s.mu.RLock()
 	items := make([]*dashpb.StrategyStatusReply_StrategyItem, 0, len(s.strategies))
 	for name, st := range s.strategies {
 		if req.Strategy != "" && req.Strategy != name {
@@ -105,27 +112,34 @@ func (s *Server) GetStrategyStatus(ctx context.Context, req *dashpb.StrategyStat
 			PnlToday:           st.pnlToday,
 		})
 	}
+	s.mu.RUnlock()
 	return &dashpb.StrategyStatusReply{Items: items}, nil
 }
 
 // ToggleStrategy enables or disables a strategy.
 func (s *Server) ToggleStrategy(ctx context.Context, req *dashpb.ToggleStrategyRequest) (*dashpb.ToggleStrategyReply, error) {
+	s.mu.Lock()
 	st, ok := s.strategies[req.Strategy]
 	if !ok {
+		s.mu.Unlock()
 		return &dashpb.ToggleStrategyReply{Success: false, Error: "strategy not found"}, nil
 	}
 	st.enabled = req.Enabled
+	s.mu.Unlock()
 	return &dashpb.ToggleStrategyReply{Success: true}, nil
 }
 
 // ResumeStrategy re-enables a strategy after circuit breaker trip.
 func (s *Server) ResumeStrategy(ctx context.Context, req *dashpb.ResumeStrategyRequest) (*dashpb.ResumeStrategyReply, error) {
+	s.mu.Lock()
 	st, ok := s.strategies[req.Strategy]
 	if !ok {
+		s.mu.Unlock()
 		return &dashpb.ResumeStrategyReply{Success: false, Error: "strategy not found"}, nil
 	}
 	st.enabled = true
 	st.consecutiveLoss = 0
+	s.mu.Unlock()
 	return &dashpb.ResumeStrategyReply{Success: true}, nil
 }
 
@@ -143,8 +157,8 @@ func (s *Server) GetKillSwitchStatus(ctx context.Context, req *dashpb.KillSwitch
 		return &dashpb.KillSwitchStatusReply{Active: false}, nil
 	}
 	return &dashpb.KillSwitchStatusReply{
-		Active:       s.kill.IsActive(),
-		TriggeredBy:  "manual",
+		Active:      s.kill.IsActive(),
+		TriggeredBy: "manual",
 	}, nil
 }
 
@@ -179,6 +193,17 @@ func (s *Server) AddBroker(ctx context.Context, req *dashpb.AddBrokerRequest) (*
 		return &dashpb.AddBrokerReply{Success: false, Error: "unknown platform type"}, nil
 	}
 
+	s.mu.RLock()
+	symbols := make([]string, 0, len(s.symbols))
+	for sym := range s.symbols {
+		symbols = append(symbols, sym)
+	}
+	s.mu.RUnlock()
+
+	a.SetOnReconnect(func(ctx context.Context) error {
+		return a.Subscribe(ctx, symbols)
+	})
+
 	token, err := a.Connect(ctx)
 	if err != nil {
 		return &dashpb.AddBrokerReply{Success: false, Error: err.Error()}, nil
@@ -186,16 +211,12 @@ func (s *Server) AddBroker(ctx context.Context, req *dashpb.AddBrokerRequest) (*
 
 	s.mu.Lock()
 	s.adapters[req.Name] = a
-	symbols := make([]string, 0, len(s.symbols))
-	for sym := range s.symbols {
-		symbols = append(symbols, sym)
-	}
 	s.mu.Unlock()
 
 	if err := a.Subscribe(ctx, symbols); err != nil {
 		slog.Warn("addBroker subscribe", "broker", req.Name, "error", err)
 	}
-	go a.QuoteStream(ctx, s.bus)
+	go a.QuoteStream(s.ctx, s.bus)
 
 	if s.store != nil {
 		if err := s.store.SaveBrokerAccount(ctx, store.BrokerAccountRecord{
@@ -226,9 +247,7 @@ func (s *Server) RemoveBroker(ctx context.Context, req *dashpb.RemoveBrokerReque
 	delete(s.adapters, req.Name)
 	s.mu.Unlock()
 
-	if err := a.Disconnect(); err != nil {
-		slog.Warn("removeBroker disconnect", "broker", req.Name, "error", err)
-	}
+	a.Stop()
 	if s.store != nil {
 		if err := s.store.DeleteBrokerAccount(ctx, req.Name); err != nil {
 			slog.Warn("removeBroker persist", "broker", req.Name, "error", err)
@@ -261,14 +280,14 @@ func (s *Server) GetBrokerOrderHistory(ctx context.Context, req *dashpb.BrokerOr
 			side = "Sell"
 		}
 		items = append(items, &dashpb.BrokerOrderHistoryReply_BrokerOrder{
-			Ticket:      o.Ticket,
-			Symbol:      o.Symbol,
-			Side:        side,
-			Lots:        float64(o.Lots.InexactFloat64()),
-			OpenPrice:   o.OpenPrice,
-			ClosePrice:  o.ClosePrice,
-			Profit:      o.Profit,
-			Comment:     o.Comment,
+			Ticket:          o.Ticket,
+			Symbol:          o.Symbol,
+			Side:            side,
+			Lots:            float64(o.Lots.InexactFloat64()),
+			OpenPrice:       o.OpenPrice,
+			ClosePrice:      o.ClosePrice,
+			Profit:          o.Profit,
+			Comment:         o.Comment,
 			OpenTimeUnixMs:  o.OpenTime.UnixMilli(),
 			CloseTimeUnixMs: o.CloseTime.UnixMilli(),
 		})
@@ -277,15 +296,15 @@ func (s *Server) GetBrokerOrderHistory(ctx context.Context, req *dashpb.BrokerOr
 }
 
 func (s *Server) GetBrokerSymbols(ctx context.Context, req *dashpb.BrokerSymbolsRequest) (*dashpb.BrokerSymbolsReply, error) {
-s.mu.RLock()
-a, exists := s.adapters[req.BrokerName]
-s.mu.RUnlock()
-if !exists {
-return &dashpb.BrokerSymbolsReply{Error: "broker not found"}, nil
-}
-symbols, err := a.AllSymbols(ctx)
-if err != nil {
-return &dashpb.BrokerSymbolsReply{Error: err.Error()}, nil
-}
-return &dashpb.BrokerSymbolsReply{Symbols: symbols}, nil
+	s.mu.RLock()
+	a, exists := s.adapters[req.BrokerName]
+	s.mu.RUnlock()
+	if !exists {
+		return &dashpb.BrokerSymbolsReply{Error: "broker not found"}, nil
+	}
+	symbols, err := a.AllSymbols(ctx)
+	if err != nil {
+		return &dashpb.BrokerSymbolsReply{Error: err.Error()}, nil
+	}
+	return &dashpb.BrokerSymbolsReply{Symbols: symbols}, nil
 }

@@ -77,18 +77,6 @@ CREATE TABLE IF NOT EXISTS orders (
     error       TEXT
 );
 
-CREATE TABLE IF NOT EXISTS broker_accounts (
-    name        TEXT PRIMARY KEY,
-    platform    INTEGER NOT NULL,
-    host        TEXT NOT NULL DEFAULT '',
-    server      TEXT NOT NULL DEFAULT '',
-    port        INTEGER NOT NULL DEFAULT 443,
-    login       BIGINT NOT NULL DEFAULT 0,
-    password    TEXT NOT NULL DEFAULT '',
-    company     TEXT NOT NULL DEFAULT '',
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
 CREATE TABLE IF NOT EXISTS daily_summary (
     day         DATE PRIMARY KEY,
     total_pnl   DOUBLE PRECISION NOT NULL DEFAULT 0,

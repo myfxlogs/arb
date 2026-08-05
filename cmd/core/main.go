@@ -102,6 +102,10 @@ func main() {
 			slog.Warn("unknown platform", "broker", bc.Name, "platform", bc.Platform)
 			continue
 		}
+		a.SetOnReconnect(func(ctx context.Context) error {
+			return a.Subscribe(ctx, allSymbols)
+		})
+
 		token, err := a.Connect(ctx)
 		if err != nil {
 			slog.Error("connect broker", "broker", bc.Name, "error", err)
@@ -111,8 +115,7 @@ func main() {
 		adapters[bc.Name] = a
 
 		// Subscribe to symbols
-		symbols := allSymbols
-		if err := a.Subscribe(ctx, symbols); err != nil {
+		if err := a.Subscribe(ctx, allSymbols); err != nil {
 			slog.Warn("subscribe", "broker", bc.Name, "error", err)
 		}
 		// Start quote stream
@@ -139,6 +142,10 @@ func main() {
 				slog.Warn("unknown platform in db broker", "broker", db.Name, "platform", db.Platform)
 				continue
 			}
+			a.SetOnReconnect(func(ctx context.Context) error {
+				return a.Subscribe(ctx, allSymbols)
+			})
+
 			token, connErr := a.Connect(ctx)
 			if connErr != nil {
 				slog.Error("connect db broker", "broker", db.Name, "error", connErr)
@@ -172,6 +179,7 @@ func main() {
 		Symbols:             allSymbols,
 		MaxConcurrentOrders: int(cfg.Risk.MaxConcurrentOrders),
 	})
+	dashServer.SetContext(ctx)
 	dashServer.StartFeeder()
 
 	lis, err := net.Listen("tcp", cfg.Dashboard.ListenAddress)

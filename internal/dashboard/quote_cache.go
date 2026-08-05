@@ -2,7 +2,6 @@ package dashboard
 
 import (
 	"sync"
-	"time"
 
 	"arb/internal/bus"
 )
@@ -55,20 +54,4 @@ func (c *quoteCache) feedSymbol(bus *bus.QuoteBus, symbol string) {
 	for q := range ch {
 		c.update(q)
 	}
-}
-
-// staleEntries returns the age of the oldest quote entry.
-func (c *quoteCache) staleEntries(maxAge time.Duration) []string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	now := time.Now()
-	var stale []string
-	for broker, syms := range c.quotes {
-		for sym, q := range syms {
-			if now.Sub(q.Time) > maxAge {
-				stale = append(stale, broker+":"+sym)
-			}
-		}
-	}
-	return stale
 }

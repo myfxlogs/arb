@@ -288,6 +288,4 @@ func classifyMT5OrderType(t mt5.OrderType) string {
 	}
 }
 
-func safeSymbol(s string) string {
-	return s
-}
+func safeSymbol(s string) string { return s }

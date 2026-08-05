@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"arb/internal/bus"
@@ -39,8 +40,11 @@ type MT5Adapter struct {
 	rsm     *reconnectStateMachine
 	execSem chan struct{}
 
-	// onReconnect is called after a successful reconnection to re-subscribe.
+	reconnectMu sync.Mutex
 	onReconnect func(ctx context.Context) error
+
+	stopCtx    context.Context
+	stopCancel context.CancelFunc
 }
 
 // NewMT5Adapter creates a new MT5Adapter. maxConcurrentOrders controls the
@@ -56,6 +60,7 @@ func NewMT5Adapter(brokerName, host, server string, port int32, user int64, pass
 		digits:     make(map[string]int32),
 		execSem:    make(chan struct{}, maxConcurrentOrders),
 	}
+	a.stopCtx, a.stopCancel = context.WithCancel(context.Background())
 	a.rsm = newReconnectStateMachine(defaultReconnectConfig(func() {
 		slog.Error("MT5 emergency close", "broker", brokerName)
 	}))
@@ -64,6 +69,13 @@ func NewMT5Adapter(brokerName, host, server string, port int32, user int64, pass
 
 func (a *MT5Adapter) BrokerName() string         { return a.brokerName }
 func (a *MT5Adapter) Platform() bus.PlatformType { return bus.PlatformMT5 }
+func (a *MT5Adapter) SetOnReconnect(fn func(ctx context.Context) error) { a.onReconnect = fn }
+func (a *MT5Adapter) Stop() {
+	if a.stopCancel != nil {
+		a.stopCancel()
+	}
+	a.Disconnect()
+}
 
 func (a *MT5Adapter) Connect(ctx context.Context) (string, error) {
 	a.rsm.setState(stateConnecting)
@@ -185,7 +197,7 @@ func (a *MT5Adapter) Subscribe(ctx context.Context, symbols []string) error {
 // On stream error, triggers reconnection.
 func (a *MT5Adapter) QuoteStream(ctx context.Context, b *bus.QuoteBus) {
 	for {
-		if err := ctx.Err(); err != nil {
+		if a.stopCtx.Err() != nil || ctx.Err() != nil {
 			return
 		}
 		if !a.rsm.isConnected() {
@@ -235,6 +247,11 @@ func (a *MT5Adapter) recvQuoteLoop(ctx context.Context, b *bus.QuoteBus, stream 
 
 // reconnect runs the reconnection state machine.
 func (a *MT5Adapter) reconnect(ctx context.Context) error {
+	a.reconnectMu.Lock()
+	defer a.reconnectMu.Unlock()
+	if a.rsm.isConnected() {
+		return nil
+	}
 	connectFn := func() error {
 		if a.conn != nil {
 			a.conn.Close()

@@ -28,6 +28,7 @@ type Server struct {
 	strategies          map[string]*strategyState
 	quoteCache          *quoteCache
 	maxConcurrentOrders int
+	ctx                 context.Context
 }
 
 type strategyState struct {
@@ -70,7 +71,14 @@ func NewServer(deps Deps) *Server {
 		strategies:          strats,
 		quoteCache:          newQuoteCache(),
 		maxConcurrentOrders: deps.MaxConcurrentOrders,
+		ctx:                 context.Background(),
 	}
+}
+
+// SetContext sets the server-level context for long-lived goroutines (e.g. QuoteStream).
+// Must be called before StartFeeder.
+func (s *Server) SetContext(ctx context.Context) {
+	s.ctx = ctx
 }
 
 // StartFeeder starts the background quote cache feeder for all subscribed symbols.
@@ -243,53 +251,73 @@ func (s *Server) buildPositionWatch(ctx context.Context) *dashpb.PositionWatchRe
 		adapters[k] = v
 	}
 	s.mu.RUnlock()
-	brokers := make([]*dashpb.PositionWatchReply_BrokerPosition, 0, len(adapters))
-	for name, a := range adapters {
-		bp := &dashpb.PositionWatchReply_BrokerPosition{
-			BrokerName:  name,
-			IsConnected: true,
-		}
-		acct, err := a.AccountSummary(ctx)
-		if err != nil {
-			slog.Warn("dashboard accountSummary", "broker", name, "error", err)
-			bp.IsConnected = false
-		} else {
-			bp.Equity = float64(acct.Equity.InexactFloat64())
-			bp.Balance = float64(acct.Balance.InexactFloat64())
-			bp.MarginUsed = float64(acct.Margin.InexactFloat64())
-			bp.MarginFree = float64(acct.FreeMargin.InexactFloat64())
-			bp.Currency = acct.Currency
-			bp.Credit = acct.Credit
-			bp.TotalFloatingPnl = acct.Profit
-			bp.MarginLevelPct = acct.MarginLevel
-			bp.Leverage = acct.Leverage
-			bp.Platform = acct.Platform
-			bp.Login = acct.Login
-		}
-		orders, err := a.OpenOrders(ctx)
-		if err == nil {
-			for _, o := range orders {
-				side := "Buy"
-				if o.Type == adapter.OpSell {
-					side = "Sell"
-				}
-				bp.Positions = append(bp.Positions, &dashpb.PositionWatchReply_Position{
-					Ticket:         o.Ticket,
-					Symbol:         o.Symbol,
-					Side:           side,
-					Lots:           float64(o.Lots.InexactFloat64()),
-					OpenPrice:      o.OpenPrice,
-					StopLoss:       o.StopLoss,
-					TakeProfit:     o.TakeProfit,
-					FloatingPnl:    o.Profit,
-					SwapAccrued:    o.Swap,
-					Commission:     o.Commission,
-					OpenTimeUnixMs: o.OpenTime.UnixMilli(),
-					Comment:        o.Comment,
-				})
+
+	names := make([]string, 0, len(adapters))
+	for name := range adapters {
+		names = append(names, name)
+	}
+	results := make([]*dashpb.PositionWatchReply_BrokerPosition, len(names))
+	var wg sync.WaitGroup
+
+	for i, name := range names {
+		a := adapters[name]
+		wg.Add(1)
+		go func(idx int, brokerName string, adp adapter.PlatformAdapter) {
+			defer wg.Done()
+			bp := &dashpb.PositionWatchReply_BrokerPosition{
+				BrokerName:  brokerName,
+				IsConnected: true,
 			}
+			acct, err := adp.AccountSummary(ctx)
+			if err != nil {
+				slog.Warn("dashboard accountSummary", "broker", brokerName, "error", err)
+				bp.IsConnected = false
+			} else {
+				bp.Equity = float64(acct.Equity.InexactFloat64())
+				bp.Balance = float64(acct.Balance.InexactFloat64())
+				bp.MarginUsed = float64(acct.Margin.InexactFloat64())
+				bp.MarginFree = float64(acct.FreeMargin.InexactFloat64())
+				bp.Currency = acct.Currency
+				bp.Credit = acct.Credit
+				bp.TotalFloatingPnl = acct.Profit
+				bp.MarginLevelPct = acct.MarginLevel
+				bp.Leverage = acct.Leverage
+				bp.Platform = acct.Platform
+				bp.Login = acct.Login
+			}
+			orders, err := adp.OpenOrders(ctx)
+			if err == nil {
+				for _, o := range orders {
+					side := "Buy"
+					if o.Type == adapter.OpSell {
+						side = "Sell"
+					}
+					bp.Positions = append(bp.Positions, &dashpb.PositionWatchReply_Position{
+						Ticket:         o.Ticket,
+						Symbol:         o.Symbol,
+						Side:           side,
+						Lots:           float64(o.Lots.InexactFloat64()),
+						OpenPrice:      o.OpenPrice,
+						StopLoss:       o.StopLoss,
+						TakeProfit:     o.TakeProfit,
+						FloatingPnl:    o.Profit,
+						SwapAccrued:    o.Swap,
+						Commission:     o.Commission,
+						OpenTimeUnixMs: o.OpenTime.UnixMilli(),
+						Comment:        o.Comment,
+					})
+				}
+			}
+			results[idx] = bp
+		}(i, name, a)
+	}
+	wg.Wait()
+
+	brokers := make([]*dashpb.PositionWatchReply_BrokerPosition, 0, len(results))
+	for _, bp := range results {
+		if bp != nil {
+			brokers = append(brokers, bp)
 		}
-		brokers = append(brokers, bp)
 	}
 	return &dashpb.PositionWatchReply{
 		TimestampUnixMs: time.Now().UnixMilli(),
