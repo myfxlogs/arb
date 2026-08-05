@@ -211,6 +211,7 @@ func (a *MT5Adapter) recvQuoteLoop(ctx context.Context, b *bus.QuoteBus, stream 
 		msg, err := stream.Recv()
 		if err != nil {
 			slog.Warn("MT5 quote recv error", "broker", a.brokerName, "error", err)
+			a.rsm.setState(stateDisconnected)
 			return
 		}
 		if msg.Error != nil {

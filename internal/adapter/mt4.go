@@ -201,6 +201,7 @@ func (a *MT4Adapter) runOnQuote(ctx context.Context, b *bus.QuoteBus) {
 			msg, err := stream.Recv()
 			if err != nil {
 				slog.Warn("MT4 quote recv error", "broker", a.brokerName, "error", err)
+				a.rsm.setState(stateDisconnected)
 				break
 			}
 			if msg.Error != nil {
@@ -242,6 +243,7 @@ func (a *MT4Adapter) runOnOrderUpdate(ctx context.Context) {
 		for {
 			_, err := stream.Recv()
 			if err != nil {
+				a.rsm.setState(stateDisconnected)
 				break
 			}
 		}
@@ -268,6 +270,7 @@ func (a *MT4Adapter) runOnOrderProfit(ctx context.Context) {
 		for {
 			_, err := stream.Recv()
 			if err != nil {
+				a.rsm.setState(stateDisconnected)
 				break
 			}
 		}
