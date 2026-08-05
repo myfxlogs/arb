@@ -11,6 +11,7 @@ import (
 type quoteCache struct {
 	mu      sync.RWMutex
 	quotes  map[string]map[string]bus.Quote // broker -> symbol -> Quote
+	cancels []func()                    // feeder unsubscribe funcs
 }
 
 func newQuoteCache() *quoteCache {
@@ -41,8 +42,8 @@ func (c *quoteCache) snapshot() map[string]map[string]bus.Quote {
 	return result
 }
 
-// startFeeder starts a background goroutine that subscribes to all symbols
-// on the QuoteBus and feeds quotes into the cache.
+// startFeeder starts background goroutines that subscribe to all symbols
+// on the QuoteBus and feeds quotes into the cache. Call Stop to clean up.
 func (c *quoteCache) startFeeder(bus *bus.QuoteBus, symbols []string) {
 	for _, sym := range symbols {
 		go c.feedSymbol(bus, sym)
@@ -50,8 +51,21 @@ func (c *quoteCache) startFeeder(bus *bus.QuoteBus, symbols []string) {
 }
 
 func (c *quoteCache) feedSymbol(bus *bus.QuoteBus, symbol string) {
-	ch, _ := bus.Subscribe(symbol)
+	ch, cancel := bus.Subscribe(symbol)
+	c.mu.Lock()
+	c.cancels = append(c.cancels, cancel)
+	c.mu.Unlock()
 	for q := range ch {
 		c.update(q)
 	}
+}
+
+// Stop unsubscribes all feeder goroutines, allowing them to exit.
+func (c *quoteCache) Stop() {
+	c.mu.Lock()
+	for _, cancel := range c.cancels {
+		cancel()
+	}
+	c.cancels = nil
+	c.mu.Unlock()
 }

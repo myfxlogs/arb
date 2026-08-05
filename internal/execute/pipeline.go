@@ -155,22 +155,21 @@ func (p *ExecutionPipeline) revalidate(ctx context.Context, opp ArbitrageOpportu
 	return nil
 }
 
-// waitForQuote subscribes and waits for a quote with retries.
+// waitForQuote returns the latest quote for a symbol, polling briefly if none yet.
 func (p *ExecutionPipeline) waitForQuote(ctx context.Context, symbol string) (bus.Quote, error) {
 	deadline := time.Now().Add(500 * time.Millisecond)
 	for {
-		ch, cancel := p.deps.Bus.Subscribe(symbol)
-		select {
-		case q := <-ch:
-			cancel()
-			return q, nil
-		case <-ctx.Done():
-			cancel()
+		if ctx.Err() != nil {
 			return bus.Quote{}, ctx.Err()
-		case <-time.After(time.Until(deadline)):
-			cancel()
+		}
+		snap := p.deps.Bus.Snapshot(ctx, []string{symbol})
+		if q, ok := snap[symbol]; ok {
+			return q, nil
+		}
+		if time.Now().After(deadline) {
 			return bus.Quote{}, fmt.Errorf("no quote for %s", symbol)
 		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

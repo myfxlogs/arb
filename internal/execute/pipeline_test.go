@@ -54,6 +54,8 @@ func (m *mockAdapter) OrderHistory(context.Context, time.Time, time.Time) ([]ada
 }
 func (m *mockAdapter) Platform() bus.PlatformType { return bus.PlatformMT5 }
 func (m *mockAdapter) BrokerName() string         { return m.broker }
+func (m *mockAdapter) SetOnReconnect(func(context.Context) error) {}
+func (m *mockAdapter) Stop()                                       {}
 
 func (m *mockAdapter) getCalls() int {
 	m.mu.Lock()

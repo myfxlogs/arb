@@ -42,6 +42,8 @@ func (m *mockAdapter) CloseOrder(context.Context, int64, decimal.Decimal, float6
 }
 func (m *mockAdapter) Platform() bus.PlatformType { return bus.PlatformMT5 }
 func (m *mockAdapter) BrokerName() string         { return m.name }
+func (m *mockAdapter) SetOnReconnect(func(context.Context) error) {}
+func (m *mockAdapter) Stop()                                       {}
 
 func TestSpreadMatrixBestBidAsk(t *testing.T) {
 	b := bus.New([]string{"EURUSD"})

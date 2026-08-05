@@ -133,11 +133,9 @@ func TestUnsubscribeNoMoreMessages(t *testing.T) {
 	}
 }
 
-func TestSnapshotTimeout(t *testing.T) {
+func TestSnapshotEmpty(t *testing.T) {
 	b := New([]string{"EURUSD"})
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
-	defer cancel()
-	result := b.Snapshot(ctx, []string{"EURUSD"})
+	result := b.Snapshot(context.Background(), []string{"EURUSD"})
 	if len(result) != 0 {
 		t.Fatalf("expected empty result, got %d items", len(result))
 	}
