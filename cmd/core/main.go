@@ -215,12 +215,12 @@ func main() {
 	slog.Info("stopping gRPC server")
 	grpcServer.GracefulStop()
 
-	// Disconnect all adapters
+	// Stop all adapter goroutines and quote cache
 	for name, a := range adapters {
-		if err := a.Disconnect(); err != nil {
-			slog.Warn("disconnect", "broker", name, "error", err)
-		}
+		a.Stop()
+		slog.Info("adapter stopped", "broker", name)
 	}
+	dashServer.StopQuoteCache()
 	if st != nil {
 		st.Close()
 	}

@@ -155,22 +155,11 @@ func (p *ExecutionPipeline) revalidate(ctx context.Context, opp ArbitrageOpportu
 	return nil
 }
 
-// waitForQuote returns the latest quote for a symbol, polling briefly if none yet.
+// waitForQuote returns the latest quote for a symbol, or waits up to 500ms for the next one.
 func (p *ExecutionPipeline) waitForQuote(ctx context.Context, symbol string) (bus.Quote, error) {
-	deadline := time.Now().Add(500 * time.Millisecond)
-	for {
-		if ctx.Err() != nil {
-			return bus.Quote{}, ctx.Err()
-		}
-		snap := p.deps.Bus.Snapshot(ctx, []string{symbol})
-		if q, ok := snap[symbol]; ok {
-			return q, nil
-		}
-		if time.Now().After(deadline) {
-			return bus.Quote{}, fmt.Errorf("no quote for %s", symbol)
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
+	ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancel()
+	return p.deps.Bus.LatestOrWait(ctx, symbol)
 }
 
 // executeLeg submits a single order with dedup check.

@@ -11,6 +11,7 @@ import (
 type QuoteBus struct {
 	mu          sync.RWMutex
 	subscribers map[string][]chan Quote
+	latestMu    sync.RWMutex
 	latest      map[string]Quote
 }
 
@@ -47,10 +48,13 @@ func (b *QuoteBus) Subscribe(symbol string) (<-chan Quote, func()) {
 // Publish sends a quote to all subscribers of the quote's symbol.
 // Drain-then-replace: if the channel is full, drop the oldest and write the newest.
 func (b *QuoteBus) Publish(q Quote) {
-	b.mu.Lock()
+	b.latestMu.Lock()
 	b.latest[q.Symbol] = q
+	b.latestMu.Unlock()
+
+	b.mu.RLock()
 	chs := b.subscribers[q.Symbol]
-	b.mu.Unlock()
+	b.mu.RUnlock()
 	for _, ch := range chs {
 		select {
 		case ch <- q:
@@ -64,8 +68,8 @@ func (b *QuoteBus) Publish(q Quote) {
 // Snapshot returns the latest quote for each requested symbol.
 // If a symbol has never received a quote, it is omitted from the result.
 func (b *QuoteBus) Snapshot(_ context.Context, symbols []string) map[string]Quote {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
+	b.latestMu.RLock()
+	defer b.latestMu.RUnlock()
 	result := make(map[string]Quote, len(symbols))
 	for _, sym := range symbols {
 		if q, ok := b.latest[sym]; ok {
@@ -73,4 +77,23 @@ func (b *QuoteBus) Snapshot(_ context.Context, symbols []string) map[string]Quot
 		}
 	}
 	return result
+}
+
+// LatestOrWait returns the latest quote for a symbol, or waits for the next one.
+func (b *QuoteBus) LatestOrWait(ctx context.Context, symbol string) (Quote, error) {
+	b.latestMu.RLock()
+	if q, ok := b.latest[symbol]; ok {
+		b.latestMu.RUnlock()
+		return q, nil
+	}
+	b.latestMu.RUnlock()
+
+	ch, cancel := b.Subscribe(symbol)
+	defer cancel()
+	select {
+	case q := <-ch:
+		return q, nil
+	case <-ctx.Done():
+		return Quote{}, ctx.Err()
+	}
 }

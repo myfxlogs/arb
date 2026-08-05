@@ -137,7 +137,11 @@ func (s *Server) PositionWatch(req *dashpb.PositionWatchRequest, stream dashpb.D
 	}
 }
 
-// BuildSpreadMatrixForTest is an exported wrapper for testing.
+// StopQuoteCache stops the background quote cache feeder.
+func (s *Server) StopQuoteCache() {
+	s.quoteCache.Stop()
+}
+
 func (s *Server) BuildSpreadMatrixForTest() *dashpb.SpreadMatrixReply {
 	return s.buildSpreadMatrix()
 }
