@@ -31,7 +31,7 @@ desk/ (arb-cockpit)
 │
 ├── ViewModels/                     ★业务逻辑（状态聚合、命令绑定、gRPC 调用编排）
 │   ├── MainViewModel.cs            顶层：持有各 Tab ViewModel + 全局命令（Kill/Resume）
-│   ├── OpportunityViewModel.cs     ★机会卡片（单条）— 见 §4
+│   ├── OpportunityViewModel.cs     ★机会表行 + 详情源（master-detail）— 见 §4
 │   ├── OpportunityListViewModel.cs ★机会列表（主视图）— 见 §4
 │   ├── MatrixViewModel.cs          价差矩阵
 │   ├── PositionsViewModel.cs       持仓 + 浮动 PnL（长期监控面板，CLAUDE.md）
@@ -74,7 +74,7 @@ constraints §三 3.2 列的 5 视图（价差矩阵 / 持仓 / 交易 / 历史 
 
 | Tab | ViewModel | 数据源 RPC | 刷新 | 用途 |
 |---|---|---|---|---|
-| **机会列表** ★主 | OpportunityListViewModel | `OpportunityStream`（push）+ `ConfirmOpportunity`（unary） | 实时 push | 看机会 → 你确认 → 看状态变更（Filled/Failed/Expired） |
+| **机会列表** ★主 | OpportunityListViewModel | `OpportunityStream`（push）+ `ConfirmOpportunity`（unary） | 实时 push | Master-Detail 表格：一屏扫多机会（筛选/排序）→ 选中看全成本 → 你确认 → 看状态变更（§4） |
 | 价差矩阵 | MatrixViewModel | `SpreadMatrix`（server stream） | push（refresh_interval_ms） | 全市场 bid/ask + 跨所价差热力 |
 | 持仓 | PositionsViewModel | `PositionWatch`（server stream） | push | 长期持仓 + 浮动 PnL + swap 累积（持续监控） |
 | 交易 | TradingViewModel | `SubmitOrder`/`ClosePosition`/`CancelOrder`（unary） | 命令触发 | 手动通道（调试/救急，与机会流程并存，04 §4） |
@@ -89,9 +89,35 @@ constraints §三 3.2 列的 5 视图（价差矩阵 / 持仓 / 交易 / 历史 
 
 ---
 
-## 4. OpportunityViewModel（机会卡片 + 确认命令）
+## 4. 机会列表（Master-Detail 表格 + 确认命令）★主视图
 
-机会列表的主元素是 `OpportunityViewModel`（一条机会 = 一张卡片）。字段对齐 `02 §5` Opportunity + `06` proto。
+### 4.0 形态定夺：表格 Master-Detail，非卡片（D-006 竞品借鉴）
+
+主视图是运营人员**扫一眼多个机会、快速决策**的入口。竞品用**高密度表格**（一机会一行：统一品种 / 收息腿 / 对冲腿 / 年化 / 报价差异 / 对冲比例 / 风险提示），一屏看十几条——这比卡片列表（一屏 2~3 张）**决策效率高一个量级**。
+
+定夺：**主表（`DataGrid`，一机会一行）+ 选中行展开详情面板**（master-detail，WPF 原生模式）。`DataGrid` 绑定 `ObservableCollection<OpportunityViewModel>`，详情面板绑定 `Selected`。表格管"扫描/排序/筛选"，详情面板管"全成本拆解 + 确认"——后者是我们相对竞品的优势（公理③全成本透明 + D-003 人工确认），不丢。
+
+### 4.1 主表列（一机会一行）
+
+| 列 | 绑定 | 说明 |
+|---|---|---|
+| 类型徽标 | `Type` | CrossExchange / Carry / Triangular（色块） |
+| 统一品种 | `CanonicalSymbol` | 逻辑符号（如 EURUSD / XAUUSD） |
+| 腿 | `LegsCompact` | Carry：`收息 IC EURUSD Buy 1.0 · 对冲 EX EURUSDm Sell 1.0`；其他：`买 IC · 卖 EX` |
+| 报价差异 | `SpreadDiffBps` | 毛价差（`GrossProfit` bps），黄底——机会的"原始信号" |
+| 主度量 | `PrimaryMeasure` | **Carry → 组合年化**（`42.1 bp/yr`）；**其他 → NetBps**（`3.2 bp`）——双轨见 `02 §5.1` |
+| 对冲比例 | `HedgeRatio` | `Lots_A:Lots_B`，如 `1:1` / `1:10`（`02 §3.1` 归一化结果） |
+| 风险提示 | `RiskHint` + 颜色 | 见下，把 `Executable`/`Confidence`/`Remaining` 映射成可读提示 |
+| 倒计时 | `Remaining` | 公理④新鲜度，进度条 |
+| 状态 | `Status` | Pushed/Confirmed/Executing/Filled/Failed/Expired 徽标 |
+
+**风险提示映射**（竞品"价差偏大/组内最小价差"的等价，第一性化为我们已有的字段）：
+- `Executable=false` → ❌「不可执行」（红）：盘口过窄/资金不足/净值不达标。
+- `Executable=true` & `Remaining<5s` → ⚠️「临期」（橙）：报价将过期。
+- `Executable=true` & `Confidence<阈值` → ⚠️「低置信」（黄）：滑点风险大。
+- `Executable=true` & 高置信 → ✅「可执行」（绿）。
+
+### 4.2 OpportunityViewModel（既是表行、又是详情源）
 
 ```csharp
 public sealed class OpportunityViewModel : INotifyPropertyChanged
@@ -99,36 +125,47 @@ public sealed class OpportunityViewModel : INotifyPropertyChanged
     // —— 身份 / 类型 ——
     public string Id { get; }                    // Opportunity.id
     public OppType Type { get; }                 // CROSS_EXCHANGE / CARRY / TRIANGULAR
-    public IReadOnlyList<LegViewModel> Legs { get; }  // 每腿展示
+    public IReadOnlyList<LegViewModel> Legs { get; }
+    public string CanonicalSymbol { get; }       // 统一品种（主表列）
 
     // —— 净盈利（统一度量，02 §3）——
     public decimal NetProfitUsd { get; }         // proto net_profit → decimal.Parse(string)
     public decimal NetBps { get; }               // proto net_bps
-    public string NetSummary => $"{NetBps:F1} bp · ${NetProfitUsd:F2}";
+    public decimal GrossProfitBps { get; }       // 报价差异列（毛，未扣成本）
+    public string PrimaryMeasure =>             // 主度量列：Carry 年化 / 其他 NetBps（02 §5.1）
+        Type == OppType.Carry ? $"{AnnualizedNetBps:F1} bp/yr" : $"{NetBps:F1} bp";
+    public decimal AnnualizedNetBps { get; }     // Carry：组合年化（02 §5.1，proto annualized_net_bps）
 
-    // —— 成本拆解（02 §4，公理③）——
+    // —— 成本拆解（02 §4，公理③，详情面板用）——
     public decimal GrossProfit { get; }
     public decimal SpreadCost { get; }
     public decimal CommissionCost { get; }
     public decimal SlippageCost { get; }
-    public decimal SwapCost { get; }
+    public decimal SwapCost { get; }             // Carry 净 swap 为收入时为负
+    public string NetSummary => $"{PrimaryMeasure} · ${NetProfitUsd:F2}";
+
+    // —— 主表投影（computed）——
+    public string LegsCompact { get; }           // 腿列文本（含角色，见 LegViewModel）
+    public string HedgeRatio { get; }            // "1:1" / "1:10"（按 Legs 手数比）
+    public string RiskHint { get; private set; } // 风险提示文本（§4.1 映射，色由 DataTrigger 定）
 
     // —— 时间（公理④）——
     public DateTimeOffset QuoteTime { get; }
     public DateTimeOffset ExpiresAt { get; }
-    public TimeSpan Remaining => ExpiresAt - DateTimeOffset.Now;   // 倒计时
+    public TimeSpan Remaining => ExpiresAt - DateTimeOffset.Now;
     public double Confidence { get; }            // 0..1
 
     // —— 状态机（04 §2）——
-    public OppStatus Status { get; private set; } // Pushed/Confirmed/Executing/Filled/Failed/Expired
-    public bool CanConfirm => Status == OppStatus.Pushed && Remaining > TimeSpan.Zero;
+    public OppStatus Status { get; private set; }
+    public bool Executable { get; }              // 02 §5 可执行性预检
+    public bool CanConfirm => Status == OppStatus.Pushed && Executable && Remaining > TimeSpan.Zero;
 
     // —— 命令 ——
     public ICommand ConfirmCommand { get; }      // → ConfirmOpportunityAsync（§5）
     public ICommand DismissCommand { get; }      // 本地忽略（不调 core；机会自然 Expire）
 
     public event PropertyChangedEventHandler? PropertyChanged;
-    // OnStatusChanged / 倒计时 Tick → PropertyChanged
+    // OnStatusChanged / 倒计时 Tick → 重新算 RiskHint + PropertyChanged
 }
 
 public sealed class LegViewModel
@@ -137,31 +174,37 @@ public sealed class LegViewModel
     public string BrokerSymbol { get; }          // 原始符号（下单用）
     public string CanonicalSymbol { get; }       // 逻辑符号（展示）
     public BuySell Direction { get; }            // Buy/Sell
-    public decimal Lots { get; }
+    public decimal Lots { get; }                 // 对冲手数（02 §3.1 归一化）
+    public LegRole Role { get; }                 // Income/Hedge（Carry）/ None（其他）—— 02 §5
+    public decimal DailySwap { get; }            // 该腿日 swap（Carry，02 §4.2）
+    public decimal AnnualizedBps { get; }        // 该腿年化（Carry，DailySwap×365/名义×10000）
     public decimal EstimatePrice { get; }
-    public string Summary => $"{Broker} · {BrokerSymbol} {Direction} {Lots} @ {EstimatePrice}";
+    // Carry 腿文本带角色：收息 ICMarkets EURUSD Buy 1.0 (+11.67/d, +43bp/yr)
+    // 其他：ICMarkets EURUSD Buy 1.0 @ 1.1000
+    public string Summary => Role == LegRole.None
+        ? $"{Broker} {BrokerSymbol} {Direction} {Lots} @ {EstimatePrice}"
+        : $"{RoleText} {Broker} {BrokerSymbol} {Direction} {Lots} ({DailySwap:+0.##;-0.##}/d, {AnnualizedBps:+0.#;-0.#}bp/yr)";
 }
 ```
 
-**机会列表 ViewModel**（主视图）：
+### 4.3 详情面板（`Selected` → 全成本 + 确认）
 
-```csharp
-public sealed class OpportunityListViewModel : INotifyPropertyChanged
-{
-    public ObservableCollection<OpportunityViewModel> Opportunities { get; } = new();
-    public OpportunityViewModel? Selected { get; set; }   // 详情面板绑定
-    // 过滤：只看 Pushed / 含全部状态；按 NetBps 排序
-}
-```
+选中主表一行 → 右侧/下方详情面板展示 `Selected`（同 `OpportunityViewModel`，深字段）：
+- **腿详情**：逐腿 `LegViewModel.Summary`（Carry 显示收息/对冲角色 + 日 swap + 年化，对应竞品"收息腿/对冲腿年化"）。
+- **成本拆解**（公理③，竞品没做到——我们的优势）：毛利差 / 点差 / 手续费 / 滑点 / swap 五行，各自 bps + USD，合计 = NetProfit。
+- **主度量大字**：`NetSummary`（Carry `42.1 bp/yr · $128.30`；其他 `3.2 bp · $42.50`）+ 置信度 + 倒计时。
+- **操作区**：「确认执行」按钮（`CanConfirm` 为 `true` 时可用，红色二次确认弹窗）+ 「忽略」按钮。
 
-**卡片展示要素**（04 §4 + 02 §5）：
-- 顶栏：类型徽标（CrossExchange/Carry/Triangular）+ 状态徽标 + 倒计时进度条。
-- 中段：腿列表（`LegViewModel.Summary` 逐腿）。
-- 净盈利大字：`NetSummary`（`3.2 bp · $42.50`）+ 置信度小字。
-- 成本拆解（可展开）：点差/手续费/滑点/swap 四行。
-- 操作区：「确认执行」按钮（`CanConfirm` 为 `true` 时可用）+ 「忽略」按钮。
+### 4.4 筛选 / 排序栏（主表上方）
 
-**确认按钮**（04 §4 的核心）：
+竞品借鉴（D-006）：`CollectionViewSource` 包 `Opportunities`，主表上方一排下拉/单选：
+- **品种筛选**：全部 / EURUSD / XAUUSD / …（按 `CanonicalSymbol`）。
+- **平台筛选**：全部 / 各 broker（按 `Legs[].Broker` 命中）。
+- **状态筛选**：未处理（仅 `Pushed`）/ 全部。
+- **排序**：按主度量（年化/NetBps）降序 / 按报价差异 / 按剩余时间升序（默认主度量降序 + `Pushed` 优先）。
+
+### 4.5 确认命令（04 §4 的核心，保留）
+
 ```csharp
 ConfirmCommand = new AsyncRelayCommand(ConfirmAsync, () => CanConfirm);
 
@@ -172,8 +215,20 @@ private async Task ConfirmAsync()
         await _dialog.Warn($"未接受：{reply.Reason}");   // 如已被 Expire/价格漂移
 }
 ```
-- `ICommand` 绑定到 XAML `<Button Command="{Binding ConfirmCommand}">`。
+- `ICommand` 绑定到详情面板 `<Button Command="{Binding Selected.ConfirmCommand}">`。
 - 确认后按钮置灰（`CanConfirm` 变 `false`），等 `OpportunityStream` 推状态变更（→ Confirmed/Executing/Filled/Failed）。
+- 主表行也支持键盘：选中行 + Enter 触发 `ConfirmCommand`（高频运营场景）。
+
+**机会列表 ViewModel**（主视图）：
+
+```csharp
+public sealed class OpportunityListViewModel : INotifyPropertyChanged
+{
+    public ObservableCollection<OpportunityViewModel> Opportunities { get; } = new();
+    public OpportunityViewModel? Selected { get; set; }   // 详情面板绑定
+    // CollectionViewSource 做 §4.4 筛选/排序；订阅 OpportunityStream 增删改 Opportunities
+}
+```
 
 ---
 
@@ -249,8 +304,8 @@ core gRPC stream ──► await foreach (ResponseStream.ReadAllAsync)
                   ──► WPF binding engine 自动刷新 View
 ```
 
-**倒计时**（公理④，机会卡片需要秒级倒计时）：
-- 单个 `DispatcherTimer`（1Hz）驱动所有可见卡片的 `Remaining` 触发 `PropertyChanged`，不为每张卡片开 timer。
+**倒计时**（公理④，机会行需要秒级倒计时）：
+- 单个 `DispatcherTimer`（1Hz）驱动所有可见行的 `Remaining` 触发 `PropertyChanged`，不为每行开 timer。
 
 ---
 
@@ -307,7 +362,7 @@ constraints §三 3.2 允许 LiveChartsCore / OxyPlot / ScottPlot。**推荐 Liv
 |---|---|
 | gRPC unary 返回 error | `AsyncRelayCommand` 捕获 → 弹窗（不崩 UI） |
 | stream 断开 | channel `StateChanged` → 状态栏标红 + 自动重连（指数退避，core 侧 09 §10） |
-| 确认时机会已 Expire | `ConfirmReply.Accepted=false` → 弹窗提示 reason，卡片状态由 stream 推回 Expired |
+| 确认时机会已 Expire | `ConfirmReply.Accepted=false` → 弹窗提示 reason，该机会状态由 stream 推回 Expired |
 | Kill Switch 触发 | 全局状态栏红色横幅 + 所有 Confirm 按钮禁用 + 策略状态置灰 |
 | core 重启对账中（09 §10） | OpportunityStream 推 `blind` 指示 → desk 暂停新机会展示 + 横幅提示 |
 
@@ -320,7 +375,7 @@ constraints §三 3.2 允许 LiveChartsCore / OxyPlot / ScottPlot。**推荐 Liv
 | 项目脚手架 | `dotnet new wpf -n arb-cockpit -f net8.0`；加 `Grpc.Net.Client`/`Grpc.Tools`/`Google.Protobuf`/`LiveChartsCore.SkiaSharpView.WPF` NuGet。 |
 | Proto stub | `dashboard.proto` 进 `Proto/`，`<Protobuf Include="Proto/dashboard.proto" />`（Grpc.Tools 生成 C# stub，与 Go 共享同一份 proto）。 |
 | MVVM 基类 | `ViewModelBase`（`INotifyPropertyChanged`）+ `AsyncRelayCommand`（标准实现，无第三方 MVVM 框架强制，轻量）。 |
-| 机会列表 | `OpportunityListView.xaml`（`ItemsControl` + 卡片 `DataTemplate`）+ `OpportunityListViewModel`（订阅 `OpportunityStream`）。 |
+| 机会列表 | `OpportunityListView.xaml`（`DataGrid` 主表 + 详情面板 `ContentControl`，master-detail）+ `OpportunityListViewModel`（订阅 `OpportunityStream`，§4）。 |
 | 全局状态 | `MainWindow` 顶部 `ContentControl` 绑定 `MainViewModel.GlobalStatus`。 |
 | 配置 | `core` 地址走配置文件（appsettings.json 或命令行）；不启动 HTTP listener。 |
 
@@ -329,8 +384,8 @@ constraints §三 3.2 允许 LiveChartsCore / OxyPlot / ScottPlot。**推荐 Liv
 ## 11. 回溯
 
 - WPF / C# / grpc-dotnet / MVVM / 6 视图 → D-005、constraints §三
-- 机会列表主视图 + 确认按钮（ICommand → ConfirmOpportunity）→ 04 §4、§5
-- OpportunityViewModel 字段（NetBps/USD/成本拆解/倒计时/置信度）→ 02 §5
+- 机会列表 Master-Detail 表格 + 确认按钮（ICommand → ConfirmOpportunity）→ 04 §4、§5、竞品借鉴 D-006
+- OpportunityViewModel 字段（NetBps/年化双轨/成本拆解/倒计时/置信度/腿角色/风险提示）→ 02 §5/§5.1/§3.1
 - OpportunityStream（await foreach）+ ConfirmOpportunity（unary）→ 06
 - 实时数据绑定（ObservableCollection / INotifyPropertyChanged）→ constraints §三 3.2/3.4
 - 后台 Task → Dispatcher → UI 线程 → WPF 单线程 UI 模型（第一性）

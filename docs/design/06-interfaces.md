@@ -153,6 +153,13 @@ enum BuySell {
   BUY_SELL_SELL = 2;
 }
 
+// 腿经济角色（02 §5）—— Carry 才有意义，其他策略 UNSPECIFIED 用 direction 区分
+enum LegRole {
+  LEG_ROLE_UNSPECIFIED = 0;  // CrossExchange / Triangular：两腿经济对称
+  LEG_ROLE_INCOME      = 1;  // Carry 收息腿（正 swap）
+  LEG_ROLE_HEDGE       = 2;  // Carry 对冲腿（负 swap 成本）
+}
+
 // 机会事件动作（OpportunityEvent.action）
 enum OpportunityAction {
   OPP_ACTION_UNSPECIFIED = 0;
@@ -179,7 +186,12 @@ message Opportunity {
   string slippage_cost    = 8;         // 滑点预估（归因 P95，07 §4）
   string swap_cost        = 9;         // swap 预估（按预期持仓时长）
   string net_profit       = 10;        // = GrossProfit − 上述全部（02 §4.1）
-  string net_bps          = 11;        // 统一收益率度量（跨机会排序）
+  string net_bps          = 11;        // 统一绝对度量（跨机会排序）
+
+  // —— Carry 专用：长期持仓年化度量（02 §5.1）——
+  string net_swap_per_day = 16;        // Carry：净日 swap（USD，+ = 收入）；其他策略不用
+  int32  hold_days_hint   = 17;        // Carry：预期持仓天数（年化换算分母）
+  string annualized_net_bps = 18;      // Carry：组合年化（02 §5.1，desk 主度量列）
 
   // —— 准确性（公理④）——
   int64 expires_at_unix_ms = 12;       // 报价有效期（Evaluator 设，02 §6）
@@ -194,8 +206,11 @@ message Leg {
   string broker_symbol = 2;            // 原始符号，下单透传（不归一化，02 §2）
   string canonical_symbol = 3;         // 逻辑符号，展示/比较用
   BuySell direction = 4;
-  string lots = 5;                     // decimal string（warm path）
+  string lots = 5;                     // decimal string（warm path，对冲手数 02 §3.1 归一化）
   string estimate_price = 6;           // 估价（采样 bid/ask，decimal string）
+  LegRole role = 7;                    // 经济角色（Carry 收息/对冲，02 §5）
+  string daily_swap = 8;               // 该腿日 swap（Carry，decimal string，02 §4.2）
+  string annualized_bps = 9;           // 该腿年化（Carry，decimal string，02 §5.1）
 }
 
 // OpportunityStream 推送事件（一次机会的完整快照 + 动作）
@@ -250,7 +265,7 @@ message OpportunityStreamRequest {
 
 ## 6. 回溯
 - OpportunityStream / ConfirmOpportunity / Opportunity 状态机 → 04 §3、§5
-- Opportunity / Leg 字段（成本拆解 / ExpiresAt / Confidence）→ 02 §5、§6
+- Opportunity / Leg 字段（成本拆解 / ExpiresAt / Confidence / 腿角色 LegRole / Carry 年化）→ 02 §5、§5.1、§6
 - decimal as string / int64 unix_ms → constraints §四
 - Push-First（stream）/ grpc-dotnet unary → constraints §一、§三
 - 现有 RPC / message → 现有 `proto/dashboard/dashboard.proto`

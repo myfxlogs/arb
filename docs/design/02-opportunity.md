@@ -86,6 +86,21 @@ type Listing struct {
 - **不依赖 `TickValue`**：实测 broker 未填该字段（零值）。用 `ContractSize × Points × ProfitCurrency` 手算。
 - **JPY 计价品种**（GBPJPY/USDJPY，ProfitCurrency=JPY）：盈亏先得 JPY，再按 USDJPY 汇率换 USD。
 
+### 3.1 对冲手数归一化（delta-neutral 的落地）
+
+对冲的前提是**两腿名义价值相等**（锁掉敞口，公理②"换算非抹平"的对偶——这里换的是手数，不是抹掉规模差）。当两腿 `ContractSize` 不同时，**手数反比于 ContractSize**：
+
+```
+名义价值(腿) = ContractSize × Lots × Price      （须两腿相等）
+→ Lots_B / Lots_A = ContractSize_A / ContractSize_B
+```
+
+- **同品种跨 broker（FX 第一版主流）**：`ContractSize` 通常一致（EURUSD ICMarkets=100000、Exness=100000）→ 手数 **1:1**。
+- **不同品种/不同合约规格对冲**：`ContractSize` 异 → 手数比 ≠ 1。例如截图竞品 UKOIL↔XBRUSD（CFD，规模异）需 **1:10** 才等量；Crypto 永续（Binance 面值 1 USD/张 vs FX 100000/手）接入后比例更悬殊。
+- 归一化在 **Evaluator** 算（decimal，warm path）：给定 A 腿基准手数，按上式定 B 腿手数，再各自向 `VolumeStep` 取整（取整后重新校验名义价值偏差 ≤ 容差，超容差则机会判不可执行）。
+
+> 这是公理②"换算非抹平"的精确化：不假设两腿规模相同，而是**用真实 ContractSize 反推对冲手数**——否则对冲腿会留敞口，"准确无误"失守。
+
 ---
 
 ## 4. 成本模型（公理③ —— "准确无误"的命门）
@@ -167,9 +182,14 @@ type Opportunity struct {
     SpreadCost     decimal.Decimal
     CommissionCost decimal.Decimal
     SlippageCost   decimal.Decimal
-    SwapCost       decimal.Decimal // 按预期持仓时长预估
+    SwapCost       decimal.Decimal // 按预期持仓时长预估（Carry 净 swap 为收入时为负，见下）
     NetProfit      decimal.Decimal // = Gross − 上述全部
-    NetBps         decimal.Decimal // 统一度量（跨机会排序用）
+    NetBps         decimal.Decimal // 统一绝对度量（跨机会排序用）
+
+    // —— Carry 专用：长期持仓的年化度量（02 §5.1）——
+    NetSwapPerDay    decimal.Decimal // Carry：净日 swap（USD，+ = 收入）；CrossExchange/Triangular 零值不用
+    HoldDaysHint     int32           // Carry：预期持仓天数（年化换算分母）；短周期策略不用
+    AnnualizedNetBps decimal.Decimal // Carry：组合年化（Evaluator 按 §5.1 算后存此 → proto 透传 desk 主度量列）
 
     // —— 准确性（公理④）——
     ExpiresAt  time.Time // 报价新鲜度有效期
@@ -178,7 +198,37 @@ type Opportunity struct {
 
     Status OppStatus // Pushed → Confirmed → Executing → Filled/Failed/Expired（Candidate 无状态，见下状态机）
 }
+
+type Leg struct {
+    Listing    *Listing        // 该腿的 broker 实例（真实参数在此）
+    Direction  BuySell         // Buy / Sell
+    Lots       decimal.Decimal // 手数（对冲手数按 §3.1 归一化，非默认 1:1）
+    Role       LegRole         // 经济角色（见下）—— Carry 才有意义
+    DailySwap  decimal.Decimal // 该腿日 swap（USD，Carry 用；§4.2 算）—— 收息/对冲腿年化拆分
+    EstPrice   decimal.Decimal // 估价（Ask 买入 / Bid 卖出）
+}
+
+// LegRole：腿在组合里的经济角色。第一性——角色因策略而异，不硬套同一框架。
+type LegRole int32
+const (
+    LegRoleNone   LegRole = 0  // CrossExchange/Triangular：两腿经济对称（价差/闭环捕获），无收息/对冲之分，用 Direction 区分
+    LegRoleIncome LegRole = 1  // Carry：提供正 swap 的腿（"收息腿"）
+    LegRoleHedge  LegRole = 2  // Carry：抵消敞口、付 swap 成本的腿（"对冲腿"）
+)
 ```
+
+### 5.1 度量双轨（绝对 bps + Carry 年化）
+
+不同策略时间跨度差几个量级（CrossExchange 秒级、Carry 天~周），单一度量会误导排序。**双轨**：
+
+| 策略 | 主度量 | 推导 |
+|---|---|---|
+| CrossExchange / Triangular | `NetBps`（绝对，已含全成本） | `NetProfit / Notional × 10000` |
+| Carry | `AnnualizedNetBps`（年化净收益） | `NetSwapPerDay × 365 / Notional × 10000` |
+
+- **Carry 为什么用年化**：净盈利是 swap 按"持仓多少天"累积，天数不定 → 绝对 NetBps 无法跨机会比较；年化（`日净 swap × 365`）把"每天赚多少"标准化，才可比、可排序。
+- **收息腿/对冲腿年化拆分**（UI 展示用，竞品借鉴）：各腿年化 = `Leg.DailySwap × 365 / 腿名义价值 × 10000`；组合年化 = 收息腿年化 + 对冲腿年化（对冲腿为负）。
+- 年化**只用于 Carry 展示与排序**，不替代 `NetProfit`（实际盈亏仍以 NetProfit 计，公理③）。
 
 **状态机**：Detector 产出 `Candidate`（无状态，仅价差）→ Evaluator 评估，通过则产出 `Opportunity(status=Pushed)`、不通过则丢弃。Opportunity 状态：`Pushed`（推送 desk）→ `Confirmed`（你点确认）→ `Executing` → `Filled`/`Failed`/`Expired`。完整状态机见 `04 §2`。
 
@@ -192,16 +242,18 @@ type Opportunity struct {
    ▼
 Evaluator 评估：
   1. 拉各腿最新 quote（公理④：校验新鲜度，过期则丢弃）
-  2. 用各腿 Listing 真实参数算：毛利差 → 点差/手续费/滑点/swap → NetProfit（§4）
-  3. 盈亏换算到 USD + bps（§3）
-  4. 可执行性预检：净盈利 NetBps > 阈值(实测滑点P95+安全垫)；风控三项（见 07 §1）：单机会敞口 ≤5%、并发未平仓 ≤5、单平台资金占比 ≤40%
-  5. 设 ExpiresAt（报价有效期）、Confidence（Confidence 算法 P1 占位：初值基于报价新鲜度+盘口宽度，Phase F 归因数据驱动校准）
+  2. 按 §3.1 归一化各腿手数（名义价值相等，ContractSize 异则反比；取整后校验偏差 ≤ 容差）
+  3. 用各腿 Listing 真实参数算：毛利差 → 点差/手续费/滑点/swap → NetProfit（§4）
+  4. 盈亏换算到 USD + NetBps（§3）
+  5. Carry 专用：算 NetSwapPerDay（各腿 §4.2 日 swap 之和）、按 §5.1 算 AnnualizedNetBps 存入；标各腿 LegRole（Income/Hedge）+ DailySwap
+  6. 可执行性预检：净盈利主度量 > 阈值（CrossExchange/Triangular 用 NetBps；Carry 用 AnnualizedNetBps，均 = 实测滑点P95+安全垫）；风控三项（见 07 §1）：单机会敞口 ≤5%、并发未平仓 ≤5、单平台资金占比 ≤40%
+  7. 设 ExpiresAt（报价有效期）、Confidence（P1 占位：初值基于报价新鲜度+盘口宽度，Phase F 归因数据驱动校准）
    │
    ▼
 Opportunity（Executable=true 的）→ 推送 desk（04-human-in-loop）
 ```
 
-阈值（`discussion-log` 讨论五）：`NetBps ≥ 实测执行滑点P95 + 安全垫`，初值 `≥ 3 bp`，随归因自适应。
+阈值（`discussion-log` 讨论五）：`NetBps ≥ 实测执行滑点P95 + 安全垫`，初值 `≥ 3 bp`，随归因自适应。Carry 的 AnnualizedNetBps 阈值另设（年化口径，初值待 Phase F 校准）。
 
 ---
 
@@ -235,8 +287,9 @@ Opportunity（Executable=true 的）→ 推送 desk（04-human-in-loop）
 ## 8. 回溯
 
 - 两层模型 / 字段来源 / 符号归一化 → 公理①
-- 盈亏换算 → 公理②（换算非抹平）
+- 盈亏换算 / 对冲手数归一化（§3.1）→ 公理②（换算非抹平）
 - 成本模型 / swap / 净盈利 → 公理③
+- 度量双轨（NetBps + Carry 年化）/ 腿经济角色（LegRole）→ 竞品借鉴 D-006（见 `decisions.md`）
 - ExpiresAt / 新鲜度 / 可执行性预检 → 公理④
 - Opportunity 推送-确认-执行链 → `04-human-in-loop.md`
 - 执行（all-or-nothing + 失败对冲）→ 现有 `execute/pipeline.go`（保留，改为仅确认后触发）

@@ -1,13 +1,13 @@
 # ARB 工作状态 — 无损接手
 
 > 每次 AI 会话**开工读、收工写**。Claude Code 与 Windsurf 共享的唯一工作状态。
-> 最后更新：2026-08-07（Phase A 完成：Listing 类型/映射/缓存/symbol_map + 真实验收通过）。
+> 最后更新：2026-08-07（Phase A 完成 + D-006 竞品 UI 借鉴 + D-007 自审作用域明确）。
 
 ---
 
 ## 一句话现状
 
-系统重新定位为「**发现 + 评估 + 人工确认 + 执行**」顾问式（D-003）；架构定稿 **Go(core) + C# .NET 8 WPF(desk) + gRPC + PostgreSQL，多语言各层最优**（D-005）；第一版 = **FX MT5 确定性套利**（跨所价差/三角/套息，Crypto 留接口，D-004）；设计文档 00-08 完成。**Phase A（数据源地基）已完成并通过真实验收。**
+系统重新定位为「**发现 + 评估 + 人工确认 + 执行**」顾问式（D-003）；架构定稿 **Go(core) + C# .NET 8 WPF(desk) + gRPC + PostgreSQL，多语言各层最优**（D-005）；第一版 = **FX MT5 确定性套利**（跨所价差/三角/套息，Crypto 留接口，D-004）；设计文档 00-11 完成；**Phase A（数据源地基）已完成并通过真实验收**；**D-006 竞品 UI 借鉴已落地到 02/03/06/10**（机会列表 Master-Detail 表格 + 腿角色 + Carry 年化 + 对冲手数归一化，保人工确认 + 全成本优势）。
 
 ---
 
@@ -18,15 +18,18 @@
 - **D-003** 重新定位：混合模式（发现→评估→**你确认**→执行）；策略聚焦 A+B 确定性套利
 - **D-004** 先 FX MT5，Crypto 留接口；跨所价差优先；broker 重质不重量
 - **D-005** 架构最优解：**Go core + C# WPF desk + gRPC + PG**；多语言各层最优；**推翻 Wails/Svelte 前端**
+- **D-006** 竞品 UI 借鉴：机会列表 Master-Detail 表格 + 腿角色(LegRole) + Carry 年化度量 + 对冲手数归一化 + 风险提示/筛选排序栏；保人工确认 + 全成本优势。截图存档 `docs/1.png`
+- **D-007** 自审作用域明确：**设计文档审归 Claude**（定稿人，每次改文档必自审）；**代码审归施工 agent**（A-F）+ Claude 复审；施工 agent 遇文档矛盾上报不自行改。落 `AGENTS.md §3.0`
 
 ---
 
 ## 文档进度
 
 - ✅ `AGENTS.md`（SSOT，含 D-005 多语言/WPF）+ `CLAUDE.md`/`.windsurfrules`（入口）+ `docs/handoff/`（STATE/decisions）
-- ✅ `docs/design/` **00–09 全部完成**（00-08 设计 + 09 core 运行时；基于真实探测数据 + 三视角审计修复）
+- ✅ `docs/design/` **00–11 全部完成**（00-08 设计 + 09 core 运行时 + 10 desk UI + 11 测试；基于真实探测数据 + 三视角审计修复）
 - ✅ `docs/design/discussion-log.md`（讨论一~七 + 真实探测 + Carry 审计纠正）
 - ✅ `docs/design/01-architecture.md` 总览（含 D-005 架构）
+- ✅ **D-006 竞品 UI 借鉴**（2026-08-07）：`02`(§3.1 对冲手数归一化 / §5 Leg+LegRole / §5.1 度量双轨) + `03`(§2.1/§2.2 腿角色+正收益佐证) + `06`(§5.2 Opportunity/Leg 新字段 + LegRole 枚举) + `10`(§4 Master-Detail 表格重写) 同步更新；决策详 `decisions.md D-006`
 
 ---
 
@@ -96,10 +99,10 @@
 
 ## 下一步
 
-1. **Phase A 已完成**，待 Claude 审查 + Phase B 设计。
-2. ✅ **core 内部架构（议题 3-8）完成**，落 `docs/design/09-core-runtime.md`。系统架构（外部 D-005 语言/通信/部署 + 内部 09 并发/延迟/容灾/恢复/扩展）设计完整。
-
-> 系统架构剩余议题（core 内部并发模型 / 延迟预算 SLO / 容灾恢复 / 扩展点）尚未深入讨论——若要继续深化 `01-architecture` 再交接，见本文末。
+1. **Phase A 已完成**（Listing/缓存/symbol_map，真实验收通过）+ **D-006 竞品借鉴已落文档**（02/03/06/10）。
+2. ✅ **系统架构设计完整**：外部（D-005 语言/通信/部署）+ 内部（`09` 并发/延迟/容灾/恢复/扩展）+ desk（`10`）+ 测试（`11`）。
+3. **设计层后续**：Phase A 代码质量审查（Claude）→ Phase B（Evaluator：成本模型 + 净利润 + 可执行性，依 `02 §6` + D-006 新字段 `NetSwapPerDay`/`annualized`/`LegRole`）设计 → 交接 Windsurf 施工。
+4. Windsurf 施工前须同步 `06 §5.2` 新 proto 字段（Opportunity `net_swap_per_day`/`hold_days_hint`/`annualized_net_bps`、Leg `role`/`daily_swap`/`annualized_bps`、`LegRole` 枚举）。
 
 ---
 
@@ -115,6 +118,7 @@
 ## 注意事项
 
 - **第一版只做 MT5**（D-004），MT4 不碰。
+- **config.proto 已回退到 strategies**（保持源/gen/cmd-core/textproto 一致；detectors 迁移由 Windsurf 全套同步——源+gen+cmd-core+textproto 一起改，勿半截改源，否则 `buf generate` 会让 core 编译崩）。
 - `docs/ant/` **保留**（成功案例参考 / 可迁移复用，用户定）。
 - 交付前自我审计（`AGENTS.md §3`）强制。
 - 真相源 `AGENTS.md`；讨论 `docs/design/discussion-log.md`；决策 `decisions.md`。

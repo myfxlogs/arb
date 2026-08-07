@@ -53,7 +53,7 @@ Detector 产出 `Candidate`（无状态，仅价差）；下表为 **Opportunity
 [OpportunityStream]  core ──gRPC server stream──► desk
      │
      ▼
-[desk 机会列表]  你看到：类型/腿/NetBps+USD/成本拆解/倒计时/置信度
+[desk 机会列表]  你看到（Master-Detail 表格，10 §4）：主表行 = 类型/统一品种/腿(角色+方向+量)/报价差异/主度量(NetBps 或 Carry 年化)/对冲比例/风险提示/倒计时；选中行 → 详情面板 = 成本拆解/置信度/确认
      │  你审，点「确认执行」
      ▼
 [ConfirmOpportunity]  desk ──gRPC unary──► core
@@ -75,8 +75,9 @@ Detector 产出 `Candidate`（无状态，仅价差）；下表为 **Opportunity
 
 ## 4. 人机交互（desk 侧，UI 由 Windsurf 实现）
 
-**机会列表（新增视图，或 Matrix 视图的可执行机会区）**：
-- 每个机会卡片：类型 / 腿（broker·品种·方向·量）/ **NetProfit（bps + USD）** / 成本拆解（点差/手续费/滑点/swap）/ 有效期倒计时 / 置信度。
+**机会列表（主视图，Master-Detail 表格，见 `10 §4`；D-006 竞品借鉴）**：
+- **主表行**（一机会一行，高密度扫描）：类型 / 统一品种 / 腿（broker·品种·方向·量，Carry 标收息/对冲角色）/ 报价差异 / **主度量**（CrossExchange/Triangular = NetBps；Carry = 组合年化，02 §5.1）/ 对冲比例 / 风险提示 / 倒计时。
+- **详情面板**（选中行展开）：腿详情（Carry 含日 swap/年化）/ 成本拆解（点差/手续费/滑点/swap，公理③）/ 置信度 / 「确认执行」按钮。
 - **「确认执行」按钮** → C# grpc-dotnet `client.ConfirmOpportunityAsync(new ConfirmRequest { Id = id })`（WPF 命令绑定）。
 - 忽略 → 机会自然 Expire（ExpiresAt 到期）。
 

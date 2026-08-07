@@ -31,9 +31,9 @@ quotes(QuoteBus) + Listing(缓存) ──► [Detector] ──► 候选机会(C
   ICMarkets Ask=1.1000   Exness(EURUSDm) Bid=1.1004
   → 候选：ICMarkets 买入 + Exness 卖出，毛价差 0.4 pip
 ```
-- **腿**：2 条（A 买、B 卖，等量对冲）。
+- **腿**：2 条（A 买、B 卖，等量对冲）。手数按 `02 §3.1` 归一化——同品种跨 broker `ContractSize` 通常一致（EURUSD 两家均 100000）→ 1:1；若遇异规模品种则反比归一。
 - **方向风险**：无（两边对冲，不赌方向）。
-- **真实可行性**：ICMarkets + Exness 同品种（EURUSD/EURUSDm）跨所价差实测可得；contractSize 跨 broker 一致（02）→ 同手数对冲可行。
+- **真实可行性**：ICMarkets + Exness 同品种（EURUSD/EURUSDm）跨所价差实测可得。
 - **执行风险**：跨 broker 同时成交不可能 100%（04 §6 兜底）。
 
 ### 2.2 Carry（套息）— swap 差，需扩大覆盖验证
@@ -55,8 +55,9 @@ quotes(QuoteBus) + Listing(缓存) ──► [Detector] ──► 候选机会(C
 **结论**：
 - Carry Detector **仍建**（扫描 broker×品种 swap，Evaluator 算净 swap，**正收益才推机会**）——当前数据无正收益 = 暂无可执行 Carry 机会，**这恰是系统不推假机会的正确表现**。
 - 真实 Carry 机会来源：某 broker 对特定品种 swap 倒挂（罕见）、或更多 broker/品种覆盖。需扩大探测验证。
+- **外部佐证（竞品实测，D-006）**：同类对冲套息产品（CFD 差价合约品种，如 UKOIL↔XBRUSD）实测存在**年化 +22% 的正收益对冲组合**（收息腿年化 +61.6%、对冲腿 −39.6%、组合净 +22.0%）。这证明**正收益对冲套息在足够品种覆盖下确实存在**——我们的 FX 实测暂为负，是 broker/品种覆盖不足，而非机制不可行。强化"检测器仍建 + 扩大覆盖"的方向。（注：竞品为 CFD 品种、非我们当前 FX MT5 样本；正收益需我们自己的 FX/Crypto 覆盖验证后才会推送。）
 - 因实测机会稀少，Carry 实现优先级降至 Triangular 之后（§5）。
-- **腿/周期**（机会出现时）：2 腿等量对冲、长期持仓（天~周）。
+- **腿角色 / 周期**（机会出现时）：2 腿对冲、长期持仓（天~周）。两腿经济角色明确（`02 §5` `LegRole`）：**收息腿**（`LegRoleIncome`，正 swap，组合收益来源）+ **对冲腿**（`LegRoleHedge`，负 swap，锁汇率的成本）。度量用年化（`02 §5.1`）。
 
 ### 2.3 Triangular（三角）— 同 broker 三品种，执行最难
 
