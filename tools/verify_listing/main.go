@@ -133,7 +133,7 @@ func printListing(l *listing.Listing) {
 	fmt.Printf("  TradeMode:      %d\n", l.TradeMode)
 	fmt.Printf("  ExecType:       %d\n", l.ExecType)
 	fmt.Printf("  FillPolicy:     %d\n", l.FillPolicy)
-	fmt.Printf("  TripleSwapDay:  %d\n", l.TripleSwap)
+	fmt.Printf("  TripleSwapDay:  %d\n", l.Swap.TripleSwapDay)
 	fmt.Printf("  Swap.SwapType:  %d\n", l.Swap.SwapType)
 	fmt.Printf("  Swap.SwapLong:  %s\n", l.Swap.SwapLong.String())
 	fmt.Printf("  Swap.SwapShort: %s\n", l.Swap.SwapShort.String())

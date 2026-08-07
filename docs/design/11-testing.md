@@ -149,7 +149,7 @@ table-driven fixture（testdata/listing_icmarkets_eurusd.json 等）：
 go build ./...                              # 编译通过
 go test -race -count=1 ./...                # 全量 race 检测（强制）
 go vet ./...                                # 静态分析
-go run ./tools/check-file-lines --strict    # 文件规模（测试文件豁免）
+./scripts/check-lines.sh                    # 文件规模（测试文件豁免）
 govulncheck ./...                           # 已知漏洞
 ```
 

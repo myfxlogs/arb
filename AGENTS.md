@@ -196,7 +196,7 @@ core:
 - ❌ 禁止 goroutine pool（`ants`/`conc`）；❌ `sync.Map`；❌ `sync.Mutex` 在热路径；❌ 裸无界 goroutine。
 
 ### 代码规模
-- Go 软参考 300 行/文件、50 行/函数；**硬红线 450 行/文件**。CI：`go run ./tools/check-file-lines --strict`（🔴 阻断）。
+- Go 软参考 300 行/文件、50 行/函数；**硬红线 450 行/文件**。CI：`./scripts/check-lines.sh`（🔴 阻断；>450 失败、>300 警告，豁免 `proto/`+`docs/`+`*_test.go`）。
 
 ---
 
@@ -238,7 +238,7 @@ desk（C# / NuGet，D-005）：
 go build ./...                              # 编译必须通过
 go test -race -count=1 ./...                # 全量 race 检测
 go vet ./...                                # 静态分析
-go run ./tools/check-file-lines --strict    # 文件规模检查（🔴 阻断）
+./scripts/check-lines.sh                    # 文件规模检查（🔴 阻断）
 govulncheck ./...                           # 已知漏洞
 ```
 
@@ -261,4 +261,4 @@ govulncheck ./...                           # 已知漏洞
 | `proto/` | mtapi + config + dashboard proto 定义 |
 | `migrations/` | PostgreSQL DDL |
 
-> ⚠️ `docs/ant/` 是**临时参考项目**，最终会被删除——**禁止依赖其中的内容或路径**。
+> ⚠️ 原参考项目 `docs/ant/` 已**移出仓库**（sibling `../arb-ant-ref`，仅外部参考，D-009）——**禁止依赖、不进本仓**。

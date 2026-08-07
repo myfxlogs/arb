@@ -123,65 +123,64 @@ func (ProxyType) EnumDescriptor() ([]byte, []int) {
 	return file_config_config_proto_rawDescGZIP(), []int{1}
 }
 
-type StrategyType int32
+// DetectorType 替代旧 StrategyType。
+// 删除：STATISTICAL（00 §4 排除）、FUTURES_SPOT（期现，本期 FX 不做，Crypto 阶段再补）。
+type DetectorType int32
 
 const (
-	StrategyType_STRATEGY_TYPE_UNSPECIFIED    StrategyType = 0
-	StrategyType_STRATEGY_TYPE_TRIANGULAR     StrategyType = 1
-	StrategyType_STRATEGY_TYPE_CROSS_EXCHANGE StrategyType = 2
-	StrategyType_STRATEGY_TYPE_STATISTICAL    StrategyType = 3
-	StrategyType_STRATEGY_TYPE_FUTURES_SPOT   StrategyType = 4
+	DetectorType_DETECTOR_TYPE_UNSPECIFIED    DetectorType = 0
+	DetectorType_DETECTOR_TYPE_CROSS_EXCHANGE DetectorType = 1 // 跨所价差（03 §2.1，★最稳，第一优先）
+	DetectorType_DETECTOR_TYPE_CARRY          DetectorType = 2 // 对冲套息（03 §2.2）
+	DetectorType_DETECTOR_TYPE_TRIANGULAR     DetectorType = 3 // 三角（03 §2.3，执行最难，最后）
 )
 
-// Enum value maps for StrategyType.
+// Enum value maps for DetectorType.
 var (
-	StrategyType_name = map[int32]string{
-		0: "STRATEGY_TYPE_UNSPECIFIED",
-		1: "STRATEGY_TYPE_TRIANGULAR",
-		2: "STRATEGY_TYPE_CROSS_EXCHANGE",
-		3: "STRATEGY_TYPE_STATISTICAL",
-		4: "STRATEGY_TYPE_FUTURES_SPOT",
+	DetectorType_name = map[int32]string{
+		0: "DETECTOR_TYPE_UNSPECIFIED",
+		1: "DETECTOR_TYPE_CROSS_EXCHANGE",
+		2: "DETECTOR_TYPE_CARRY",
+		3: "DETECTOR_TYPE_TRIANGULAR",
 	}
-	StrategyType_value = map[string]int32{
-		"STRATEGY_TYPE_UNSPECIFIED":    0,
-		"STRATEGY_TYPE_TRIANGULAR":     1,
-		"STRATEGY_TYPE_CROSS_EXCHANGE": 2,
-		"STRATEGY_TYPE_STATISTICAL":    3,
-		"STRATEGY_TYPE_FUTURES_SPOT":   4,
+	DetectorType_value = map[string]int32{
+		"DETECTOR_TYPE_UNSPECIFIED":    0,
+		"DETECTOR_TYPE_CROSS_EXCHANGE": 1,
+		"DETECTOR_TYPE_CARRY":          2,
+		"DETECTOR_TYPE_TRIANGULAR":     3,
 	}
 )
 
-func (x StrategyType) Enum() *StrategyType {
-	p := new(StrategyType)
+func (x DetectorType) Enum() *DetectorType {
+	p := new(DetectorType)
 	*p = x
 	return p
 }
 
-func (x StrategyType) String() string {
+func (x DetectorType) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (StrategyType) Descriptor() protoreflect.EnumDescriptor {
+func (DetectorType) Descriptor() protoreflect.EnumDescriptor {
 	return file_config_config_proto_enumTypes[2].Descriptor()
 }
 
-func (StrategyType) Type() protoreflect.EnumType {
+func (DetectorType) Type() protoreflect.EnumType {
 	return &file_config_config_proto_enumTypes[2]
 }
 
-func (x StrategyType) Number() protoreflect.EnumNumber {
+func (x DetectorType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use StrategyType.Descriptor instead.
-func (StrategyType) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use DetectorType.Descriptor instead.
+func (DetectorType) EnumDescriptor() ([]byte, []int) {
 	return file_config_config_proto_rawDescGZIP(), []int{2}
 }
 
-// BrokerConfig 定义单个 MT4/MT5 经纪商连接参数。
+// BrokerConfig 定义单个 MT4/MT5 经纪商连接参数。（保留，字段不变）
 type BrokerConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// 经纪商标识名（如 "OctaFX-Demo"），用于 Quote.Broker 字段和日志。
+	// 经纪商标识名（如 "ICMarketsSC-Demo"），用于 Quote.Broker 字段和日志。
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// 平台类型：MT4 或 MT5。
 	Platform PlatformType `protobuf:"varint,2,opt,name=platform,proto3,enum=arb.config.PlatformType" json:"platform,omitempty"`
@@ -192,7 +191,7 @@ type BrokerConfig struct {
 	User     int64  `protobuf:"varint,5,opt,name=user,proto3" json:"user,omitempty"` // MT5: uint64 转 int64；MT4: int32 转 int64
 	Password string `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
 	// 可选：使用 ConnectEx（按服务器名而非 host:port）。
-	Server string `protobuf:"bytes,7,opt,name=server,proto3" json:"server,omitempty"` // 如 "RoboForex-Demo"，非空时使用 ConnectEx
+	Server string `protobuf:"bytes,7,opt,name=server,proto3" json:"server,omitempty"` // 如 "ICMarketsSC-Demo"，非空时使用 ConnectEx
 	// 可选：代理。
 	Proxy *ProxyConfig `protobuf:"bytes,8,opt,name=proxy,proto3" json:"proxy,omitempty"`
 	// 可选：连接超时。默认 30 秒。
@@ -370,39 +369,41 @@ func (x *ProxyConfig) GetType() ProxyType {
 	return ProxyType_PROXY_TYPE_UNSPECIFIED
 }
 
-// StrategyConfig 定义策略参数。
-type StrategyConfig struct {
+// ============================================================
+// DetectorConfig（★新，替代旧 StrategyConfig）
+//
+// Detector 只「发现候选机会」（仅毛价差），不算净盈利——那是 Evaluator 的职责（03 §1）。
+// 依据 03-strategies §2（三类）+ 08-roadmap（FX 先行落地顺序）。
+// ============================================================
+type DetectorConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// 策略类型。
-	Type StrategyType `protobuf:"varint,1,opt,name=type,proto3,enum=arb.config.StrategyType" json:"type,omitempty"`
-	// 是否启用。
+	// Detector 类型。决定 Scan 逻辑（03 §2）。
+	Type DetectorType `protobuf:"varint,1,opt,name=type,proto3,enum=arb.config.DetectorType" json:"type,omitempty"`
+	// 是否启用。关闭的 detector 不参与扫描（desk 管理 Tab 可切换，04 §4 策略开关）。
 	Enabled bool `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	// 滑点容忍度（basis points，即 0.01%）。
-	MaxSlippageBps float64 `protobuf:"fixed64,3,opt,name=max_slippage_bps,json=maxSlippageBps,proto3" json:"max_slippage_bps,omitempty"`
-	// 单腿下单超时。
-	OrderTimeout *durationpb.Duration `protobuf:"bytes,4,opt,name=order_timeout,json=orderTimeout,proto3" json:"order_timeout,omitempty"`
-	// 订阅的品种列表。空 = 该 broker 所有品种。
-	SubscribedSymbols []string `protobuf:"bytes,5,rep,name=subscribed_symbols,json=subscribedSymbols,proto3" json:"subscribed_symbols,omitempty"`
-	// 统计套利专用参数。
-	Statistical   *StatisticalParams `protobuf:"bytes,6,opt,name=statistical,proto3" json:"statistical,omitempty"`
+	// 订阅的逻辑（canonical）品种。空 = 该类型 detector 扫描所有已映射品种。
+	// 跨所 / 套息按 canonical 聚合（09 §2 QuoteBus canonical 路由）。
+	CanonicalSymbols []string `protobuf:"bytes,3,rep,name=canonical_symbols,json=canonicalSymbols,proto3" json:"canonical_symbols,omitempty"`
+	// 单腿下单超时（pipeline 用，ConfirmOpportunity 触发后生效）。
+	OrderTimeout  *durationpb.Duration `protobuf:"bytes,4,opt,name=order_timeout,json=orderTimeout,proto3" json:"order_timeout,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *StrategyConfig) Reset() {
-	*x = StrategyConfig{}
+func (x *DetectorConfig) Reset() {
+	*x = DetectorConfig{}
 	mi := &file_config_config_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *StrategyConfig) String() string {
+func (x *DetectorConfig) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*StrategyConfig) ProtoMessage() {}
+func (*DetectorConfig) ProtoMessage() {}
 
-func (x *StrategyConfig) ProtoReflect() protoreflect.Message {
+func (x *DetectorConfig) ProtoReflect() protoreflect.Message {
 	mi := &file_config_config_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -414,145 +415,70 @@ func (x *StrategyConfig) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use StrategyConfig.ProtoReflect.Descriptor instead.
-func (*StrategyConfig) Descriptor() ([]byte, []int) {
+// Deprecated: Use DetectorConfig.ProtoReflect.Descriptor instead.
+func (*DetectorConfig) Descriptor() ([]byte, []int) {
 	return file_config_config_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *StrategyConfig) GetType() StrategyType {
+func (x *DetectorConfig) GetType() DetectorType {
 	if x != nil {
 		return x.Type
 	}
-	return StrategyType_STRATEGY_TYPE_UNSPECIFIED
+	return DetectorType_DETECTOR_TYPE_UNSPECIFIED
 }
 
-func (x *StrategyConfig) GetEnabled() bool {
+func (x *DetectorConfig) GetEnabled() bool {
 	if x != nil {
 		return x.Enabled
 	}
 	return false
 }
 
-func (x *StrategyConfig) GetMaxSlippageBps() float64 {
+func (x *DetectorConfig) GetCanonicalSymbols() []string {
 	if x != nil {
-		return x.MaxSlippageBps
+		return x.CanonicalSymbols
 	}
-	return 0
+	return nil
 }
 
-func (x *StrategyConfig) GetOrderTimeout() *durationpb.Duration {
+func (x *DetectorConfig) GetOrderTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.OrderTimeout
 	}
 	return nil
 }
 
-func (x *StrategyConfig) GetSubscribedSymbols() []string {
-	if x != nil {
-		return x.SubscribedSymbols
-	}
-	return nil
-}
-
-func (x *StrategyConfig) GetStatistical() *StatisticalParams {
-	if x != nil {
-		return x.Statistical
-	}
-	return nil
-}
-
-type StatisticalParams struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	LookbackBars  int32                  `protobuf:"varint,1,opt,name=lookback_bars,json=lookbackBars,proto3" json:"lookback_bars,omitempty"` // 回看 bar 数
-	EntryZScore   float64                `protobuf:"fixed64,2,opt,name=entry_z_score,json=entryZScore,proto3" json:"entry_z_score,omitempty"` // 入场 z-score 阈值
-	ExitZScore    float64                `protobuf:"fixed64,3,opt,name=exit_z_score,json=exitZScore,proto3" json:"exit_z_score,omitempty"`    // 退场 z-score 阈值
-	Timeframe     string                 `protobuf:"bytes,4,opt,name=timeframe,proto3" json:"timeframe,omitempty"`                            // 如 "H1"、"D1"
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *StatisticalParams) Reset() {
-	*x = StatisticalParams{}
-	mi := &file_config_config_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StatisticalParams) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StatisticalParams) ProtoMessage() {}
-
-func (x *StatisticalParams) ProtoReflect() protoreflect.Message {
-	mi := &file_config_config_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StatisticalParams.ProtoReflect.Descriptor instead.
-func (*StatisticalParams) Descriptor() ([]byte, []int) {
-	return file_config_config_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *StatisticalParams) GetLookbackBars() int32 {
-	if x != nil {
-		return x.LookbackBars
-	}
-	return 0
-}
-
-func (x *StatisticalParams) GetEntryZScore() float64 {
-	if x != nil {
-		return x.EntryZScore
-	}
-	return 0
-}
-
-func (x *StatisticalParams) GetExitZScore() float64 {
-	if x != nil {
-		return x.ExitZScore
-	}
-	return 0
-}
-
-func (x *StatisticalParams) GetTimeframe() string {
-	if x != nil {
-		return x.Timeframe
-	}
-	return ""
-}
-
-// RiskConfig 定义风控参数。
+// ============================================================
+// RiskConfig（★重写，P1 参数集）
+//
+// 依据 07-risk-audit §1（P1 初值，自适应）+ discussion-log 讨论五。
+// 套利风控不是防"单笔亏"，是防：执行失败→单边敞口 / 对手方爆雷 / 数据断流→假信号。
+// 所有参数是初值，由归因（07 §4）持续校准——不写死。
+// ============================================================
 type RiskConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// 单笔名义本金上限（美元），防配置错误。
-	MaxNotionalPerTrade float64 `protobuf:"fixed64,1,opt,name=max_notional_per_trade,json=maxNotionalPerTrade,proto3" json:"max_notional_per_trade,omitempty"`
-	// 策略级熔断：连续亏损笔数上限。
-	MaxConsecutiveLosses int32 `protobuf:"varint,2,opt,name=max_consecutive_losses,json=maxConsecutiveLosses,proto3" json:"max_consecutive_losses,omitempty"`
-	// 策略级熔断：滑动窗口最大亏损（美元）。
-	MaxWindowLoss float64 `protobuf:"fixed64,3,opt,name=max_window_loss,json=maxWindowLoss,proto3" json:"max_window_loss,omitempty"`
-	// 全局熔断：日亏损上限（美元）。
-	DailyLossLimit float64 `protobuf:"fixed64,4,opt,name=daily_loss_limit,json=dailyLossLimit,proto3" json:"daily_loss_limit,omitempty"`
-	// 全局熔断：总回撤上限（相对于峰值净值的百分比）。
-	MaxDrawdownPct float64 `protobuf:"fixed64,5,opt,name=max_drawdown_pct,json=maxDrawdownPct,proto3" json:"max_drawdown_pct,omitempty"`
-	// 订单并发上限（每 broker）。
-	MaxConcurrentOrders int32 `protobuf:"varint,6,opt,name=max_concurrent_orders,json=maxConcurrentOrders,proto3" json:"max_concurrent_orders,omitempty"`
-	// 自适应限流初始速率（req/s）。
-	RateLimitInitial float64 `protobuf:"fixed64,7,opt,name=rate_limit_initial,json=rateLimitInitial,proto3" json:"rate_limit_initial,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// P1：单机会最大敞口（占 total equity 的百分比）。防单机会执行失败敞口。初值 5.0。
+	MaxExposurePerOpportunityPct float64 `protobuf:"fixed64,1,opt,name=max_exposure_per_opportunity_pct,json=maxExposurePerOpportunityPct,proto3" json:"max_exposure_per_opportunity_pct,omitempty"`
+	// P1：最大并发未平仓机会数。防风险叠加 + 管道压力。初值 5。
+	MaxConcurrentOpportunities int32 `protobuf:"varint,2,opt,name=max_concurrent_opportunities,json=maxConcurrentOpportunities,proto3" json:"max_concurrent_opportunities,omitempty"`
+	// P1：单平台（broker）资金占比上限（占 total equity 的百分比）。防对手方风险。初值 40.0。
+	SingleBrokerExposurePct float64 `protobuf:"fixed64,3,opt,name=single_broker_exposure_pct,json=singleBrokerExposurePct,proto3" json:"single_broker_exposure_pct,omitempty"`
+	// 单笔名义本金上限（USD）。防配置错误（如手数多打一个 0）。
+	MaxNotionalPerTrade float64 `protobuf:"fixed64,4,opt,name=max_notional_per_trade,json=maxNotionalPerTrade,proto3" json:"max_notional_per_trade,omitempty"`
+	// P1：单边敞口存活上限 → 自动对冲/平仓（一腿失败变赌注，04 §3）。初值 3s。
+	MaxLegExposureDuration *durationpb.Duration `protobuf:"bytes,5,opt,name=max_leg_exposure_duration,json=maxLegExposureDuration,proto3" json:"max_leg_exposure_duration,omitempty"`
+	// revalidate 价偏阈值（bps）。ConfirmOpportunity 触发后重拉报价，价偏超此值 → 放弃（Expired）。
+	// 初值 = 机会阈值（net_bps ≥ 3bp）的同一量级；归因校准（07 §4）。
+	RevalidateMaxSlippageBps float64 `protobuf:"fixed64,6,opt,name=revalidate_max_slippage_bps,json=revalidateMaxSlippageBps,proto3" json:"revalidate_max_slippage_bps,omitempty"`
+	// P1：日亏损熔断（占日初 total equity 的百分比）。日亏超此值 → 暂停新机会，须人工 Resume。初值 3.0。
+	DailyLossLimitPct float64 `protobuf:"fixed64,7,opt,name=daily_loss_limit_pct,json=dailyLossLimitPct,proto3" json:"daily_loss_limit_pct,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *RiskConfig) Reset() {
 	*x = RiskConfig{}
-	mi := &file_config_config_proto_msgTypes[4]
+	mi := &file_config_config_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -564,7 +490,7 @@ func (x *RiskConfig) String() string {
 func (*RiskConfig) ProtoMessage() {}
 
 func (x *RiskConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_config_config_proto_msgTypes[4]
+	mi := &file_config_config_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -577,7 +503,28 @@ func (x *RiskConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RiskConfig.ProtoReflect.Descriptor instead.
 func (*RiskConfig) Descriptor() ([]byte, []int) {
-	return file_config_config_proto_rawDescGZIP(), []int{4}
+	return file_config_config_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RiskConfig) GetMaxExposurePerOpportunityPct() float64 {
+	if x != nil {
+		return x.MaxExposurePerOpportunityPct
+	}
+	return 0
+}
+
+func (x *RiskConfig) GetMaxConcurrentOpportunities() int32 {
+	if x != nil {
+		return x.MaxConcurrentOpportunities
+	}
+	return 0
+}
+
+func (x *RiskConfig) GetSingleBrokerExposurePct() float64 {
+	if x != nil {
+		return x.SingleBrokerExposurePct
+	}
+	return 0
 }
 
 func (x *RiskConfig) GetMaxNotionalPerTrade() float64 {
@@ -587,49 +534,28 @@ func (x *RiskConfig) GetMaxNotionalPerTrade() float64 {
 	return 0
 }
 
-func (x *RiskConfig) GetMaxConsecutiveLosses() int32 {
+func (x *RiskConfig) GetMaxLegExposureDuration() *durationpb.Duration {
 	if x != nil {
-		return x.MaxConsecutiveLosses
+		return x.MaxLegExposureDuration
+	}
+	return nil
+}
+
+func (x *RiskConfig) GetRevalidateMaxSlippageBps() float64 {
+	if x != nil {
+		return x.RevalidateMaxSlippageBps
 	}
 	return 0
 }
 
-func (x *RiskConfig) GetMaxWindowLoss() float64 {
+func (x *RiskConfig) GetDailyLossLimitPct() float64 {
 	if x != nil {
-		return x.MaxWindowLoss
+		return x.DailyLossLimitPct
 	}
 	return 0
 }
 
-func (x *RiskConfig) GetDailyLossLimit() float64 {
-	if x != nil {
-		return x.DailyLossLimit
-	}
-	return 0
-}
-
-func (x *RiskConfig) GetMaxDrawdownPct() float64 {
-	if x != nil {
-		return x.MaxDrawdownPct
-	}
-	return 0
-}
-
-func (x *RiskConfig) GetMaxConcurrentOrders() int32 {
-	if x != nil {
-		return x.MaxConcurrentOrders
-	}
-	return 0
-}
-
-func (x *RiskConfig) GetRateLimitInitial() float64 {
-	if x != nil {
-		return x.RateLimitInitial
-	}
-	return 0
-}
-
-// DatabaseConfig 定义 PostgreSQL 连接。
+// DatabaseConfig 定义 PostgreSQL 连接。（保留，字段不变）
 type DatabaseConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dsn           string                 `protobuf:"bytes,1,opt,name=dsn,proto3" json:"dsn,omitempty"` // "postgres://user:pass@host:port/db"
@@ -639,7 +565,7 @@ type DatabaseConfig struct {
 
 func (x *DatabaseConfig) Reset() {
 	*x = DatabaseConfig{}
-	mi := &file_config_config_proto_msgTypes[5]
+	mi := &file_config_config_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -651,7 +577,7 @@ func (x *DatabaseConfig) String() string {
 func (*DatabaseConfig) ProtoMessage() {}
 
 func (x *DatabaseConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_config_config_proto_msgTypes[5]
+	mi := &file_config_config_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -664,7 +590,7 @@ func (x *DatabaseConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseConfig.ProtoReflect.Descriptor instead.
 func (*DatabaseConfig) Descriptor() ([]byte, []int) {
-	return file_config_config_proto_rawDescGZIP(), []int{5}
+	return file_config_config_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DatabaseConfig) GetDsn() string {
@@ -674,7 +600,111 @@ func (x *DatabaseConfig) GetDsn() string {
 	return ""
 }
 
-// DashboardConfig 定义 DashboardService gRPC server。
+// ============================================================
+// EvaluatorConfig（★新，12 §7）
+//
+// 机会评估阈值 + 滑点预估 + 新鲜度 + 对冲容差。
+// 依据 12-evaluator §7 + 02 §6（阈值）+ 02 §4.1（滑点）+ 公理④（新鲜度）。
+// ============================================================
+type EvaluatorConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// 主度量阈值（02 §6）。CrossExchange/Triangular 用 min_net_bps；Carry 用 min_annualized_net_bps。
+	MinNetBps           float64 `protobuf:"fixed64,1,opt,name=min_net_bps,json=minNetBps,proto3" json:"min_net_bps,omitempty"`                                 // 初值 3.0
+	MinAnnualizedNetBps float64 `protobuf:"fixed64,2,opt,name=min_annualized_net_bps,json=minAnnualizedNetBps,proto3" json:"min_annualized_net_bps,omitempty"` // Carry 年化口径，初值待 Phase F
+	// 滑点预估（02 §4.1，归因 P95 校准前用保守静态值）
+	SlippageBps float64 `protobuf:"fixed64,3,opt,name=slippage_bps,json=slippageBps,proto3" json:"slippage_bps,omitempty"` // 每腿入场滑点，保守初值（如 1.0）
+	// 报价新鲜度（公理④）
+	QuoteFreshnessTtl *durationpb.Duration `protobuf:"bytes,4,opt,name=quote_freshness_ttl,json=quoteFreshnessTtl,proto3" json:"quote_freshness_ttl,omitempty"` // 初值 2s
+	// 对冲手数归一化容差（02 §3.1）
+	HedgeNotionalTolerancePct float64 `protobuf:"fixed64,5,opt,name=hedge_notional_tolerance_pct,json=hedgeNotionalTolerancePct,proto3" json:"hedge_notional_tolerance_pct,omitempty"` // 初值 1.0
+	// Carry 默认预期持仓天数（年化换算分母，02 §5.1）
+	CarryDefaultHoldDays int32 `protobuf:"varint,6,opt,name=carry_default_hold_days,json=carryDefaultHoldDays,proto3" json:"carry_default_hold_days,omitempty"` // 初值 7
+	// 盘口宽度上限（12 §5 第3条）
+	MaxSpreadBps  float64 `protobuf:"fixed64,7,opt,name=max_spread_bps,json=maxSpreadBps,proto3" json:"max_spread_bps,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EvaluatorConfig) Reset() {
+	*x = EvaluatorConfig{}
+	mi := &file_config_config_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EvaluatorConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EvaluatorConfig) ProtoMessage() {}
+
+func (x *EvaluatorConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_config_config_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EvaluatorConfig.ProtoReflect.Descriptor instead.
+func (*EvaluatorConfig) Descriptor() ([]byte, []int) {
+	return file_config_config_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *EvaluatorConfig) GetMinNetBps() float64 {
+	if x != nil {
+		return x.MinNetBps
+	}
+	return 0
+}
+
+func (x *EvaluatorConfig) GetMinAnnualizedNetBps() float64 {
+	if x != nil {
+		return x.MinAnnualizedNetBps
+	}
+	return 0
+}
+
+func (x *EvaluatorConfig) GetSlippageBps() float64 {
+	if x != nil {
+		return x.SlippageBps
+	}
+	return 0
+}
+
+func (x *EvaluatorConfig) GetQuoteFreshnessTtl() *durationpb.Duration {
+	if x != nil {
+		return x.QuoteFreshnessTtl
+	}
+	return nil
+}
+
+func (x *EvaluatorConfig) GetHedgeNotionalTolerancePct() float64 {
+	if x != nil {
+		return x.HedgeNotionalTolerancePct
+	}
+	return 0
+}
+
+func (x *EvaluatorConfig) GetCarryDefaultHoldDays() int32 {
+	if x != nil {
+		return x.CarryDefaultHoldDays
+	}
+	return 0
+}
+
+func (x *EvaluatorConfig) GetMaxSpreadBps() float64 {
+	if x != nil {
+		return x.MaxSpreadBps
+	}
+	return 0
+}
+
+// DashboardConfig 定义 DashboardService gRPC server。（保留，字段不变）
 type DashboardConfig struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	ListenAddress   string                 `protobuf:"bytes,1,opt,name=listen_address,json=listenAddress,proto3" json:"listen_address,omitempty"`          // 默认 "127.0.0.1:50051"
@@ -727,14 +757,23 @@ func (x *DashboardConfig) GetMatrixRefreshMs() int32 {
 	return 0
 }
 
-// SystemConfig 是完整的系统配置。
+// ============================================================
+// SystemConfig：完整系统配置（顶层）
+//
+// ★变化：`repeated StrategyConfig strategies = 2`
+//
+//	→ `repeated DetectorConfig detectors = 2`（替代旧 strategies）。
+//
+// 其余顶层字段（brokers / risk / database / dashboard）保留。
+// ============================================================
 type SystemConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Brokers       []*BrokerConfig        `protobuf:"bytes,1,rep,name=brokers,proto3" json:"brokers,omitempty"`
-	Strategies    []*StrategyConfig      `protobuf:"bytes,2,rep,name=strategies,proto3" json:"strategies,omitempty"`
+	Detectors     []*DetectorConfig      `protobuf:"bytes,2,rep,name=detectors,proto3" json:"detectors,omitempty"` // ★替代旧 strategies
 	Risk          *RiskConfig            `protobuf:"bytes,3,opt,name=risk,proto3" json:"risk,omitempty"`
 	Database      *DatabaseConfig        `protobuf:"bytes,4,opt,name=database,proto3" json:"database,omitempty"`
 	Dashboard     *DashboardConfig       `protobuf:"bytes,5,opt,name=dashboard,proto3" json:"dashboard,omitempty"`
+	Evaluator     *EvaluatorConfig       `protobuf:"bytes,6,opt,name=evaluator,proto3" json:"evaluator,omitempty"` // ★新（12 §7）
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -776,9 +815,9 @@ func (x *SystemConfig) GetBrokers() []*BrokerConfig {
 	return nil
 }
 
-func (x *SystemConfig) GetStrategies() []*StrategyConfig {
+func (x *SystemConfig) GetDetectors() []*DetectorConfig {
 	if x != nil {
-		return x.Strategies
+		return x.Detectors
 	}
 	return nil
 }
@@ -804,6 +843,13 @@ func (x *SystemConfig) GetDashboard() *DashboardConfig {
 	return nil
 }
 
+func (x *SystemConfig) GetEvaluator() *EvaluatorConfig {
+	if x != nil {
+		return x.Evaluator
+	}
+	return nil
+}
+
 var File_config_config_proto protoreflect.FileDescriptor
 
 const file_config_config_proto_rawDesc = "" +
@@ -825,42 +871,41 @@ const file_config_config_proto_rawDesc = "" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x12\n" +
 	"\x04user\x18\x03 \x01(\tR\x04user\x12\x1a\n" +
 	"\bpassword\x18\x04 \x01(\tR\bpassword\x12)\n" +
-	"\x04type\x18\x05 \x01(\x0e2\x15.arb.config.ProxyTypeR\x04type\"\xb2\x02\n" +
-	"\x0eStrategyConfig\x12,\n" +
-	"\x04type\x18\x01 \x01(\x0e2\x18.arb.config.StrategyTypeR\x04type\x12\x18\n" +
-	"\aenabled\x18\x02 \x01(\bR\aenabled\x12(\n" +
-	"\x10max_slippage_bps\x18\x03 \x01(\x01R\x0emaxSlippageBps\x12>\n" +
-	"\rorder_timeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\forderTimeout\x12-\n" +
-	"\x12subscribed_symbols\x18\x05 \x03(\tR\x11subscribedSymbols\x12?\n" +
-	"\vstatistical\x18\x06 \x01(\v2\x1d.arb.config.StatisticalParamsR\vstatistical\"\x9c\x01\n" +
-	"\x11StatisticalParams\x12#\n" +
-	"\rlookback_bars\x18\x01 \x01(\x05R\flookbackBars\x12\"\n" +
-	"\rentry_z_score\x18\x02 \x01(\x01R\ventryZScore\x12 \n" +
-	"\fexit_z_score\x18\x03 \x01(\x01R\n" +
-	"exitZScore\x12\x1c\n" +
-	"\ttimeframe\x18\x04 \x01(\tR\ttimeframe\"\xd5\x02\n" +
+	"\x04type\x18\x05 \x01(\x0e2\x15.arb.config.ProxyTypeR\x04type\"\xc5\x01\n" +
+	"\x0eDetectorConfig\x12,\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x18.arb.config.DetectorTypeR\x04type\x12\x18\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\x12+\n" +
+	"\x11canonical_symbols\x18\x03 \x03(\tR\x10canonicalSymbols\x12>\n" +
+	"\rorder_timeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\forderTimeout\"\xce\x03\n" +
 	"\n" +
-	"RiskConfig\x123\n" +
-	"\x16max_notional_per_trade\x18\x01 \x01(\x01R\x13maxNotionalPerTrade\x124\n" +
-	"\x16max_consecutive_losses\x18\x02 \x01(\x05R\x14maxConsecutiveLosses\x12&\n" +
-	"\x0fmax_window_loss\x18\x03 \x01(\x01R\rmaxWindowLoss\x12(\n" +
-	"\x10daily_loss_limit\x18\x04 \x01(\x01R\x0edailyLossLimit\x12(\n" +
-	"\x10max_drawdown_pct\x18\x05 \x01(\x01R\x0emaxDrawdownPct\x122\n" +
-	"\x15max_concurrent_orders\x18\x06 \x01(\x05R\x13maxConcurrentOrders\x12,\n" +
-	"\x12rate_limit_initial\x18\a \x01(\x01R\x10rateLimitInitial\"\"\n" +
+	"RiskConfig\x12F\n" +
+	" max_exposure_per_opportunity_pct\x18\x01 \x01(\x01R\x1cmaxExposurePerOpportunityPct\x12@\n" +
+	"\x1cmax_concurrent_opportunities\x18\x02 \x01(\x05R\x1amaxConcurrentOpportunities\x12;\n" +
+	"\x1asingle_broker_exposure_pct\x18\x03 \x01(\x01R\x17singleBrokerExposurePct\x123\n" +
+	"\x16max_notional_per_trade\x18\x04 \x01(\x01R\x13maxNotionalPerTrade\x12T\n" +
+	"\x19max_leg_exposure_duration\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x16maxLegExposureDuration\x12=\n" +
+	"\x1brevalidate_max_slippage_bps\x18\x06 \x01(\x01R\x18revalidateMaxSlippageBps\x12/\n" +
+	"\x14daily_loss_limit_pct\x18\a \x01(\x01R\x11dailyLossLimitPct\"\"\n" +
 	"\x0eDatabaseConfig\x12\x10\n" +
-	"\x03dsn\x18\x01 \x01(\tR\x03dsn\"d\n" +
+	"\x03dsn\x18\x01 \x01(\tR\x03dsn\"\xf2\x02\n" +
+	"\x0fEvaluatorConfig\x12\x1e\n" +
+	"\vmin_net_bps\x18\x01 \x01(\x01R\tminNetBps\x123\n" +
+	"\x16min_annualized_net_bps\x18\x02 \x01(\x01R\x13minAnnualizedNetBps\x12!\n" +
+	"\fslippage_bps\x18\x03 \x01(\x01R\vslippageBps\x12I\n" +
+	"\x13quote_freshness_ttl\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x11quoteFreshnessTtl\x12?\n" +
+	"\x1chedge_notional_tolerance_pct\x18\x05 \x01(\x01R\x19hedgeNotionalTolerancePct\x125\n" +
+	"\x17carry_default_hold_days\x18\x06 \x01(\x05R\x14carryDefaultHoldDays\x12$\n" +
+	"\x0emax_spread_bps\x18\a \x01(\x01R\fmaxSpreadBps\"d\n" +
 	"\x0fDashboardConfig\x12%\n" +
 	"\x0elisten_address\x18\x01 \x01(\tR\rlistenAddress\x12*\n" +
-	"\x11matrix_refresh_ms\x18\x02 \x01(\x05R\x0fmatrixRefreshMs\"\x9d\x02\n" +
+	"\x11matrix_refresh_ms\x18\x02 \x01(\x05R\x0fmatrixRefreshMs\"\xd6\x02\n" +
 	"\fSystemConfig\x122\n" +
-	"\abrokers\x18\x01 \x03(\v2\x18.arb.config.BrokerConfigR\abrokers\x12:\n" +
-	"\n" +
-	"strategies\x18\x02 \x03(\v2\x1a.arb.config.StrategyConfigR\n" +
-	"strategies\x12*\n" +
+	"\abrokers\x18\x01 \x03(\v2\x18.arb.config.BrokerConfigR\abrokers\x128\n" +
+	"\tdetectors\x18\x02 \x03(\v2\x1a.arb.config.DetectorConfigR\tdetectors\x12*\n" +
 	"\x04risk\x18\x03 \x01(\v2\x16.arb.config.RiskConfigR\x04risk\x126\n" +
 	"\bdatabase\x18\x04 \x01(\v2\x1a.arb.config.DatabaseConfigR\bdatabase\x129\n" +
-	"\tdashboard\x18\x05 \x01(\v2\x1b.arb.config.DashboardConfigR\tdashboard*[\n" +
+	"\tdashboard\x18\x05 \x01(\v2\x1b.arb.config.DashboardConfigR\tdashboard\x129\n" +
+	"\tevaluator\x18\x06 \x01(\v2\x1b.arb.config.EvaluatorConfigR\tevaluator*[\n" +
 	"\fPlatformType\x12\x1d\n" +
 	"\x19PLATFORM_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11PLATFORM_TYPE_MT4\x10\x01\x12\x15\n" +
@@ -869,13 +914,12 @@ const file_config_config_proto_rawDesc = "" +
 	"\x16PROXY_TYPE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10PROXY_TYPE_HTTPS\x10\x01\x12\x15\n" +
 	"\x11PROXY_TYPE_SOCKS4\x10\x02\x12\x15\n" +
-	"\x11PROXY_TYPE_SOCKS5\x10\x03*\xac\x01\n" +
-	"\fStrategyType\x12\x1d\n" +
-	"\x19STRATEGY_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
-	"\x18STRATEGY_TYPE_TRIANGULAR\x10\x01\x12 \n" +
-	"\x1cSTRATEGY_TYPE_CROSS_EXCHANGE\x10\x02\x12\x1d\n" +
-	"\x19STRATEGY_TYPE_STATISTICAL\x10\x03\x12\x1e\n" +
-	"\x1aSTRATEGY_TYPE_FUTURES_SPOT\x10\x04Bx\n" +
+	"\x11PROXY_TYPE_SOCKS5\x10\x03*\x86\x01\n" +
+	"\fDetectorType\x12\x1d\n" +
+	"\x19DETECTOR_TYPE_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cDETECTOR_TYPE_CROSS_EXCHANGE\x10\x01\x12\x17\n" +
+	"\x13DETECTOR_TYPE_CARRY\x10\x02\x12\x1c\n" +
+	"\x18DETECTOR_TYPE_TRIANGULAR\x10\x03Bx\n" +
 	"\x0ecom.arb.configB\vConfigProtoP\x01Z\x10arb/proto/config\xa2\x02\x03ACX\xaa\x02\n" +
 	"Arb.Config\xca\x02\n" +
 	"Arb\\Config\xe2\x02\x16Arb\\Config\\GPBMetadata\xea\x02\vArb::Configb\x06proto3"
@@ -897,13 +941,13 @@ var file_config_config_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_config_config_proto_goTypes = []any{
 	(PlatformType)(0),           // 0: arb.config.PlatformType
 	(ProxyType)(0),              // 1: arb.config.ProxyType
-	(StrategyType)(0),           // 2: arb.config.StrategyType
+	(DetectorType)(0),           // 2: arb.config.DetectorType
 	(*BrokerConfig)(nil),        // 3: arb.config.BrokerConfig
 	(*ProxyConfig)(nil),         // 4: arb.config.ProxyConfig
-	(*StrategyConfig)(nil),      // 5: arb.config.StrategyConfig
-	(*StatisticalParams)(nil),   // 6: arb.config.StatisticalParams
-	(*RiskConfig)(nil),          // 7: arb.config.RiskConfig
-	(*DatabaseConfig)(nil),      // 8: arb.config.DatabaseConfig
+	(*DetectorConfig)(nil),      // 5: arb.config.DetectorConfig
+	(*RiskConfig)(nil),          // 6: arb.config.RiskConfig
+	(*DatabaseConfig)(nil),      // 7: arb.config.DatabaseConfig
+	(*EvaluatorConfig)(nil),     // 8: arb.config.EvaluatorConfig
 	(*DashboardConfig)(nil),     // 9: arb.config.DashboardConfig
 	(*SystemConfig)(nil),        // 10: arb.config.SystemConfig
 	(*durationpb.Duration)(nil), // 11: google.protobuf.Duration
@@ -913,19 +957,21 @@ var file_config_config_proto_depIdxs = []int32{
 	4,  // 1: arb.config.BrokerConfig.proxy:type_name -> arb.config.ProxyConfig
 	11, // 2: arb.config.BrokerConfig.connect_timeout:type_name -> google.protobuf.Duration
 	1,  // 3: arb.config.ProxyConfig.type:type_name -> arb.config.ProxyType
-	2,  // 4: arb.config.StrategyConfig.type:type_name -> arb.config.StrategyType
-	11, // 5: arb.config.StrategyConfig.order_timeout:type_name -> google.protobuf.Duration
-	6,  // 6: arb.config.StrategyConfig.statistical:type_name -> arb.config.StatisticalParams
-	3,  // 7: arb.config.SystemConfig.brokers:type_name -> arb.config.BrokerConfig
-	5,  // 8: arb.config.SystemConfig.strategies:type_name -> arb.config.StrategyConfig
-	7,  // 9: arb.config.SystemConfig.risk:type_name -> arb.config.RiskConfig
-	8,  // 10: arb.config.SystemConfig.database:type_name -> arb.config.DatabaseConfig
-	9,  // 11: arb.config.SystemConfig.dashboard:type_name -> arb.config.DashboardConfig
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	2,  // 4: arb.config.DetectorConfig.type:type_name -> arb.config.DetectorType
+	11, // 5: arb.config.DetectorConfig.order_timeout:type_name -> google.protobuf.Duration
+	11, // 6: arb.config.RiskConfig.max_leg_exposure_duration:type_name -> google.protobuf.Duration
+	11, // 7: arb.config.EvaluatorConfig.quote_freshness_ttl:type_name -> google.protobuf.Duration
+	3,  // 8: arb.config.SystemConfig.brokers:type_name -> arb.config.BrokerConfig
+	5,  // 9: arb.config.SystemConfig.detectors:type_name -> arb.config.DetectorConfig
+	6,  // 10: arb.config.SystemConfig.risk:type_name -> arb.config.RiskConfig
+	7,  // 11: arb.config.SystemConfig.database:type_name -> arb.config.DatabaseConfig
+	9,  // 12: arb.config.SystemConfig.dashboard:type_name -> arb.config.DashboardConfig
+	8,  // 13: arb.config.SystemConfig.evaluator:type_name -> arb.config.EvaluatorConfig
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_config_config_proto_init() }

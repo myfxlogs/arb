@@ -148,6 +148,33 @@ message DatabaseConfig {
   string dsn = 1;  // "postgres://user:pass@host:port/db"
 }
 
+// ============================================================
+// EvaluatorConfig（★新，12 §7）
+//
+// 机会评估阈值 + 滑点预估 + 新鲜度 + 对冲容差。
+// 依据 12-evaluator §7 + 02 §6（阈值）+ 02 §4.1（滑点）+ 公理④（新鲜度）。
+// ============================================================
+message EvaluatorConfig {
+  // 主度量阈值（02 §6）。CrossExchange/Triangular 用 min_net_bps；Carry 用 min_annualized_net_bps。
+  double min_net_bps = 1;             // 初值 3.0
+  double min_annualized_net_bps = 2;  // Carry 年化口径，初值待 Phase F
+
+  // 滑点预估（02 §4.1，归因 P95 校准前用保守静态值）
+  double slippage_bps = 3;            // 每腿入场滑点，保守初值（如 1.0）
+
+  // 报价新鲜度（公理④）
+  google.protobuf.Duration quote_freshness_ttl = 4;  // 初值 2s
+
+  // 对冲手数归一化容差（02 §3.1）
+  double hedge_notional_tolerance_pct = 5;  // 初值 1.0
+
+  // Carry 默认预期持仓天数（年化换算分母，02 §5.1）
+  int32 carry_default_hold_days = 6;  // 初值 7
+
+  // 盘口宽度上限（12 §5 第3条）
+  double max_spread_bps = 7;
+}
+
 // DashboardConfig 定义 DashboardService gRPC server。（保留，字段不变）
 message DashboardConfig {
   string listen_address = 1;   // 默认 "127.0.0.1:50051"
@@ -168,4 +195,5 @@ message SystemConfig {
   RiskConfig risk = 3;
   DatabaseConfig database = 4;
   DashboardConfig dashboard = 5;
+  EvaluatorConfig evaluator = 6;           // ★新（12 §7）
 }

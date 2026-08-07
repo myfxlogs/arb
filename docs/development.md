@@ -336,11 +336,6 @@ Phase 8: 入口 + 集成
 go build ./...                              # 编译
 go test -race -count=1 ./...                # 全量 race
 go vet ./...                                # 静态分析
-go run ./tools/check-file-lines --strict    # 文件规模（🔴 Go>450 行阻断）
+./scripts/check-lines.sh                    # 文件规模（🔴 Go>450 行阻断；300 软警告；豁免 proto/gen + 测试）
 govulncheck ./...                           # 已知漏洞
 ```
-
-**施工 agent 注意**：`check-file-lines` 工具需要自己实现。逻辑很简单：
-- 遍历所有 `.go` 文件（跳过 `proto/gen/`、`_test.go`）
-- 任一行数 > 450 → 输出文件名 + 行数 + 返回非零 exit code
-- 目标：保持每个文件在 AI agent 能一次读完的范围内

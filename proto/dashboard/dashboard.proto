@@ -62,6 +62,10 @@ service DashboardService {
   rpc RemoveBroker(RemoveBrokerRequest) returns (RemoveBrokerReply);
   rpc GetBrokerOrderHistory(BrokerOrderHistoryRequest) returns (BrokerOrderHistoryReply);
   rpc GetBrokerSymbols(BrokerSymbolsRequest) returns (BrokerSymbolsReply);
+
+  // === 机会闭环（06 §5, 04 §3）===
+  rpc OpportunityStream(OpportunityStreamRequest) returns (stream OpportunityEvent);
+  rpc ConfirmOpportunity(ConfirmRequest) returns (ConfirmReply);
 }
 
 // ============================================================
@@ -490,4 +494,103 @@ message BrokerSymbolsRequest {
 message BrokerSymbolsReply {
   repeated string symbols = 1;
   string error = 2;
+}
+
+// ============================================================
+// 机会闭环（06 §5, 04 §3）
+// ============================================================
+
+enum OppType {
+  OPP_TYPE_UNSPECIFIED    = 0;
+  OPP_TYPE_CROSS_EXCHANGE = 1;
+  OPP_TYPE_CARRY          = 2;
+  OPP_TYPE_TRIANGULAR     = 3;
+}
+
+enum OppStatus {
+  OPP_STATUS_UNSPECIFIED = 0;
+  OPP_STATUS_PUSHED      = 1;
+  OPP_STATUS_CONFIRMED   = 2;
+  OPP_STATUS_EXECUTING   = 3;
+  OPP_STATUS_FILLED      = 4;
+  OPP_STATUS_FAILED      = 5;
+  OPP_STATUS_EXPIRED     = 6;
+}
+
+enum BuySell {
+  BUY_SELL_UNSPECIFIED = 0;
+  BUY_SELL_BUY         = 1;
+  BUY_SELL_SELL        = 2;
+}
+
+enum LegRole {
+  LEG_ROLE_UNSPECIFIED = 0;
+  LEG_ROLE_INCOME      = 1;
+  LEG_ROLE_HEDGE       = 2;
+}
+
+enum OpportunityAction {
+  OPP_ACTION_UNSPECIFIED = 0;
+  OPP_ACTION_PUSHED      = 1;
+  OPP_ACTION_UPDATED     = 2;
+  OPP_ACTION_FILLED      = 3;
+  OPP_ACTION_FAILED      = 4;
+  OPP_ACTION_EXPIRED     = 5;
+}
+
+message Opportunity {
+  string id = 1;
+  OppType type = 2;
+  repeated Leg legs = 3;
+  int64 quote_time_unix_ms = 4;
+
+  string gross_profit       = 5;
+  string spread_cost        = 6;
+  string commission_cost    = 7;
+  string slippage_cost      = 8;
+  string swap_cost          = 9;
+  string net_profit         = 10;
+  string net_bps            = 11;
+
+  string net_swap_per_day   = 16;
+  int32  hold_days_hint     = 17;
+  string annualized_net_bps = 18;
+
+  int64  expires_at_unix_ms = 12;
+  bool   executable         = 13;
+  double confidence         = 14;
+  OppStatus status          = 15;
+  string notional_usd       = 19;
+  string reject_reason      = 20;
+}
+
+message Leg {
+  string broker           = 1;
+  string broker_symbol    = 2;
+  string canonical_symbol = 3;
+  BuySell direction       = 4;
+  string lots             = 5;
+  string estimate_price   = 6;
+  LegRole role            = 7;
+  string daily_swap       = 8;
+  string annualized_bps   = 9;
+}
+
+message OpportunityEvent {
+  string id              = 1;
+  Opportunity opp        = 2;
+  OpportunityAction action = 3;
+  int64 timestamp_unix_ms = 4;
+  string reason          = 5;
+}
+
+message OpportunityStreamRequest {}
+
+message ConfirmRequest {
+  string opportunity_id = 1;
+}
+
+message ConfirmReply {
+  bool   accepted = 1;
+  string reason   = 2;
 }

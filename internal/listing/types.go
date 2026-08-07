@@ -89,6 +89,14 @@ const (
 	SettleEvery8h SettlementFreq = 1 // Crypto perpetual: every 8 hours
 )
 
+// CommissionMode determines how commission is calculated (02 §4.4, 12 §2.1).
+type CommissionMode int32
+
+const (
+	CommissionPerLot        CommissionMode = 0 // Fixed per lot (FX mainstream)
+	CommissionPerNotionalBps CommissionMode = 1 // Basis points of notional
+)
+
 // Funding unifies FX swap and Crypto funding rate (02 §4.3).
 type Funding struct {
 	SwapType       SwapType
@@ -134,5 +142,9 @@ type Listing struct {
 	TradeMode  TradeMode
 	ExecType   ExecutionType
 	FillPolicy FillPolicy
-	TripleSwap TripleSwapDay
+
+	// Commission (02 §4.4, 12 §2.1). MT5 SymbolInfo does not provide this;
+	// human-entered, calibrated by actual fills. Default 0 = honest over-estimate.
+	CommissionMode  CommissionMode
+	CommissionRate  decimal.Decimal
 }

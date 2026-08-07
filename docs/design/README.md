@@ -29,6 +29,10 @@
 | `09-core-runtime.md` | core 内部运行时：并发模型 / 延迟预算 / 容灾恢复 / 持久化 / 扩展 / 可用性 | ✅ |
 | `10-desk-ui.md` | desk UI：arb-cockpit WPF 详细设计（MVVM / 视图 / ViewModel / gRPC / 线程模型） | ✅ |
 | `11-testing.md` | 测试策略：单元 / 集成 / 回归基线（02 §7 真实字段）+ `go test -race` 强制 | ✅ |
+| `12-evaluator.md` | Evaluator 算核：Candidate→扣全成本→净盈利+可执行性（落地 02 §6）+ Phase A→B 前置补齐 | ✅ |
+| `13-detector.md` | Detector 扫描器：三类扫描算法（CrossExchange/Carry/Triangular）+ Quote 消费 + 黄金用例（落地 03 §4） | ✅ |
+| `14-dashboard-wiring.md` | Dashboard 机会闭环接线：OpportunityStream + ConfirmOpportunity（落地 06 §5.2 / 04 §2） | ✅ |
+| `15-desk-wpf.md` | Desk C# WPF 实施规格：项目骨架 + MVVM + grpc-dotnet + 线程模型 + 分阶段落地（落地 10 + 06 §5.2） | ✅ |
 
 ## 关键决策（见 `../handoff/decisions.md`）
 - **D-003**：混合模式（发现+评估+人确认+执行），非全自动；策略聚焦 A+B 确定性套利。

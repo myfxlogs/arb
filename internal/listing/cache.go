@@ -2,6 +2,7 @@ package listing
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"sync"
 	"time"
@@ -59,8 +60,10 @@ func (c *Cache) All() []*Listing {
 
 // Populate fetches Listings for all broker symbols and stores them.
 // brokerSymbols maps broker name → list of raw broker symbols to fetch.
-// Fetchers must be keyed by broker name.
+// Fetchers must be keyed by broker name. Returns an error if zero listings
+// were stored (e.g. all brokers failed) to prevent silent empty-cache startup.
 func (c *Cache) Populate(ctx context.Context, fetchers []Fetcher, brokerSymbols map[string][]string) error {
+	var stored int
 	for _, f := range fetchers {
 		syms := brokerSymbols[f.BrokerName()]
 		c.mu.Lock()
@@ -75,10 +78,21 @@ func (c *Cache) Populate(ctx context.Context, fetchers []Fetcher, brokerSymbols 
 			c.mu.Lock()
 			c.items[cacheKey(l.Broker, l.BrokerSymbol)] = l
 			c.mu.Unlock()
+			stored++
 			slog.Info("listing cache: stored", "broker", l.Broker, "symbol", l.BrokerSymbol)
 		}
 	}
+	if stored == 0 {
+		return errors.New("listing cache: populate stored 0 listings (all fetches failed)")
+	}
 	return nil
+}
+
+// PutForTest inserts a Listing directly. For test setup only.
+func (c *Cache) PutForTest(l *Listing) {
+	c.mu.Lock()
+	c.items[cacheKey(l.Broker, l.BrokerSymbol)] = l
+	c.mu.Unlock()
 }
 
 // RunDailyRefresh starts a goroutine that re-fetches all Listings once per

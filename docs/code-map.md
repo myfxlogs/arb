@@ -384,6 +384,53 @@ Phase A: 数据源地基（已完成 2026-08-07）
   migrations/002_symbol_map.sql       # symbol_map DDL
   tools/verify_listing/main.go        # 验收工具
 
+Phase A→B 前置补齐（12 §2，已完成 2026-08-07 Task B-0）
+  internal/listing/types.go           # +Commission 字段（02 §4.4）+ 去 TripleSwap 冗余（F4）
+  internal/listing/resolver.go        # CanonicalIndex：symbol_map+cache→(broker,canonical) Listing（Instrument 已填）
+  internal/listing/resolver_test.go   # CanonicalIndex + ResolveInstrument 单测
+  internal/adapter/mt5_listing_test.go # proto→Listing 映射纯函数单测（F3）
+  proto/config/config.proto           # +EvaluatorConfig（阈值/滑点/新鲜度/容差），全套同步
+  proto/gen/config/config.pb.go       # buf generate 重新生成
+  cmd/core/main.go                    # 适配新 proto 字段名
+  config/default.textproto            # detectors + evaluator + 新 risk 字段
+
+Phase B: Evaluator 评估算核（已完成 2026-08-07，B-0 前置 + B-1 核心 A–F 全达标，Claude 复审通过）
+  internal/evaluator/types.go           # Enums + Candidate/Opportunity/OppLeg/Deps/Config
+  internal/evaluator/evaluator.go       # Evaluate 主流程（12 §3 七步）
+  internal/evaluator/swap.go            # 9 种 SwapType 换算（12 §4.1）
+  internal/evaluator/hedge.go           # 对冲手数归一化（12 §4.2）
+  internal/evaluator/convert.go         # USD 换算 + RateResolver（12 §4.3）
+  internal/evaluator/cost.go            # 成本四项（12 §4.4）
+  internal/evaluator/carry.go           # Carry 年化/LegRole（12 §4.5）
+  internal/evaluator/evaluator_test.go  # 12 黄金测试（02 §7 真实数据）
+
+Phase C: Detector 机会发现扫描器（已完成 2026-08-07，A–F 全达标，Claude 复审通过）
+  internal/detector/detector.go         # Detector 接口 + Scan 入口（canonical 分组→分发）
+  internal/detector/cross_exchange.go   # CrossExchange 跨所价差扫描（13 §3）
+  internal/detector/carry.go            # Carry 套息扫描（13 §4 / import evaluator.DailySwap）
+  internal/detector/triangular.go       # Triangular 三角扫描（13 §5 / 5 枚举三角）
+  internal/detector/detector_test.go    # 9 黄金测试（CrossExchange/Carry/Triangular + 合并去重）
+
+Phase D: Dashboard 机会闭环接线（已完成 2026-08-07，A–F 全达标，Claude 复审通过）
+  internal/dashboard/opportunity.go     # OpportunityStream + ConfirmOpportunity handler + 类型映射
+  proto/dashboard/dashboard.proto       # +OppType/OppStatus/BuySell/LegRole/Opportunity/Leg/Event/Confirm/Stream RPC (06 §5.2)
+
+Phase E: Desk C# WPF 桌面应用（设计完成 docs/design/15-desk-wpf.md，待施工）
+  desk/ArbDesk.csproj                  # .NET 8 WPF + Grpc.Net.Client/Grpc.Tools/CommunityToolkit.Mvvm
+  desk/Services/DashboardClient.cs     # GrpcChannel + gRPC client 封装
+  desk/ViewModels/OpportunityViewModel.cs # 机会列表 + Confirm ICommand + ObservableCollection
+  desk/Views/OpportunityView.xaml       # Master-Detail 表格（10 §4）
+  desk/ViewModels/MatrixViewModel.cs    # 价差矩阵
+  desk/Views/MatrixView.xaml
+  desk/ViewModels/PositionsViewModel.cs # 持仓列表
+  desk/Views/PositionsView.xaml
+  desk/ViewModels/TradingViewModel.cs   # 手动交易
+  desk/Views/TradingView.xaml
+  desk/ViewModels/HistoryViewModel.cs   # 历史查询
+  desk/Views/HistoryView.xaml
+  desk/ViewModels/AdminViewModel.cs     # Kill Switch/策略开关
+  desk/Views/AdminView.xaml
+
 Phase 9: 集成
   test/integration/mt5_connect_test.go
   test/integration/dashboard_test.go

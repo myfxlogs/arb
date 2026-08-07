@@ -28,15 +28,5 @@ jobs:
       - name: Test with race detector
         run: go test -race -count=1 ./...
 
-      - name: Check file lines (450 hard limit)
-        run: |
-          violations=$(find . -name '*.go' \
-            -not -path './vendor/*' \
-            -not -path './proto/*' \
-            -not -path './.git/*' \
-            -exec sh -c 'lines=$(wc -l < "$1"); if [ "$lines" -gt 450 ]; then echo "$1: $lines lines"; fi' _ {} \;)
-          if [ -n "$violations" ]; then
-            echo "File line limit (450) violated:"
-            echo "$violations"
-            exit 1
-          fi
+      - name: Check file lines (soft 300 / hard 450)
+        run: ./scripts/check-lines.sh

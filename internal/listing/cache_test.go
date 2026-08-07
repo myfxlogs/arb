@@ -2,6 +2,7 @@ package listing
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/shopspring/decimal"
@@ -17,7 +18,7 @@ func (m *mockFetcher) Listing(_ context.Context, brokerSymbol string) (*Listing,
 		Broker:       m.broker,
 		BrokerSymbol: brokerSymbol,
 		Digits:       5,
-		Points:       decimal.NewFromFloat(0.00001),
+		Points:       decimal.RequireFromString("0.00001"),
 	}, nil
 }
 
@@ -53,5 +54,22 @@ func TestCachePopulate(t *testing.T) {
 	all := c.All()
 	if len(all) != 2 {
 		t.Fatalf("All() returned %d, want 2", len(all))
+	}
+}
+
+type errFetcher struct{ broker string }
+
+func (e *errFetcher) BrokerName() string { return e.broker }
+func (e *errFetcher) Listing(_ context.Context, _ string) (*Listing, error) {
+	return nil, errors.New("connection refused")
+}
+
+func TestCachePopulateEmptyError(t *testing.T) {
+	c := NewCache()
+	f := &errFetcher{broker: "DEAD"}
+	syms := map[string][]string{"DEAD": {"EURUSD"}}
+	err := c.Populate(context.Background(), []Fetcher{f}, syms)
+	if err == nil {
+		t.Fatal("expected error when 0 listings stored, got nil")
 	}
 }

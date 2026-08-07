@@ -5,23 +5,30 @@
 
 brokers: []  # 真实 broker 在 PG；此处留空
 
-# ⚠️ strategies 的 schema 仍是旧 engine 设计（STRATEGY_TYPE_*）。
-#    D-003 后策略改为 detector/evaluator，config.proto 待 Windsurf 按 docs/design 重定义。
-#    下方保留旧结构仅作占位（enabled:false），不代表最终配置。
-strategies: [
+detectors: [
   {
-    type: STRATEGY_TYPE_TRIANGULAR
-    enabled: false
-    subscribed_symbols: ["EURUSD", "GBPUSD", "EURGBP"]
+    type: DETECTOR_TYPE_CROSS_EXCHANGE
+    enabled: true
+    canonical_symbols: ["EURUSD", "XAUUSD"]
   }
 ]
 
 risk: {
-  # P1 参数初值见 docs/design/discussion-log 讨论五；待 config.proto 按新架构重定义
+  max_exposure_per_opportunity_pct: 5.0
+  max_concurrent_opportunities: 5
+  single_broker_exposure_pct: 40.0
   max_notional_per_trade: 10000
-  max_consecutive_losses: 5
-  daily_loss_limit: 5000
-  max_concurrent_orders: 5
+  daily_loss_limit_pct: 3.0
+}
+
+evaluator: {
+  min_net_bps: 3.0
+  min_annualized_net_bps: 10.0
+  slippage_bps: 1.0
+  quote_freshness_ttl: { seconds: 2 }
+  hedge_notional_tolerance_pct: 1.0
+  carry_default_hold_days: 7
+  max_spread_bps: 5.0
 }
 
 database: {

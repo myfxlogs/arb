@@ -19,7 +19,11 @@ import (
 	"arb/internal/bus"
 	config "arb/internal/config"
 	"arb/internal/dashboard"
+	"arb/internal/detector"
+	"arb/internal/engine"
+	"arb/internal/evaluator"
 	"arb/internal/execute"
+	"arb/internal/listing"
 	"arb/internal/risk"
 	"arb/internal/store"
 
@@ -61,12 +65,13 @@ func main() {
 	// 3. Kill switch
 	killSwitch := risk.NewKillSwitch("/tmp/arb_kill_switch")
 
-	// 4. Circuit breaker
+	// 4. Circuit breaker (P1 params from new RiskConfig; consecutive-losses
+	// and window-loss removed in new schema — use safe defaults)
 	breaker := risk.NewCircuitBreaker(
-		cfg.Risk.MaxConsecutiveLosses,
-		30*time.Second,
-		cfg.Risk.DailyLossLimit,
-		cfg.Risk.MaxWindowLoss,
+		5,                          // maxConsecutiveLosses (default, was removed from config)
+		30*time.Second,             // cooldown
+		cfg.Risk.GetDailyLossLimitPct(),
+		0,                          // windowLossLimit (removed from config)
 	)
 
 	// 5. Store (optional — skip if no DSN)
@@ -95,9 +100,9 @@ func main() {
 		var a adapter.PlatformAdapter
 		switch bc.Platform {
 		case configpb.PlatformType_PLATFORM_TYPE_MT4:
-			a = adapter.NewMT4Adapter(bc.Name, bc.Host, bc.Server, bc.Port, bc.User, bc.Password, int(cfg.Risk.MaxConcurrentOrders))
+			a = adapter.NewMT4Adapter(bc.Name, bc.Host, bc.Server, bc.Port, bc.User, bc.Password, int(cfg.Risk.GetMaxConcurrentOpportunities()))
 		case configpb.PlatformType_PLATFORM_TYPE_MT5:
-			a = adapter.NewMT5Adapter(bc.Name, bc.Host, bc.Server, bc.Port, bc.User, bc.Password, int(cfg.Risk.MaxConcurrentOrders))
+			a = adapter.NewMT5Adapter(bc.Name, bc.Host, bc.Server, bc.Port, bc.User, bc.Password, int(cfg.Risk.GetMaxConcurrentOpportunities()))
 		default:
 			slog.Warn("unknown platform", "broker", bc.Name, "platform", bc.Platform)
 			continue
@@ -135,9 +140,9 @@ func main() {
 			var a adapter.PlatformAdapter
 			switch db.Platform {
 			case 0: // MT4
-				a = adapter.NewMT4Adapter(db.Name, db.Host, db.Server, db.Port, db.Login, db.Password, int(cfg.Risk.MaxConcurrentOrders))
+				a = adapter.NewMT4Adapter(db.Name, db.Host, db.Server, db.Port, db.Login, db.Password, int(cfg.Risk.GetMaxConcurrentOpportunities()))
 			case 1: // MT5
-				a = adapter.NewMT5Adapter(db.Name, db.Host, db.Server, db.Port, db.Login, db.Password, int(cfg.Risk.MaxConcurrentOrders))
+				a = adapter.NewMT5Adapter(db.Name, db.Host, db.Server, db.Port, db.Login, db.Password, int(cfg.Risk.GetMaxConcurrentOpportunities()))
 			default:
 				slog.Warn("unknown platform in db broker", "broker", db.Name, "platform", db.Platform)
 				continue
@@ -160,7 +165,66 @@ func main() {
 		}
 	}
 
-	// 7. Execution pipeline
+	// 7. Listing cache
+	listCache := listing.NewCache()
+	if len(adapters) > 0 {
+		brokerSyms := make(map[string][]string)
+		for name := range adapters {
+			brokerSyms[name] = allSymbols
+		}
+		var fetchers []listing.Fetcher
+		for _, a := range adapters {
+			if mt5a, ok := a.(*adapter.MT5Adapter); ok {
+				fetchers = append(fetchers, mt5a)
+			}
+		}
+		if err := listCache.Populate(ctx, fetchers, brokerSyms); err != nil {
+			slog.Warn("listing cache populate", "error", err)
+		}
+		go listCache.RunDailyRefresh(ctx)
+	}
+
+	// 7b. Evaluator
+	evalCfg := evaluator.Config{
+		MinNetBps:            cfg.Evaluator.GetMinNetBps(),
+		MinAnnualizedNetBps:  cfg.Evaluator.GetMinAnnualizedNetBps(),
+		SlippageBps:          cfg.Evaluator.GetSlippageBps(),
+		QuoteFreshness:       cfg.Evaluator.GetQuoteFreshnessTtl().AsDuration(),
+		HedgeTolerancePct:    float64(cfg.Evaluator.GetHedgeNotionalTolerancePct()),
+		CarryDefaultHoldDays: int32(cfg.Evaluator.GetCarryDefaultHoldDays()),
+		MaxSpreadBps:         cfg.Evaluator.GetMaxSpreadBps(),
+	}
+	rateResolver := &evaluator.BusRateResolver{Bus: quoteBus}
+	eval := evaluator.New(evaluator.Deps{
+		Listings: listCache,
+		Bus:      quoteBus,
+		Rates:    rateResolver,
+		Cfg:      evalCfg,
+	})
+
+	// 7c. Engine (scan loop)
+	var symMapProvider engine.SymMapProvider
+	if st != nil {
+		symMapProvider = &engine.StoreSymMap{Store: st}
+	}
+	eng := engine.New(engine.Deps{
+		Bus:       quoteBus,
+		Cache:     listCache,
+		SymMap:    symMapProvider,
+		Evaluator: eval,
+		Detectors: []detector.Detector{
+			detector.NewCrossExchange(),
+			detector.NewCarry(),
+			detector.NewTriangular(),
+		},
+		Throttle: 100 * time.Millisecond,
+		Symbols:  allSymbols,
+	})
+	if symMapProvider != nil {
+		go eng.Run(ctx)
+	}
+
+	// 8. Execution pipeline
 	dedup := execute.NewDedupCache()
 	pipeline := execute.NewPipeline(execute.PipelineDeps{
 		Bus:      quoteBus,
@@ -169,7 +233,7 @@ func main() {
 	})
 	_ = pipeline // used by strategy engine (Phase 8 integration)
 
-	// 8. Dashboard gRPC server
+	// 9. Dashboard gRPC server
 	dashServer := dashboard.NewServer(dashboard.Deps{
 		Bus:                 quoteBus,
 		Adapters:            adapters,
@@ -177,7 +241,8 @@ func main() {
 		KillSwitch:          killSwitch,
 		Breaker:             breaker,
 		Symbols:             allSymbols,
-		MaxConcurrentOrders: int(cfg.Risk.MaxConcurrentOrders),
+		MaxConcurrentOrders: int(cfg.Risk.GetMaxConcurrentOpportunities()),
+		Engine:              eng,
 	})
 	dashServer.SetContext(ctx)
 	dashServer.StartFeeder()
@@ -230,8 +295,8 @@ func main() {
 func collectSymbols(cfg *configpb.SystemConfig) []string {
 	seen := make(map[string]bool)
 	var symbols []string
-	for _, sc := range cfg.Strategies {
-		for _, s := range sc.SubscribedSymbols {
+	for _, dc := range cfg.Detectors {
+		for _, s := range dc.GetCanonicalSymbols() {
 			if !seen[s] {
 				seen[s] = true
 				symbols = append(symbols, s)

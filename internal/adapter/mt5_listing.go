@@ -24,18 +24,24 @@ func (a *MT5Adapter) Listing(ctx context.Context, brokerSymbol string) (*listing
 	si := sp.GetSymbolInfo()
 	sg := sp.GetSymbolGroup()
 
+	return mapSymbolParams(si, sg, a.brokerName, brokerSymbol), nil
+}
+
+// mapSymbolParams maps MT5 proto SymbolInfo + SymGroup to a listing.Listing.
+// Extracted as a pure function for unit testing (F3).
+func mapSymbolParams(si *mt5.SymbolInfo, sg *mt5.SymGroup, broker, brokerSymbol string) *listing.Listing {
 	l := &listing.Listing{
-		Broker:       a.brokerName,
-		BrokerSymbol: brokerSymbol,
-		ContractSize: decimalutil.FromFloat64(si.ContractSize, 8),
-		Digits:       si.Digits,
-		Points:       decimalutil.FromFloat64(si.Points, 8),
+		Broker:         broker,
+		BrokerSymbol:   brokerSymbol,
+		ContractSize:   decimalutil.FromFloat64(si.ContractSize, 8),
+		Digits:         si.Digits,
+		Points:         decimalutil.FromFloat64(si.Points, 8),
 		ProfitCurrency: si.ProfitCurrency,
 		MarginCurrency: si.MarginCurrency,
-		CalcMode:     mapCalcMode(si.CalcMode),
+		CalcMode:       mapCalcMode(si.CalcMode),
 	}
-
 	if sg != nil {
+		tsd := mapTripleSwapDay(sg.ThreeDaysSwap)
 		l.VolumeMin = decimalutil.FromFloat64(sg.MinLots, 8)
 		l.VolumeMax = decimalutil.FromFloat64(sg.MaxLots, 8)
 		l.VolumeStep = decimalutil.FromFloat64(sg.LotsStep, 8)
@@ -43,16 +49,15 @@ func (a *MT5Adapter) Listing(ctx context.Context, brokerSymbol string) (*listing
 		l.TradeMode = mapTradeMode(sg.TradeMode)
 		l.ExecType = mapExecType(sg.TradeType)
 		l.FillPolicy = mapFillPolicy(sg.FillPolicy)
-		l.TripleSwap = mapTripleSwapDay(sg.ThreeDaysSwap)
 		l.Swap = listing.Funding{
 			SwapType:       mapSwapType(sg.SwapType),
 			SwapLong:       decimalutil.FromFloat64(sg.SwapLong, 8),
 			SwapShort:      decimalutil.FromFloat64(sg.SwapShort, 8),
 			SettlementFreq: listing.SettleDaily,
-			TripleSwapDay:  l.TripleSwap,
+			TripleSwapDay:  tsd,
 		}
 	}
-	return l, nil
+	return l
 }
 
 // Proto enum values are int32 with identical numeric values to our Go-native

@@ -36,11 +36,11 @@
 go build ./...
 go test -race -count=1 ./...
 go vet ./...
-go run ./tools/check-file-lines --strict    # 🔴 阻断
+./scripts/check-lines.sh                    # 🔴 阻断
 govulncheck ./...
 ```
 
 ## 禁止
-- 依赖 `docs/ant/`（临时参考项目，最终删除）。
+- 依赖或引用 `docs/ant/`（已移出仓库至 `../arb-ant-ref`，仅外部参考；禁止进本仓、禁止依赖）。
 - 违反 `AGENTS.md §7` 硬约束（语言/协议/前端/存储/精度/并发）。
 - 跳过 §3 自我审计直接提交。

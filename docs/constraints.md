@@ -186,7 +186,7 @@ Go: decimal.Decimal — Warm/Cold Path
 - 拆分前先判断：是否有明确的功能边界（CRUD/生命周期/实体类型）？有 → 拆。没有 → 保持内聚。
 - 硬性红线：Go > 450 行必须拆分（AI agent 阅读理解明显退化）。
 - 自动生成代码（`proto/gen/`）、测试文件豁免。
-- CI：`go run ./tools/check-file-lines --strict`（🔴 阻断提交）。
+- CI：`./scripts/check-lines.sh`（🔴 阻断提交；>450 失败、>300 警告，豁免 `proto/`+`docs/`+`*_test.go`）。
 
 ---
 
@@ -347,6 +347,6 @@ migrations/           # PG DDL
 go build ./...                              # 编译必须通过
 go test -race -count=1 ./...                # 全量 race 检测
 go vet ./...                                # 静态分析
-go run ./tools/check-file-lines --strict    # 文件规模检查（🔴 阻断）
+./scripts/check-lines.sh                    # 文件规模检查（🔴 阻断）
 govulncheck ./...                           # 已知漏洞
 ```

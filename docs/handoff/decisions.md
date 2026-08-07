@@ -193,3 +193,111 @@ AGENTS §3 自审原表述"适用于所有 agent，无差别"，但未区分**�
 - `AGENTS.md §3` 新增 §3.0（被 `CLAUDE.md @AGENTS.md` + `.windsurfrules` 内联生效）。
 - Windsurf 接手时不再困惑"文档我该不该审"——它只审自己写的代码（A-F，E/F 含对文档的反向核对），文档问题上报 Claude。
 - Claude 每次改文档后必跑一次跨文档自审（A-F，重点 F）。
+
+---
+
+## D-008 · Phase A 审查结论 + Phase B Evaluator 设计决策（2026-08-07）
+
+**背景**
+Phase A（数据源地基，Windsurf 施工）已通过真实验收（真实 MT5 数据吻合 02 §7）。本轮 Claude 按 §3 A–F + §3.0（文档/代码双审）复审 Phase A 全部产出，并设计 Phase B（Evaluator，落地 02 §6）成文 `docs/design/12-evaluator.md`。设计过程中发现 3 处**跨文档不一致**（02 §4.4 要求 commission 入 Listing，但 §1.2 结构与代码都无；02 §6 要评估阈值，但 config.proto 无该参数；Instrument 解析层缺失）须在 Phase B 前补齐。
+
+**决策**
+
+*Phase A 审查（A–F）*：
+1. **映射正确性已核**：proto↔Go 枚举数值逐项对齐（SwapType/CalcMode/TradeMode/ExecutionType/FillingFlags/V3DaysSwap），`mt5_listing.go` 直接强转注释属实；字段名对 proto；build/vet/test 通过。地基扎实，可作 Phase B 输入。
+2. **A–F 门禁有 4 处待修**（详见 STATE.md「Phase A 审查结论」）：F1 已修（`cache_test` 违规 `decimal.NewFromFloat`→`RequireFromString`）；F2 `Cache.Populate` 全失败静默返 nil 须改返错；F3 proto→Listing 映射须补单测；F4 `TripleSwap` 双存须去重。F2/F3/F4 建议 Windsurf 在 Phase B 前置时一并清。
+
+*Phase B Evaluator 设计（`12-evaluator.md`）*：
+3. **纯函数算核**：`Evaluate(Candidate)→*Opportunity`，warm-path decimal，无 broker I/O/无副作用。落地 02 §6 七步。Executable=false 也产出（透明展示拒因，呼应 D-006 风险提示列）。
+4. **三项前置补齐**（跨文档不一致修复）：① `Listing` 加 `Commission{Mode,Rate}`（默认 0，未配置则 desk 标注——诚实高估，不抹平 MT5 固有限制）；② `listing.CanonicalIndex` 解析器（symbol_map+cache→(broker,canonical) Listing，Instrument 由 canonical 推导，补 Phase A 留下的 nil）；③ `config.proto` 加 `EvaluatorConfig`（阈值/滑点/新鲜度/容差/持仓天数/盘口）。
+5. **swap 未实测模式不猜值**：InPoints 已验证为主公式；SymInfo_s408/PointClose/PointBid 等未实测模式 → 判 Executable=false（无法保证成本准确 = 无法保证「准确无误」），**禁止猜 0**（swap 多为成本，猜 0 造假机会）。Phase F 归因/扩覆盖后精确化。
+6. **Notional 定义**：对冲手数归一化后两腿名义相等 → `Notional = 基准腿名义`（USD）；NetBps = NetProfit/Notional×10000。
+7. **黄金用例锚定真实数据**：测试表直接复用 02 §7 对照表 + 03 §2.2 实测 swap，锁死「准确无误」可核验性。
+
+*项目级缺口（已解）*：
+8. **行数检查统一为 `scripts/check-lines.sh`（最优解，非造 Go 工具）**：`tools/check-file-lines` 从未存在（`development.md:343` 自承「需自己实现」）；根因 = CI 用 shell 片段、5 处文档却引用不存在的 go 工具（两套分裂）。落 `scripts/check-lines.sh` 单一 shell 真相源（>450 失败 / >300 警告，豁免 `proto/`+`docs/`+`*_test.go`），CI + AGENTS §10/constraints/development/11-testing 全指向它，删 phantom 引用。顺带补 CI 漏排 `*_test.go`（规格偏离）、排 `docs/ant/`（本地扫到、CI 因未提交侥幸通过）。当前 EXIT=0（4 软警告，0 硬违例）。为数行数专门写 Go 程序属过度工程（§2.6），shell 片段是更直接的解。
+
+**理由**
+- Phase A 难点在「proto→Listing 映射的正确性」，已用真实数据 + 枚举逐项核对验证通过；剩下的 F2/F3/F4 是工程洁净度，不撼动地基。
+- Phase B 三项前置都是「设计文档要求了、但代码/配置尚未跟上」的真不一致——第一性必须先补齐才能让 Evaluator 有正确输入；这正是 §3.0「文档审归 Claude」的价值（跨文档自洽）。
+- swap 未实测模式「不猜值、判不可执行」是把公理③（漏成本=假机会）从口号落到可核验行为：宁可少推、不可错推。
+- Notional 取归一化后相等的名义，是对冲手数归一化（02 §3.1）的自然推论，避免另造度量。
+
+**影响**
+- `docs/design/12-evaluator.md` 新增（设计 SSOT，Windsurf 照此施工）。
+- `code-map.md §7` 加 Phase A→B 前置 + Phase B 文件清单。
+- `docs/design/README.md` 索引加 12。
+- Phase B 施工顺序：前置（Commission/CanonicalIndex/EvaluatorConfig proto 全套同步）→ 子模型（§4 各文件+单测）→ 主流程编排 → 黄金用例。
+- Phase A 的 F2/F3/F4 待修；F5（行数检查）已解（`scripts/check-lines.sh` 统一，CI + 文档共用）。
+
+---
+
+## D-009 · 仓库瘦身：docs/ant 移出 + Makefile 清死目标（2026-08-07）
+
+**背景**
+用户提出「是否把历史文件全删、做成全新项目」。盘点事实：git 仓库本身已极精简（~120 跟踪文件 / 292KB Go core），273MB 体量 99% 来自**未跟踪**的 `docs/ant/` 参考项目；可复用 Go core 是刚验收的真资产。Claude（§0，技术判断优于用户时须直说）**反对推倒重写**（违反 §2.1 root-cause-first、纯沉没成本），建议剪枝而非新建。
+
+**决策（用户拍板）**
+1. **`docs/ant/` 移出仓库**至 sibling `/opt/arb-ant-ref`（同文件系统，`mv` 秒级 rename；保留参考、不污染本仓）。**推翻** STATE 原「保留 docs/ant/」的决定。
+2. **Makefile 清死目标**：删 `run-desk`/`build-frontend`/`build-desk`（D-005 已废 Wails/Svelte，`cmd/desk`+`frontend` 早已 0 跟踪文件）；`test`/`lint` 去掉无意义的 `grep -v '/desk'`。
+3. **旧设计文档**（`evaluation-framework.md`/`implementation.md`）**保持现状**作历史快照（design README 已声明），不移不删。
+4. **可复用 Go core 全保留**（decimalutil/errclass/bus/adapter/store/execute/risk/listing）——Phase B 地基，不碰。
+
+**理由**
+- 仓库「重」的错觉来自一个 273MB 未跟踪 blob；移走即得「全新项目」的轻装感，零浪费。
+- 推倒 core = 重写刚验证的最优解，反 §2.1；本仓并无遗留代码烂摊子可清。
+- Makefile 死目标是 D-005 迁移遗留，顺手清掉（§C 无死代码）。
+
+**影响**
+- 工作树 **-273MB**；`git status` 不再有 `?? docs/ant/`。
+- AGENTS §11 / `.windsurfrules` / STATE 的 `docs/ant` 引用改为「已移出」。
+- Makefile 不再有 desk/frontend 目标（desk 将来为独立 C# 项目，不走本 Makefile）。
+- `check-lines.sh` 仍排 `docs/`（`docs/api` 的 mtapi Go 示例仍是参考、非我方代码），行为不变。
+
+---
+
+## D-010 · Phase C Detector 实现级设计：13-detector.md（2026-08-07）
+
+**背景**
+Evaluator 落地后（B-1 复审通过），下一阶段是 Detector（候选发现层）。`03-strategies.md` 已有策略级规格（三类 Detector、职责边界、Candidate 接口），但缺少实现级细节——文件布局、逐类扫描算法、QuoteBus 消费模式、CanonicalIndex 接入、黄金测试用例。这些是实现级文档，对标 `12-evaluator.md` 的深度。
+
+**决策**
+1. **设计成文 `13-detector.md`**：实现级规格，包含三类扫描器的精确算法、Quote 消费模式（Snapshot 轮询，100ms）、文件布局（5 文件）、黄金用例。
+2. **Detector 不建独立 Candidate 类型**——复用在 `evaluator.Candidate`（Detector→Evaluator 单向 import evaluator，不违依赖方向）。
+3. **CrossExchange 优先**（最稳、闭环最短），次 Carry（swap 差），最后 Triangular（三腿成交最难）。
+4. **Triangular 初版枚举 3–5 已知三角**（EUR/USD/GBP、EUR/USD/JPY 等），不写全自动图搜索——broker+品种少时枚举 > 通用性。
+5. **不新建 orchestrator**：Detector 的 Scan 是纯函数；运行时循环（Snapshot→Scan→Evaluate→push）在 cmd/core 或 engine 层（本阶段不建，后续接线时加）。
+
+**理由**
+- 手递 Evaluator 顺是因为 `12-evaluator.md` 把实现细节全写清了（公式、文件布局、黄金用例）。Detector 更复杂（跨 broker 配对、三类算法），没有对等级别的设计文档就交给 Windsurf 大概率走偏。
+- Candidate 类型共享避免重复定义（§C 无冗余）；单向 import 不违依赖方向（Evaluator 定义输入格式，Detector 导入消费）。
+- 三角枚举是初版最优解——通用图搜索对 2-4 broker × 10-20 品种是过度工程（§2.6）。
+
+**影响**
+- `docs/design/13-detector.md` 新增（实现 SSOT，Windsurf 照此施工）。
+- `docs/design/README.md` 索引加 13；`code-map.md §7` 加 Phase C 文件清单。
+- Detector 施工顺序：CrossExchange → Carry → Triangular，逐类加测试。交付前过 A–F。
+
+---
+
+## D-011 · Phase D Dashboard 机会闭环接线（2026-08-07）
+
+**背景**
+Phase C 中 Windsurf 顺手建的 `internal/engine/` 已完成扫描循环（Snapshot→CanonicalIndex→Detect→Evaluate→push），含 sub/pub + ConfirmOpportunity。下一步是把 engine 的 sub/pub 接到 gRPC OpportunityStream + ConfirmOpportunity unary，闭环「发现→评估→推送→确认」链路的最后两环。
+
+**决策**
+1. **设计成文 `14-dashboard-wiring.md`**：实现级规格，proto 变更清单 + dashboard Go 实现 + 类型映射 + 测试计划。
+2. **Proto 同步** `dashboard.proto`：搬入 `06 §5.2` 全部 message + enum + 新增 `OpportunityStream` / `ConfirmOpportunity` RPC。`buf generate` 全套。
+3. **Dashboard Go**：`internal/dashboard/opportunity.go` — `OpportunityStream`（订阅 engine→stream.Send）+ `ConfirmOpportunity`（调 engine.ConfirmOpportunity）+ 类型映射（evaluator.Opportunity→proto Opportunity，decimal→string，time→unix_ms）。
+4. **不改 Engine 逻辑**、不改 Detector/Evaluator——纯接线。
+
+**理由**
+- Engine 的 sub/pub 模式天然对接 gRPC server stream（一个 goroutine select on channel+ctx.Done → stream.Send）。
+- 类型映射集中在一处（`toProtoEvent`），避免 proto 生成类型散落到 evaluator 或 engine 包。
+- 短规格（~100 行）足以指导实现；
+
+**影响**
+- `docs/design/14-dashboard-wiring.md` 新增。
+- `proto/dashboard/dashboard.proto` 新增内容；`buf generate` 重生成 Go + C# stub。
+- `internal/dashboard/opportunity.go` 新增。
+- Phase D 施工后，全链路「Quote → Detect → Evaluate → Engine → gRPC → desk」可运行。

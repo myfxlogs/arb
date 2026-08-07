@@ -8,6 +8,7 @@ import (
 
 	"arb/internal/adapter"
 	"arb/internal/bus"
+	"arb/internal/engine"
 	"arb/internal/risk"
 	"arb/internal/store"
 
@@ -28,6 +29,7 @@ type Server struct {
 	strategies          map[string]*strategyState
 	quoteCache          *quoteCache
 	maxConcurrentOrders int
+	engine              *engine.Engine
 	ctx                 context.Context
 }
 
@@ -48,6 +50,7 @@ type Deps struct {
 	Breaker             *risk.CircuitBreaker
 	Symbols             []string
 	MaxConcurrentOrders int
+	Engine              *engine.Engine
 }
 
 // NewServer creates a DashboardServiceServer.
@@ -71,6 +74,7 @@ func NewServer(deps Deps) *Server {
 		strategies:          strats,
 		quoteCache:          newQuoteCache(),
 		maxConcurrentOrders: deps.MaxConcurrentOrders,
+		engine:              deps.Engine,
 		ctx:                 context.Background(),
 	}
 }
