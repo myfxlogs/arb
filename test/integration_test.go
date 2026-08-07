@@ -27,7 +27,12 @@ func (m *mockAdapter) AccountSummary(context.Context) (*adapter.Account, error) 
 	return &adapter.Account{Currency: "USD"}, nil
 }
 func (m *mockAdapter) OpenOrders(context.Context) ([]adapter.Order, error) { return nil, nil }
-func (m *mockAdapter) AllSymbols(context.Context) ([]string, error)        { return nil, nil }
+func (m *mockAdapter) OrderHistory(context.Context, time.Time, time.Time) ([]adapter.Order, error) {
+	return nil, nil
+}
+func (m *mockAdapter) AllSymbols(context.Context) ([]string, error) { return nil, nil }
+func (m *mockAdapter) Stop()                                        {}
+func (m *mockAdapter) SetOnReconnect(func(context.Context) error)   {}
 func (m *mockAdapter) SymbolDigits(context.Context, []string) (map[string]int32, error) {
 	return nil, nil
 }

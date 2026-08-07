@@ -1,46 +1,33 @@
-# ARB 系统配置
-# 复制此文件并填入真实的 broker 凭证
+# ARB 系统配置（protobuf text format，schema 见 proto/config/config.proto）
+#
+# ⚠️ 真实 broker 配置在 PG `broker_accounts` 表（docker arb-postgres，宿主 5433），不在本文件。
+#    core 启动从 PG 加载 broker（见 cmd/core main.go §6b）。本文件 brokers 仅作 textproto 格式示例。
 
-brokers: [
-  {
-    name: "OctaFX-Demo"
-    platform: PLATFORM_TYPE_MT5
-    host: "78.140.180.198"
-    port: 443
-    user: 0
-    password: ""
-  }
-]
+brokers: []  # 真实 broker 在 PG；此处留空
 
+# ⚠️ strategies 的 schema 仍是旧 engine 设计（STRATEGY_TYPE_*）。
+#    D-003 后策略改为 detector/evaluator，config.proto 待 Windsurf 按 docs/design 重定义。
+#    下方保留旧结构仅作占位（enabled:false），不代表最终配置。
 strategies: [
   {
     type: STRATEGY_TYPE_TRIANGULAR
-    enabled: true
-    max_slippage_bps: 0.5
-    order_timeout: { seconds: 0 nanos: 500000000 }
-    subscribed_symbols: ["EURUSD", "GBPUSD", "EURGBP"]
-  },
-  {
-    type: STRATEGY_TYPE_CROSS_EXCHANGE
     enabled: false
-    max_slippage_bps: 1.0
-    order_timeout: { seconds: 0 nanos: 500000000 }
-    subscribed_symbols: []
+    subscribed_symbols: ["EURUSD", "GBPUSD", "EURGBP"]
   }
 ]
 
 risk: {
+  # P1 参数初值见 docs/design/discussion-log 讨论五；待 config.proto 按新架构重定义
   max_notional_per_trade: 10000
   max_consecutive_losses: 5
-  max_window_loss: 500
   daily_loss_limit: 5000
-  max_drawdown_pct: 20
   max_concurrent_orders: 5
-  rate_limit_initial: 10
 }
 
 database: {
-  dsn: "postgres://arb:arb@localhost:5432/arb?sslmode=disable"
+  # 宿主直连 docker PG 用 5433；core 容器内走 DB_DSN 环境变量（postgres:5432，见 docker-compose）。
+  # 注意：宿主 5432 是另一个无 arb 库的系统 PG，勿用。
+  dsn: "postgres://arb:arb@localhost:5433/arb?sslmode=disable"
 }
 
 dashboard: {

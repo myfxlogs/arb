@@ -1,11 +1,12 @@
 # 跨平台跨经纪商套利系统 — 项目约束文档
 
-> 版本：v4.0  
-> 日期：2026-08-04  
-> 施工 agent：Claude Code（Sonnet/Haiku mode）  
+> 版本：v5.0
+> 日期：2026-08-07
+> 施工 agent：Claude Code / Windsurf Cascade
 > 违反任何一条约束的代码不得合并。
 >
-> **v4.0 重大变更**：desk 前端从 Fyne 迁移到 Wails v3 + Svelte。变更原因见 §三。
+> **v4.0 重大变更**：desk 前端从 Fyne 迁移到 Wails v3 + Svelte。
+> **v5.0 重大变更**：desk 客户端从 Wails v3 + Svelte/JS 迁移到 **.NET 8 WPF + C#**（多语言架构，D-005）。变更原因见 §三。
 
 ---
 
@@ -28,7 +29,7 @@
 ❌ REST API (HTTP/1.1 + JSON) — 任何场景
 ❌ JSON 序列化 — 任何场景（包括 encoding/json）
 ❌ WebSocket — 任何场景
-❌ gRPC-Web — 不需要，desk 内部通过 Wails IPC 桥接，core↔desk 走原生 gRPC
+❌ gRPC-Web — 不需要，core↔desk 直接走原生 gRPC（grpc-dotnet），无 Web 栈
 ❌ Server-Sent Events
 ❌ GraphQL
 ❌ 任何文本格式的 RPC
@@ -61,69 +62,64 @@
 ### 3.1 架构
 
 ```
-desk.exe (单个进程，Wails v3)
-├── Go 后端
-│   ├── gRPC client ──────── gRPC (network) ────→ core:50051
-│   ├── 业务逻辑（数据处理、状态聚合）
-│   └── Wails runtime ────── 进程内 IPC ──────┐
-│                                              │
-└── WebView2 (Windows 系统原生，零额外体积)      │
-    ├── HTML/CSS (液态玻璃、阴影、动画)          │
-    ├── Svelte 5 (编译为 vanilla JS)            │
-    └── wails.Call() / wails.Events.On() ←─────┘
+desk.exe (单个进程，.NET 8 WPF)
+├── C# gRPC client (grpc-dotnet) ──── gRPC (network) ────→ core:50051
+├── ViewModels (MVVM) — 业务逻辑（状态聚合、命令绑定）
+└── WPF UI (XAML + 数据绑定)
+    ├── INotifyPropertyChanged / ObservableCollection (实时刷新)
+    ├── 5 个视图：价差矩阵 / 持仓 / 交易 / 历史 / 管理
+    └── 图表控件（LiveCharts/OxyPlot/ScottPlot）
 ```
 
 ### 3.2 允许
 
 ```
-✅ Wails v3 — 桌面壳（Go 后端 + WebView2 前端，单进程）
-✅ Svelte 5 — 前端框架（编译为 vanilla JS，无运行时）
-✅ HTML/CSS — 布局与样式（GPU 加速渲染）
-✅ 5 个 Tab：价差矩阵 / 持仓 / 交易 / 历史 / 管理
-✅ Go 后端通过 gRPC 连接 Core（同一个 Go 代码库）
-✅ Wails IPC — 前端↔后端通信（进程内函数调用，不走网络栈）
-✅ Node.js — 仅构建时依赖，运行时不存在
+✅ .NET 8 WPF + C# — Windows 桌面客户端（单进程，原生）
+✅ grpc-dotnet (Grpc.Net.Client) — 连 core 的唯一网络通道
+✅ WPF 数据绑定（INotifyPropertyChanged / ObservableCollection）
+✅ 图表库：LiveChartsCore / OxyPlot / ScottPlot（任选其一）
+✅ MVVM 模式（ViewModel + XAML View + ICommand）
+✅ 5 个视图：价差矩阵 / 持仓 / 交易 / 历史 / 管理
+✅ Proto 生成的 C# gRPC client（与 Go 共享同一份 .proto）
 ```
 
 ### 3.3 禁止
 
 ```
-❌ 浏览器 / Electron — 臃肿，捆绑 Chromium
-❌ Wails 内启动 HTTP server / REST endpoint / WebSocket
-❌ 前端直接发起网络请求（所有网络 I/O 必须走 Go 后端 → gRPC）
-❌ React / Vue — 运行时框架，体积大，virtual DOM 对实时数据不友好
+❌ 浏览器 / Electron / Web — 不捆绑 Chromium、不走 Web 栈
+❌ Wails / Fyne / Avalonia — Go 桌面非原生（已废，见 D-005）
+❌ React / Vue / JS / Svelte 前端 — desk 不再用 JS（已改 C#）
+❌ TypeScript — desk 不走 Web 前端构建
 ❌ TUI / 终端界面
-❌ Qt / GTK — CGO 依赖，交叉编译问题
-❌ TypeScript — Svelte 用 JS，减少构建复杂度
+❌ desk 直连 broker — 所有 broker I/O 经 core（desk 只见 gRPC）
+❌ desk 内启动 HTTP server / REST endpoint / WebSocket
+❌ desk 直接访问 PostgreSQL — 历史等查询经 core gRPC unary
 ```
 
 ### 3.4 数据流
 
 ```
-实时推送（gRPC server stream → Wails Events）：
-  core gRPC stream
-    │ Go 后端 stream.Recv() loop
-    │ runtime.EventsEmit("spread-matrix", data)   ← 进程内 IPC
+实时推送（gRPC server stream → WPF 数据绑定）：
+  core gRPC stream (OpportunityStream / SpreadMatrix / PositionWatch)
+    │ C# stream.Recv() async (await foreach)
+    │ ViewModel 更新 ObservableCollection / 触发 PropertyChanged
     ▼
-  Svelte: wails.Events.On("spread-matrix", updateStore)
+  WPF UI 自动刷新（数据绑定引擎）
 
-用户操作（Wails Call → gRPC unary）：
-  Svelte: wails.Call("SubmitOrder", {...})        ← 进程内 IPC
-    │ Go 后端函数执行
-    │ gRPC client.SubmitOrder(ctx, req)            ← 网络 gRPC
+用户操作（WPF 命令 → gRPC unary）：
+  WPF Button → ICommand →
+    client.ConfirmOpportunityAsync(req) / SubmitOrderAsync(req)  ← 网络 gRPC
     ▼
-  core: DashboardService.SubmitOrder
+  core: DashboardService.{ConfirmOpportunity, SubmitOrder, ...}
 ```
 
-### 3.5 为什么不是 Fyne
+### 3.5 为什么是 WPF 而非 Wails
 
-Fyne 的 CPU 合成渲染管线无法实现以下效果（架构层面不可能）：
-- `backdrop-filter: blur()` — 液态玻璃核心效果
-- `box-shadow` 投影阴影 — 无高斯模糊 filter
-- CSS transition 流畅动效 — Fyne 动画 API 是 CPU 驱动
-- Skeleton shimmer 动画 — 无 GPU shader
-
-Wails + WebView2 使用 Chromium 渲染引擎，上述效果全部是 CSS 原生能力，零开发成本。同时 Go 后端完全复用，gRPC 通信不变。唯一新增的是 Svelte 编译步骤（`npm run build`，构建时一次性）。
+D-005 第一性重审结论：**多语言架构（Go core + C# desk），各层最优**。
+- **WPF 是 Windows 桌面标杆**：成熟的数据绑定、稳健的图表生态（LiveCharts/OxyPlot/ScottPlot）、长期稳定（与 .NET 同生命周期），实时数据刷新是 WPF 数据绑定的主场。
+- **Wails v3 仍 beta**：本仓库已踩坑；Go 桌面框架（Wails/Fyne/Avalonia）非 Windows 原生，在数据绑定与图表生态上不及 WPF。
+- **gRPC+protobuf 桥接成本极小**：Go core 与 C# desk 共享同一份 `.proto`，grpc-dotnet 性能不输 Go gRPC，多语言不会成为瓶颈。强行单语言会逼某层次优。
+- 移动端第一版不做；后期如需，独立项目（与 desk 不共用 WPF）。
 
 ---
 
@@ -205,19 +201,26 @@ Go: decimal.Decimal — Warm/Cold Path
 
 ## 八、依赖
 
-### 8.1 允许
+### 8.1 允许（core / Go）
 
 | 包 | 用途 |
 |----|------|
 | `shopspring/decimal` | Warm/Cold Path 精度 |
 | `google.golang.org/grpc` | 唯一通信 |
 | `google.golang.org/protobuf` | 序列化 |
-| `github.com/wailsapp/wails/v3` | 桌面壳（Go + WebView2） |
 | `github.com/jackc/pgx/v5` | PostgreSQL driver |
 | `golang.org/x/time/rate` | 自适应限流 |
 | `log/slog` | 结构化日志 |
 
-### 8.2 禁止
+### 8.2 允许（desk / C# NuGet，D-005）
+
+| 包 | 用途 |
+|----|------|
+| `Grpc.Net.Client` / `Grpc.Tools` / `Google.Protobuf` | grpc-dotnet 连 core |
+| .NET 8 WPF SDK | Windows 桌面壳 |
+| `LiveChartsCore` / `OxyPlot` / `ScottPlot` | 图表（择一） |
+
+### 8.3 禁止
 
 ```
 ❌ encoding/json
@@ -226,7 +229,8 @@ Go: decimal.Decimal — Warm/Cold Path
 ❌ gin/echo/gorilla/mux（任何 HTTP 框架）
 ❌ go-redis/redis
 ❌ mattn/go-sqlite3、modernc.org/sqlite
-❌ fyne.io/fyne/v2（已迁移到 Wails）
+❌ fyne.io/fyne/v2（Go 桌面，已废）
+❌ github.com/wailsapp/wails/v3（Go 桌面，已废，见 D-005）
 ```
 
 ---
@@ -235,12 +239,11 @@ Go: decimal.Decimal — Warm/Cold Path
 
 ```
 cmd/
-  core/main.go        # 守护进程入口
-  desk/main.go        # Wails 桌面应用入口
-internal/
+  core/main.go        # 守护进程入口（Go）
+internal/             # Go 包（core 侧）
   adapter/            # PlatformAdapter + MT4/MT5 实现
   bus/                # QuoteBus
-  engine/             # 策略引擎
+  engine/             # 策略引擎（detector + evaluator）
   execute/            # 执行管线 + 幂等去重
   risk/               # 资金门禁 + 熔断 + Kill Switch
   audit/              # 审计日志
@@ -248,46 +251,30 @@ internal/
   errclass/           # 错误码分类
   dashboard/          # DashboardService gRPC server
   store/              # PostgreSQL 读写
-desk/
-  app.go              # Wails 应用初始化 + Go 后端绑定函数
-  matrix/             # 价差矩阵（Go 数据层）
-  positions/          # 持仓（Go 数据层）
-  trading/            # 交易（Go 数据层）
-  history/            # 历史查询（Go 数据层）
-  admin/              # 管理（Go 数据层）
-frontend/             # Svelte 前端（构建时编译为静态文件）
-  src/
-    App.svelte        # 根组件 + Tab 容器
-    lib/
-      wails.js        # Wails runtime 封装
-      grpc-bridge.js  # Go↔前端数据桥接
-    tabs/
-      Matrix.svelte   # 价差矩阵 Tab
-      Positions.svelte # 持仓 Tab
-      Trading.svelte  # 交易 Tab
-      History.svelte  # 历史 Tab
-      Admin.svelte    # 管理 Tab
-    components/
-      Card.svelte     # 液态玻璃卡片
-      StatCard.svelte # 数据卡片
-      Skeleton.svelte # 骨架屏
-      DataTable.svelte # 数据表格
-  package.json
-  vite.config.js
+desk/                 # C# .NET 8 WPF 项目（取代旧 Wails，D-005）
+  Desk.csproj         # 项目文件（.NET 8，NET 8 WPF SDK）
+  App.xaml / App.xaml.cs
+  MainWindow.xaml / MainWindow.xaml.cs
+  ViewModels/         # MVVM（Matrix / Positions / Trading / History / Admin）
+  Views/              # XAML 视图（5 个）
+  Services/           # gRPC client（封装 grpc-dotnet 连 core）
+  Proto/              # 由 .proto 生成的 C# gRPC client 桩
+# frontend/（旧 Svelte）作废，删除
 proto/
-  config/             # 配置 schema
-  dashboard/          # DashboardService schema
+  config/             # 配置 schema（Go/C# 共享）
+  dashboard/          # DashboardService schema（Go/C# 共享）
 migrations/           # PG DDL
 ```
 
 命名：
 ```
-✅ 接口：名词（PlatformAdapter, QuoteBus）
-✅ 方法：动词（Connect, Publish, Evaluate）
+✅ Go 接口：名词（PlatformAdapter, QuoteBus）
+✅ Go 方法：动词（Connect, Publish, Evaluate）
 ✅ Go 文件：小写下划线（quote_bus.go）
-✅ Svelte 组件：PascalCase（Matrix.svelte, StatCard.svelte）
+✅ C# 类型 / XAML：PascalCase（MatrixViewModel, MatrixView.xaml）
+✅ C# 私有字段：_camelCase
 ❌ 包名包含 util/common/misc/helper
-❌ 接口名 I 前缀
+❌ Go 接口名 I 前缀（C# 接口保留 I 前缀，遵循 .NET 惯例）
 ```
 
 ---
@@ -295,18 +282,16 @@ migrations/           # PG DDL
 ## 十、编译与部署
 
 ```
-✅ Go 1.22+
-✅ Linux amd64 (core)；Windows amd64 (desk)
-✅ CGO_ENABLED=0（core）；desk 通过 Wails 构建，无 CGO 依赖
-✅ Docker 容器化（core）
-✅ Wails 构建 desk：npm run build (前端) → go build (后端) → 单 exe
+✅ core：Go 1.22+，Linux amd64，CGO_ENABLED=0，Docker 容器化
+✅ desk：.NET 8 SDK + WPF（Windows amd64，dotnet build → desk.exe）
+✅ desk 不再依赖 Node.js / npm（旧 Svelte 链路随 D-005 废除）
+✅ Go 与 C# 共享同一份 proto（buf generate 出 Go stub，Grpc.Tools 出 C# stub）
 ✅ TLS 1.3
 ✅ GOTRACEBACK=0
 ✅ ulimit -c 0
 ✅ GOGC=50
-✅ go test -race 强制
-✅ CI 跑 govulncheck
-✅ Node.js 22+（仅 desk 构建时，CI runner 预装）
+✅ go test -race 强制（core）
+✅ CI 跑 govulncheck（core）
 ```
 
 ---
@@ -316,10 +301,11 @@ migrations/           # PG DDL
 ### 11.1 语言
 
 ```
-✅ 后端：Go（唯一语言）
-✅ 前端：JavaScript (Svelte 5，编译为 vanilla JS)
-❌ 禁止 TypeScript（Svelte 用 JS，减少构建复杂度）
-❌ 禁止 Python/任何其他语言
+✅ core 后端：Go（core 唯一语言）
+✅ desk 客户端：C#（.NET 8 WPF；多语言架构，见 D-005）
+❌ 禁止 TypeScript（desk 不走 Web 前端）
+❌ 禁止 Python / 任何其他语言
+❌ desk 不再用 JS/Svelte（已改 C#）
 ```
 
 ### 11.2 零容忍

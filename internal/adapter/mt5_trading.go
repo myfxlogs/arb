@@ -237,6 +237,16 @@ func (a *MT5Adapter) SymbolDigits(ctx context.Context, symbols []string) (map[st
 	return result, nil
 }
 
+// SymbolParamsRaw returns the full MT5 SymbolParams reply for one symbol.
+// Probe/inspection use: exposes contractSize/swap/commission/digits etc. as
+// the broker actually returns them, before we finalize the Listing struct.
+func (a *MT5Adapter) SymbolParamsRaw(ctx context.Context, symbol string) (*mt5.SymbolParamsReply, error) {
+	if !a.rsm.canPlaceOrder() {
+		return nil, ErrNotConnected
+	}
+	return a.mt5.SymbolParams(a.withSessionMD(ctx), &mt5.SymbolParamsRequest{Id: a.token, Symbol: symbol})
+}
+
 func toMT5Op(op OrderOperation) mt5.OrderType {
 	switch op {
 	case OpBuy:

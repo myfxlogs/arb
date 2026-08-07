@@ -1,0 +1,46 @@
+# ARB — Windsurf Cascade 规则
+
+> 本项目的强制约束、工作方法、接手协议的**唯一真相源是 `AGENTS.md`**。
+> **开工第一件事：读 `AGENTS.md` 全文 + `docs/handoff/STATE.md`。**
+> 本文件仅补充 Windsurf 专属行为；与 `AGENTS.md` 冲突时，**以 `AGENTS.md` 为准**。
+
+## 开工前必读
+1. `AGENTS.md` — 约束 SSOT + 工作方法 + 自我审计 + 接手协议（本文件不能替代它，必须读全文）。
+2. `docs/handoff/STATE.md` — 当前工作状态、阻塞、下一步、未决决策（上一个 AI 留下的交接）。
+3. `docs/code-map.md` — 依赖图 + 数据流 + Phase 文件清单（写代码前必读）。
+
+## 必须遵守的工作方法（AGENTS.md §2 摘要）
+- **Root-Cause-First**：功能消失/退化/bug，先 `git log --all --oneline -- <path>` + `git blame`，禁止"看到没了就重写"。
+- **对照 Phase 清单核对**：实现前先查 `docs/code-map.md §7` + `STATE.md`，确认是否已存在。
+- **Cross-scope 禁止**：一个 task 只改一个语义范围。
+- **先调研后动手**：开写前读相关代码、查 git 历史；独立信息收集并行做。
+
+## 交付前自我审计（单项工作完成 · 🔴 强制 — 所有 agent 无差别）
+每完成一项可独立交付的工作，交付前必须按 `AGENTS.md §3` 的 A–F 逐条自审，**任何一条不达标 = 不得提交、不得交接**：
+- **A 架构最优**：符合依赖方向、复用已有能力、无更简单等价方案被放弃。
+- **B 实现最优 + 第一性**：解法直接对应问题本质，无多余间接层。
+- **C 代码洁净**：无冗余 / 无死代码（删除不注释）/ 无 TODO·FIXME·nolint·hack·legacy / 无注释代码块。
+- **D 无 BUG**：边界·nil·并发·错误路径全覆盖；关键路径有测试；`go test -race` 通过；通读 diff 排除资源泄漏。
+- **E 全合规**：`AGENTS.md §7` 硬约束逐条对照 + `§10` Before Commit 全过。
+- **F 设计与文档**：影响架构/接口时同步更新 `code-map.md` 及相关 docs；文档无过时/冗余。
+- 存疑按"不达标"处理，当场修；修不好降级为"未完成"。自审结论写入 commit/PR 或 `STATE.md`。
+
+## 收工前必写（无损接手 — 失职红线）
+1. 通过 §3 自我审计（A–F 全达标）。
+2. 更新 `docs/handoff/STATE.md`：当前进度 / 阻塞 / 下一步 / 未决决策。
+3. 重要架构决策追加 `docs/handoff/decisions.md`。
+4. 这几条是另一个 AI（Claude Code）能无缝接手的保证。**收工不写 STATE.md = 失职。**
+
+## Before Commit（AGENTS.md §10）
+```bash
+go build ./...
+go test -race -count=1 ./...
+go vet ./...
+go run ./tools/check-file-lines --strict    # 🔴 阻断
+govulncheck ./...
+```
+
+## 禁止
+- 依赖 `docs/ant/`（临时参考项目，最终删除）。
+- 违反 `AGENTS.md §7` 硬约束（语言/协议/前端/存储/精度/并发）。
+- 跳过 §3 自我审计直接提交。

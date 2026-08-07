@@ -95,6 +95,14 @@ CREATE TABLE IF NOT EXISTS broker_accounts (
     company     TEXT NOT NULL DEFAULT '',
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS symbol_map (
+    broker           TEXT NOT NULL,
+    broker_symbol    TEXT NOT NULL,
+    canonical_symbol TEXT NOT NULL,
+    PRIMARY KEY (broker, broker_symbol)
+);
+CREATE INDEX IF NOT EXISTS idx_symbol_map_broker_canonical ON symbol_map (broker, canonical_symbol);
 	`)
 	return err
 }

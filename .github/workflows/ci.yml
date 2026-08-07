@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test with race detector
+        run: go test -race -count=1 ./...
+
+      - name: Check file lines (450 hard limit)
+        run: |
+          violations=$(find . -name '*.go' \
+            -not -path './vendor/*' \
+            -not -path './proto/gen/*' \
+            -not -path './.git/*' \
+            -exec sh -c 'lines=$(wc -l < "$1"); if [ "$lines" -gt 450 ]; then echo "$1: $lines lines"; fi' _ {} \;)
+          if [ -n "$violations" ]; then
+            echo "File line limit (450) violated:"
+            echo "$violations"
+            exit 1
+          fi
