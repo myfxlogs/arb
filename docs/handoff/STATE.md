@@ -1,7 +1,7 @@
 # ARB 工作状态 — 无损接手
 
 > 每次 AI 会话**开工读、收工写**。Claude Code 与 Windsurf 共享的唯一工作状态。
-> 最后更新：2026-08-08（Phase H 归因闭环已完成 — PG 双写 + DETECTED 埋点 + expireOld 修复；go build/vet/test/check-lines 全过）。
+> 最后更新：2026-08-08（Phase H Claude 复审通过，A–F 全达标；Phase I 任务清单已就位）。
 
 ---
 
@@ -17,19 +17,19 @@
 
 | # | 状态 | 在做的事 |
 |---|------|---------|
-| H-1 | ✅ | DDL UUID→TEXT (`003_opportunity.sql` id + audit_events FK) |
-| H-2 | ✅ | Engine 接线 PG 写 — `OppWriter` 接口 + `writeOpp`/`updateOppStatus` + scanOnce/executeConfirmed/expireOld 三处调用 |
-| H-3 | ✅ | scanOnce 加 DETECTED 审计埋点（Evaluate 后立即记，非 executable 也记） |
-| H-4 | ✅ | expireOld 无锁读修复 — opp 指针 + delete 在同一锁内完成 |
-| H-5 | ✅ | main.go 传 Store — `oppStore = st`（nil-safe interface wrap） |
-| H-6 | ✅ | 测试 — DetectedType + MockWrite + NilNoPanic + ExpireOld_RaceFree + ToOppRecord + TypeStatusString |
-| H-7 | ✅ | build/vet/test -race/check-lines 全过 + STATE.md |
+| I-1 | ⬜ | 集成测试 `mt5_connect_test.go`（真实 MT5 broker → Quote 验收） |
+| I-2 | ⬜ | 集成测试 `dashboard_e2e_test.go`（mock→engine→gRPC→client E2E） |
+| I-3 | ⬜ | `Dockerfile.core`（多阶段构建，golang→debian-slim） |
+| I-4 | ⬜ | `docker-compose.yml`（core + postgres + volumes） |
+| I-5 | ⬜ | `tools/readaudit/main.go`（可选，protoc --decode 已是标准方案） |
+| I-6 | ⬜ | `docs/code-map.md` §7 同步（Phase H/I 文件清单） |
+| I-7 | ⬜ | 最终 Before Commit + STATE.md（全量自审） |
 
 > 状态：⬜ 未开始 · 🔄 进行中 · ✅ 已完成 · ⛔ 阻塞
 
 ### 阻塞 / 待决策
 
-无阻塞。Phase H 全部完成，等待 Claude 复审。
+无阻塞。Phase H 已通过 Claude 复审，Phase I 任务清单就位，等待 Windsurf 施工。
 
 ---
 
@@ -104,7 +104,7 @@
 
 ## 当前阻塞
 
-无阻塞。Phase H 已完成，等待 Claude 复审。
+无阻塞。Phase H 已通过 Claude 复审（A–F 全达标）。Phase I 待 Windsurf 施工。
 
 ---
 
@@ -143,8 +143,8 @@
 
 1–12. ✅ **Phase A–G 全部完成并通过复审**（见上方各节）。
 13. ✅ **Phase G Claude 复审完成（2026-08-08）— 条件通过，A–F 逐项判定见下方「Phase G Claude 复审结论」**。
-14. ✅ **Phase H 归因闭环已完成（2026-08-08）— PG 双写 + DETECTED 埋点 + expireOld 修复 + DDL UUID→TEXT**。
-15. ▶ **【当前】Phase H 过审 → Phase I**（集成测试 + 部署准备）。
+14. ✅ **Phase H 归因闭环已完成 + Claude 复审通过（2026-08-08）— A–F 全达标，PG 双写 + DETECTED 埋点 + expireOld 修复 + DDL UUID→TEXT**。
+15. ▶ **【当前】Phase I**（集成测试 + 部署准备 + 收尾）。
 
 ---
 
@@ -601,3 +601,84 @@ Phase G 全部 6 个子任务（G-1~G-6）：`proto/audit/audit.proto` + `intern
 - **D 正确性** ✅ — 6 新测试全过 + `-race` clean；ExpireOld_RaceFree 并发 10×expireOld + 5×ConfirmOpportunity 无竞态；MockWrite 验证 FILLED 状态更新写入 PG
 - **E 合规** ✅ — 无 decimal.NewFromFloat；无 goroutine pool/sync.Map；engine.go 376 行 < 450
 - **F 文档** ✅ — STATE.md 本次更新；DDL 改动与 genOppID() 字符串 ID 一致
+
+---
+
+## Phase H Claude 复审结论（2026-08-08）
+
+### Before Commit
+
+| 检查 | 结果 |
+|------|------|
+| `go build ./...` | ✅ 无错误 |
+| `go vet ./...` | ✅ 无警告 |
+| `go test -race -count=1 ./...` | ✅ **122 passed**（23 packages，含 6 新测试） |
+| `./scripts/check-lines.sh` | ✅ engine.go 376 < 450；无硬违例 |
+
+### A–F 逐项判定
+
+- **A 架构** ✅ — `OppWriter` 接口在 engine 包（Layer 4），`*store.Store` 自然实现（Layer 0），依赖方向正确（Layer 4→Layer 0），同 `symmap.go` 的 `SymMapProvider` 模式。`oppstore.go` 独立文件不污染 `engine.go`。
+- **B 实现** ✅ — nil-safe interface wrap（`main.go:224-228`）正确规避 Go nil-interface 陷阱。nil-safe 方法入口 `if e.deps.OppStore == nil { return }` 正确。DETECTED 埋点在 ID 生成后 Executable 判定前。expireOld 修复用最小改动（`[]string`→`[]*evaluator.Opportunity`+delete 锁内）。全生命周期覆盖（PUSHED/FILLED/FAILED/EXPIRED）。审计写入顺序：protobuf 文件先于 PG。
+- **C 洁净** ✅ — 无死代码/TODO/FIXME/注释代码块。转换函数 DRY。`oppstore.go` 101 行，`engine.go` 376 行，均 < 450。
+- **D 正确性** ✅ — 6 新测试全过 + `-race` clean。ExpireOld_RaceFree 并发无竞态。DDL UUID→TEXT 三处全部对齐。`writeOpp` 用 `ON CONFLICT DO UPDATE`（upsert）。`toOppRecord` 的 `MarshalLegs` 错误 discard — 输入始终为 `map[string]any`+`decimal.String()`，JSON marshal 不可能失败；失败时降级为 `[]`，可接受。
+- **E 合规** ✅ — 生产代码无 `decimal.NewFromFloat`。无 goroutine pool/sync.Map/热路径 Mutex。engine.go 376 < 450。
+- **F 文档** ✅ — STATE.md 已更新。DDL 改动已记录。
+
+### 总判定：✅ **Phase H 通过，A–F 全达标**
+
+Phase G 复审 3 个发现全部修复：D-1 DDL UUID→TEXT / C-1 PG 双写接线 / D-3 DETECTED 埋点 / D-2 expireOld 无锁读修复。
+
+全链路完整：**Quote → Detect → Evaluate → Engine(protobuf+PG 双写) → gRPC stream → desk → Confirm → Pipeline → Audit+PG**。归因闭环完成。
+
+---
+
+## Phase I — 集成测试 + 部署准备 + 收尾（Windsurf 施工）
+
+> Phase H 是最后一个功能 Phase。Phase I 是工程化收尾：集成测试、容器化、文档同步。
+
+### 施工前必读
+
+1. `AGENTS.md` 全文 + 本文件（STATE.md）+ `practices.md` + `WORKING.md`
+2. `docs/code-map.md` — 依赖图 + goroutine 拓扑 + §7 文件清单
+3. `docs/testing.md` — 测试规范
+4. `docs/operations.md` — 运维操作手册
+5. `docs/development.md` — 环境搭建
+
+### 任务清单
+
+| # | 任务 | 产出 | 参考 |
+|---|------|------|------|
+| **I-1** | 集成测试 `mt5_connect_test.go` | 真实连 MT5 broker → Subscribe EURUSD → 读 3 条 Quote → 验证 Bid/Ask 非零、Timestamp 近 10s | testing.Short() 保护（CI 无 broker） |
+| **I-2** | 集成测试 `dashboard_e2e_test.go` | 无需真实 broker：mockAdapter + bus.Publish → engine scanOnce → gRPC server（随机端口）+ client → 验证 OpportunityStream 收到 ≥1 条事件（Opp 非 nil、ID 非空、Legs 非空） | 测试内启动 gRPC server + grpc.DialContext |
+| **I-3** | `Dockerfile.core` | 多阶段构建（golang:1.24-bookworm AS builder → debian:bookworm-slim），复制 config + 二进制，EXPOSE 50051 | docs/operations.md |
+| **I-4** | `docker-compose.yml` | core（build: .）+ postgres（image: postgres:16，5432→5433）+ volumes（pgdata + ./audit.pb）。core depends_on postgres | — |
+| **I-5** | `tools/readaudit/main.go`（可选） | 读 `audit.pb` → 按 varint 长度前缀逐条解析 AuditEvent → fmt.Printf 人类可读 | `protoc --decode` 已是标准方案；做不做看需要 |
+| **I-6** | `docs/code-map.md` §7 同步 | 加 Phase H 文件（oppstore.go/oppstore_test.go）+ Phase I 文件 | 保持文档一致 |
+| **I-7** | 最终 Before Commit + STATE.md | `go build ./... && go vet ./... && go test -race -count=1 ./... && ./scripts/check-lines.sh` 全过 | AGENTS §10 |
+
+### 施工注意事项
+
+- I-1 用 `testing.Short()` 保护：`if testing.Short() { t.Skip("needs real broker") }`。`go test -short` 跳过。
+- I-2 用 `net.Listen("tcp", "127.0.0.1:0")` 随机端口，测试结束后 `s.Stop()`。
+- I-3 多阶段构建：builder 阶段 `CGO_ENABLED=0 go build -o /app/core ./cmd/core`；run 阶段 `apt-get install -y ca-certificates`。
+- I-5 可选——如果 Windsurf 判断 `protoc --decode` 已够用，可跳过。
+- 所有新文件 < 450 行。
+
+### 验收标准
+
+- [ ] `go test -short -race -count=1 ./...` 全过（CI 模式）
+- [ ] `go test -race -count=1 ./...` 全过（有 PG+broker 环境时全量）
+- [ ] `docker build -f Dockerfile.core -t arb-core .` 成功
+- [ ] `docker-compose up -d` 启动 → `docker-compose logs core` 无 ERROR
+- [ ] `go vet ./...` 无警告
+- [ ] `./scripts/check-lines.sh` 无硬违例
+- [ ] A–F 自审通过（AGENTS.md §3）
+
+### 长期路线图（Phase I 之后）
+
+| Phase | 内容 | 说明 |
+|-------|------|------|
+| **J** | 真实经纪商验收 | 两个 MT5 broker 同时跑 QuoteStream，观察 engine 产出，验收 swap 计算 |
+| **K** | desk 桌面联调 | Windows `dotnet run`，验证 gRPC stream 延迟 + Confirm→Pipeline→Filled 闭环 |
+| **L** | 策略参数调优 | 基于 Phase J 真实数据调 EvaluatorConfig 阈值 |
+| **M** | Crypto 接入（Binance） | 复用 detector/evaluator/engine，加 adapter/binance.go |
