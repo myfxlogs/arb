@@ -25,7 +25,7 @@ BEGIN;
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS opportunities (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id              TEXT PRIMARY KEY,
 
     -- 分类 / 状态（02 §5 / 04 §2 状态机）
     type            TEXT NOT NULL CHECK (type IN ('CROSS_EXCHANGE','CARRY','TRIANGULAR')),
@@ -117,8 +117,8 @@ CREATE TABLE IF NOT EXISTS audit_events (
     ts              TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     -- 关联实体（二者至少填一）
-    opportunity_id  UUID REFERENCES opportunities(id),
-    order_client_id UUID,                  -- 关联 orders.client_id（001_init.sql 定义）
+    opportunity_id  TEXT REFERENCES opportunities(id),
+    order_client_id TEXT,                  -- 关联 orders.client_id（001_init.sql 定义）
 
     -- 事件分类（07 §3：每个 Opportunity / Order 事件落审计）
     event_type      TEXT NOT NULL,         -- OPPORTUNITY_PUSHED / CONFIRMED / LEG_FILLED /

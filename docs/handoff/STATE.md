@@ -1,13 +1,13 @@
 # ARB 工作状态 — 无损接手
 
 > 每次 AI 会话**开工读、收工写**。Claude Code 与 Windsurf 共享的唯一工作状态。
-> 最后更新：2026-08-08（Phase G Claude 复审完成 — 条件通过，3 个非阻塞发现归入 Phase H）。
+> 最后更新：2026-08-08（Phase H 归因闭环已完成 — PG 双写 + DETECTED 埋点 + expireOld 修复；go build/vet/test/check-lines 全过）。
 
 ---
 
 ## 一句话现状
 
-系统重新定位为「**发现 + 评估 + 人工确认 + 执行**」顾问式（D-003）；架构定稿 **Go(core) + C# .NET 8 WPF(desk) + gRPC + PostgreSQL，多语言各层最优**（D-005）；第一版 = **FX MT5 确定性套利**（跨所价差/三角/套息，Crypto 留接口，D-004）；**设计文档 00–17 全部完成，覆盖到终局**（发现→评估→接线→确认→执行→归因）；**Phase A–G 全部 A–F 合规并通过复审**；全链路「Quote→Detect→Evaluate→Engine→gRPC stream→desk→Confirm→Pipeline→Audit」可运行。
+系统重新定位为「**发现 + 评估 + 人工确认 + 执行**」顾问式（D-003）；架构定稿 **Go(core) + C# .NET 8 WPF(desk) + gRPC + PostgreSQL，多语言各层最优**（D-005）；第一版 = **FX MT5 确定性套利**（跨所价差/三角/套息，Crypto 留接口，D-004）；**设计文档 00–17 全部完成，覆盖到终局**（发现→评估→接线→确认→执行→归因）；**Phase A–H 全部 A–F 合规**；全链路「Quote→Detect→Evaluate→Engine→gRPC stream→desk→Confirm→Pipeline→Audit+PG」可运行。
 
 ---
 
@@ -17,18 +17,19 @@
 
 | # | 状态 | 在做的事 |
 |---|------|---------|
-| G-1 | ✅ | `proto/audit/audit.proto` + `internal/audit/audit.go` + `audit_test.go` — length-delimited protobuf 同步写 |
-| G-2 | ✅ | `internal/store/opportunities.go` — Write/Update/Query CRUD（用 003 DDL） |
-| G-3 | ✅ | Engine 5 处埋点 — Pushed/Confirmed/Filled/Failed/Expired |
-| G-4 | ✅ | main.go 接线 — `audit.NewLogger("audit.pb")` 传入 `engine.Deps.Audit` |
-| G-5 | ✅ | 修复 context.Background() → runCtx（New 初始化 + Run 覆写） |
-| G-6 | ✅ | 测试 — audit WriteRead + NilLogger + NotExecutable + AuditLog_Events + OpportunityRecord + MarshalLegs |
+| H-1 | ✅ | DDL UUID→TEXT (`003_opportunity.sql` id + audit_events FK) |
+| H-2 | ✅ | Engine 接线 PG 写 — `OppWriter` 接口 + `writeOpp`/`updateOppStatus` + scanOnce/executeConfirmed/expireOld 三处调用 |
+| H-3 | ✅ | scanOnce 加 DETECTED 审计埋点（Evaluate 后立即记，非 executable 也记） |
+| H-4 | ✅ | expireOld 无锁读修复 — opp 指针 + delete 在同一锁内完成 |
+| H-5 | ✅ | main.go 传 Store — `oppStore = st`（nil-safe interface wrap） |
+| H-6 | ✅ | 测试 — DetectedType + MockWrite + NilNoPanic + ExpireOld_RaceFree + ToOppRecord + TypeStatusString |
+| H-7 | ✅ | build/vet/test -race/check-lines 全过 + STATE.md |
 
 > 状态：⬜ 未开始 · 🔄 进行中 · ✅ 已完成 · ⛔ 阻塞
 
 ### 阻塞 / 待决策
 
-无阻塞。Phase G 已通过 Claude 复审（条件通过，3 个非阻塞发现归入 Phase H）。
+无阻塞。Phase H 全部完成，等待 Claude 复审。
 
 ---
 
@@ -88,11 +89,13 @@
 - ✅ `internal/engine/` — **扫描循环 + Confirm→Pipeline 异步执行**（Phase D + Phase F 执行接线）
 - ✅ desk C# .NET 8 WPF — **v0/v1/v2 全部完成并通过复审**
 - ✅ Phase E v2 bug fixes F1–F4 — **已修复并通过复审**（SignalRecord/Handler/SL-TP）
-- ✅ `internal/audit/` + 归因记账（`17-audit.md §1`）— **Phase G 已完成**（protobuf 文件写入通过复审；PG 双写待 Phase H）
-- ✅ `internal/store/opportunities.go`（CRUD，`17-audit.md §2`）— **Phase G 已完成**（CRUD 已定义；引擎接线待 Phase H）
-- ✅ Engine 审计埋点（5 处，`17-audit.md §1`）— **Phase G 已完成**
+- ✅ `internal/audit/` + 归因记账（`17-audit.md §1`）— **Phase G 已完成 + Phase H PG 双写接线**
+- ✅ `internal/store/opportunities.go`（CRUD，`17-audit.md §2`）— **Phase G 已完成 + Phase H 引擎接线**
+- ✅ Engine 审计埋点（6 处，`17-audit.md §1/§4`）— **Phase G 5 处 + Phase H 加 DETECTED**
 - ✅ engine.go context.Background() → runCtx（复审发现 #1）— **Phase G-5 已修**
-- ❌ `tools/readaudit/` — Phase H（可选便利工具，protoc --decode 已是标准方案）
+- ✅ engine.go expireOld 无锁读修复 — **Phase H-4 已修**
+- ✅ DDL UUID→TEXT 修复 — **Phase H-1 已修**
+- ❌ `tools/readaudit/` — Phase I（可选便利工具，protoc --decode 已是标准方案）
 - ✅ ~~`SymbolInfo`+`SymGroup` 缓存 → `Listing`~~ Phase A 完成
 - ✅ ~~成本模型 `Funding` 结构~~ Phase A 完成；净盈利计算见 Evaluator（Phase B）
 - ✅ ~~`Notional()` 硬编码 100000~~ Phase F 已替换为 Evaluator.NotionalUSD
@@ -101,7 +104,7 @@
 
 ## 当前阻塞
 
-无阻塞。Phase H 任务清单已就位（STATE.md 底部），等待 Windsurf 施工。
+无阻塞。Phase H 已完成，等待 Claude 复审。
 
 ---
 
@@ -140,7 +143,8 @@
 
 1–12. ✅ **Phase A–G 全部完成并通过复审**（见上方各节）。
 13. ✅ **Phase G Claude 复审完成（2026-08-08）— 条件通过，A–F 逐项判定见下方「Phase G Claude 复审结论」**。
-14. ▶ **【当前】Phase H**：归因闭环（PG 双写接线 + DDL UUID 修复）+ 集成测试 + 部署准备。
+14. ✅ **Phase H 归因闭环已完成（2026-08-08）— PG 双写 + DETECTED 埋点 + expireOld 修复 + DDL UUID→TEXT**。
+15. ▶ **【当前】Phase H 过审 → Phase I**（集成测试 + 部署准备）。
 
 ---
 
@@ -562,10 +566,38 @@ Phase G 全部 6 个子任务（G-1~G-6）：`proto/audit/audit.proto` + `intern
 
 ### 验收标准
 
-- [ ] `go test -race -count=1 ./...` 全过（含新测试）
-- [ ] `go vet ./...` 无警告
-- [ ] engine.go ≤ 450 行
-- [ ] 所有机会生命周期事件同时出现在 protobuf 文件 **和** PG opportunities 表中
-- [ ] 非 executable 机会的 DETECTED 事件出现在 audit.pb 文件中
-- [ ] `expireOld` 路径 `-race` clean
-- [ ] A–F 自审通过（`AGENTS.md §3`）
+- [x] `go test -race -count=1 ./...` 全过（含新测试）
+- [x] `go vet ./...` 无警告
+- [x] engine.go ≤ 450 行（376 行）
+- [x] 所有机会生命周期事件同时出现在 protobuf 文件 **和** PG opportunities 表中（writeOpp + updateOppStatus 接线）
+- [x] 非 executable 机会的 DETECTED 事件出现在 audit.pb 文件中
+- [x] `expireOld` 路径 `-race` clean
+- [x] A–F 自审通过（`AGENTS.md §3`）
+
+---
+
+## Phase H 完成详情 + 自审（2026-08-08，Windsurf）
+
+### 新增文件
+
+- **`internal/engine/oppstore.go`** (101行) — `OppWriter` 接口 + `oppTypeString`/`oppStatusString`/`dirString` 转换 + `toOppRecord`（evaluator.Opportunity → store.OpportunityRecord）+ `writeOpp`/`updateOppStatus` Engine 方法（nil-safe）
+- **`internal/engine/oppstore_test.go`** (216行) — 6 测试：DetectedType + MockWrite + NilNoPanic + ExpireOld_RaceFree + ToOppRecord_Conversion + OppTypeStatusString
+
+### 修改文件
+
+- **`migrations/003_opportunity.sql`** — `id UUID → TEXT` + `opportunity_id/order_client_id UUID → TEXT`
+- **`internal/engine/engine.go`** — Deps 加 `OppStore OppWriter`；scanOnce 加 DETECTED 埋点 + writeOpp 调用；executeConfirmed 加 updateOppStatus；expireOld 修复（`[]string → []*evaluator.Opportunity` + delete 在锁内）；376 行 < 450
+- **`cmd/core/main.go`** — `oppStore = st`（nil-safe interface wrap）传入 `engine.Deps.OppStore`
+
+### Before Commit
+
+- `go build ./...` ✅ / `go vet ./...` ✅ / `go test -race -count=1 ./...` ✅ / `./scripts/check-lines.sh` ✅
+
+### A–F 自审
+
+- **A 架构** ✅ — `oppstore.go` 定义 `OppWriter` 接口（engine 层），`*store.Store` 自然实现；engine→store 单向依赖（Layer 4→Layer 0，同 symmap.go 模式）；转换函数隔离在 oppstore.go 不污染 engine.go
+- **B 实现** ✅ — nil-safe interface wrap（`var oppStore OppWriter; if st != nil { oppStore = st }`）避免 Go nil-interface 陷阱；expireOld 修复用最小改动（`[]string → []*evaluator.Opportunity` + delete 移入锁内）；DETECTED 在 ID 生成后 Executable 判定前记
+- **C 洁净** ✅ — 无死代码/TODO/FIXME；转换函数 DRY 复用；mockOppWriter 仅测试文件
+- **D 正确性** ✅ — 6 新测试全过 + `-race` clean；ExpireOld_RaceFree 并发 10×expireOld + 5×ConfirmOpportunity 无竞态；MockWrite 验证 FILLED 状态更新写入 PG
+- **E 合规** ✅ — 无 decimal.NewFromFloat；无 goroutine pool/sync.Map；engine.go 376 行 < 450
+- **F 文档** ✅ — STATE.md 本次更新；DDL 改动与 genOppID() 字符串 ID 一致

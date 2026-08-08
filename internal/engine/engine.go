@@ -36,6 +36,7 @@ type Deps struct {
 	Detectors []detector.Detector
 	Pipeline  *execute.ExecutionPipeline
 	Audit     *audit.Logger
+	OppStore  OppWriter
 	Throttle  time.Duration // min interval between scans (default 100ms)
 	Symbols   []string      // all broker symbols to snapshot
 }
@@ -137,6 +138,7 @@ func (e *Engine) executeConfirmed(ctx context.Context, opp *evaluator.Opportunit
 		action = "FAILED"
 		evType = auditpb.EventType_EVENT_TYPE_FAILED
 	}
+	e.updateOppStatus(opp.ID, action)
 	e.auditLog(evType, opp)
 	e.broadcast(OpportunityEvent{Opp: opp, Action: action})
 }
@@ -269,19 +271,22 @@ func (e *Engine) scanOnce(ctx context.Context) {
 		if opp == nil {
 			continue // stale or discarded
 		}
-		if !opp.Executable {
-			continue // not executable, don't push
-		}
 
-		// Generate ID if empty
 		if opp.ID == "" {
 			opp.ID = genOppID(c)
+		}
+
+		e.auditLog(auditpb.EventType_EVENT_TYPE_DETECTED, opp)
+
+		if !opp.Executable {
+			continue
 		}
 
 		e.mu.Lock()
 		e.opp[opp.ID] = opp
 		e.mu.Unlock()
 
+		e.writeOpp(opp)
 		e.auditLog(auditpb.EventType_EVENT_TYPE_PUSHED, opp)
 		e.broadcast(OpportunityEvent{
 			Opp:    opp,
@@ -296,25 +301,23 @@ func (e *Engine) scanOnce(ctx context.Context) {
 func (e *Engine) expireOld(ctx context.Context) {
 	now := time.Now()
 	e.mu.Lock()
-	var expired []string
+	var expired []*evaluator.Opportunity
 	for id, opp := range e.opp {
 		if opp.ExpiresAt.Before(now) && opp.Status == evaluator.OppStatusPushed {
 			opp.Status = evaluator.OppStatusExpired
-			expired = append(expired, id)
+			expired = append(expired, opp)
+			delete(e.opp, id)
 		}
 	}
 	e.mu.Unlock()
 
-	for _, id := range expired {
-		opp := e.opp[id]
+	for _, opp := range expired {
+		e.updateOppStatus(opp.ID, "EXPIRED")
 		e.auditLog(auditpb.EventType_EVENT_TYPE_EXPIRED, opp)
 		e.broadcast(OpportunityEvent{
 			Opp:    opp,
 			Action: "EXPIRED",
 		})
-		e.mu.Lock()
-		delete(e.opp, id)
-		e.mu.Unlock()
 	}
 }
 

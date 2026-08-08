@@ -221,8 +221,10 @@ func main() {
 
 	// 7e. Engine (scan loop)
 	var symMapProvider engine.SymMapProvider
+	var oppStore engine.OppWriter
 	if st != nil {
 		symMapProvider = &engine.StoreSymMap{Store: st}
+		oppStore = st
 	}
 	eng := engine.New(engine.Deps{
 		Bus:       quoteBus,
@@ -236,6 +238,7 @@ func main() {
 		},
 		Pipeline:  pipeline,
 		Audit:     auditLogger,
+		OppStore:  oppStore,
 		Throttle:  100 * time.Millisecond,
 		Symbols:   allSymbols,
 	})
