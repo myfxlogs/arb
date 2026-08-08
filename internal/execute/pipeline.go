@@ -32,17 +32,14 @@ type LegResult struct {
 
 // ArbitrageOpportunity describes a multi-leg arbitrage trade.
 type ArbitrageOpportunity struct {
-	Legs    []Leg
-	Params  StrategyParams
+	Legs       []Leg
+	Params     StrategyParams
+	NotionalUSD float64
 }
 
-// Notional returns the total notional value of all legs.
+// Notional returns the total notional value in USD, pre-calculated by Evaluator.
 func (o ArbitrageOpportunity) Notional() float64 {
-	total := 0.0
-	for _, leg := range o.Legs {
-		total += leg.Price * leg.Volume * 100000 // standard lot size
-	}
-	return total
+	return o.NotionalUSD
 }
 
 // StrategyParams holds execution parameters for a strategy.

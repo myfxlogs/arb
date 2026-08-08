@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"arb/internal/adapter"
+	"arb/internal/audit"
 	"arb/internal/bus"
 	config "arb/internal/config"
 	"arb/internal/dashboard"
@@ -202,7 +203,23 @@ func main() {
 		Cfg:      evalCfg,
 	})
 
-	// 7c. Engine (scan loop)
+	// 7c. Audit logger (length-delimited protobuf, synchronous)
+	auditLogger, err := audit.NewLogger("audit.pb")
+	if err != nil {
+		slog.Error("create audit logger", "error", err)
+		os.Exit(1)
+	}
+	defer auditLogger.Close()
+
+	// 7d. Execution pipeline (before engine so engine can use it)
+	dedup := execute.NewDedupCache()
+	pipeline := execute.NewPipeline(execute.PipelineDeps{
+		Bus:      quoteBus,
+		Dedup:    dedup,
+		Adapters: adapters,
+	})
+
+	// 7e. Engine (scan loop)
 	var symMapProvider engine.SymMapProvider
 	if st != nil {
 		symMapProvider = &engine.StoreSymMap{Store: st}
@@ -217,21 +234,14 @@ func main() {
 			detector.NewCarry(),
 			detector.NewTriangular(),
 		},
-		Throttle: 100 * time.Millisecond,
-		Symbols:  allSymbols,
+		Pipeline:  pipeline,
+		Audit:     auditLogger,
+		Throttle:  100 * time.Millisecond,
+		Symbols:   allSymbols,
 	})
 	if symMapProvider != nil {
 		go eng.Run(ctx)
 	}
-
-	// 8. Execution pipeline
-	dedup := execute.NewDedupCache()
-	pipeline := execute.NewPipeline(execute.PipelineDeps{
-		Bus:      quoteBus,
-		Dedup:    dedup,
-		Adapters: adapters,
-	})
-	_ = pipeline // used by strategy engine (Phase 8 integration)
 
 	// 9. Dashboard gRPC server
 	dashServer := dashboard.NewServer(dashboard.Deps{

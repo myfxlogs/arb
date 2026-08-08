@@ -3,6 +3,7 @@ syntax = "proto3";
 package arb.dashboard;
 
 option go_package = "arb/proto/dashboard";
+option csharp_namespace = "ArbDesk.Dashboard";
 
 // DashboardService 为 desk 桌面应用提供数据和控制接口。
 // core 是 gRPC server；desk 是 gRPC client。

@@ -14,7 +14,9 @@
       "Bash(python3 *)",
       "Bash(npm init *)",
       "Bash(npm install *)",
-      "Bash(npx playwright *)"
+      "Bash(npx playwright *)",
+      "Bash(rtk git *)",
+      "Bash(rtk go *)"
     ]
   }
 }

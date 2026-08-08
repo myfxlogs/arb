@@ -39,6 +39,12 @@ func (a *MT5Adapter) PlaceOrder(ctx context.Context, req OrderRequest) (*OrderRe
 	if req.Slippage > 0 {
 		r.Slippage = proto.Uint64(uint64(req.Slippage))
 	}
+	if req.StopLoss > 0 {
+		r.Stoploss = proto.Float64(req.StopLoss)
+	}
+	if req.TakeProfit > 0 {
+		r.Takeprofit = proto.Float64(req.TakeProfit)
+	}
 
 	resp, err := a.trading.OrderSend(a.withSessionMD(ctx), r)
 	if err != nil {

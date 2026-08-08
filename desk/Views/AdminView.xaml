@@ -1,0 +1,58 @@
+<UserControl x:Class="ArbDesk.Views.AdminView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Kill / Resume -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button Content="KILL ALL" Command="{Binding KillCommand}"
+                    Padding="20,8" Margin="0,0,12,0" FontWeight="Bold"
+                    Foreground="White" Background="#D32F2F" />
+            <Button Content="Resume" Command="{Binding ResumeCommand}"
+                    Padding="20,8" Margin="0,0,12,0" />
+            <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center"
+                       Foreground="#FFA500" FontWeight="Bold" />
+        </StackPanel>
+
+        <!-- Load Strategies -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button Content="Load Strategies" Command="{Binding LoadStrategiesCommand}"
+                    Padding="16,6" />
+        </StackPanel>
+
+        <!-- Strategy List -->
+        <DataGrid Grid.Row="2"
+                  ItemsSource="{Binding Strategies}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Strategy" Binding="{Binding Name}" Width="120" />
+                <DataGridCheckBoxColumn Header="Enabled" Binding="{Binding Enabled}" Width="60" />
+                <DataGridTextColumn Header="CB Open" Binding="{Binding CircuitBreakerOpen}" Width="60" />
+                <DataGridTextColumn Header="Losses" Binding="{Binding ConsecutiveLosses}" Width="60" />
+                <DataGridTextColumn Header="WindowPnL" Binding="{Binding WindowPnl}" Width="90" />
+                <DataGridTextColumn Header="Trades" Binding="{Binding TradesToday}" Width="60" />
+                <DataGridTextColumn Header="PnL Today" Binding="{Binding PnlToday}" Width="90" />
+                <DataGridTemplateColumn Header="Toggle" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="Toggle"
+                                    Command="{Binding DataContext.ToggleCommand,
+                                        RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Padding="8,2" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

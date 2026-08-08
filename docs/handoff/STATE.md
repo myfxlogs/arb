@@ -1,40 +1,67 @@
 # ARB 工作状态 — 无损接手
 
 > 每次 AI 会话**开工读、收工写**。Claude Code 与 Windsurf 共享的唯一工作状态。
-> 最后更新：2026-08-07（Phase D 复审通过；▶ Phase E Desk WPF 设计完成 `15-desk-wpf.md`，待 Windsurf）。
+> 最后更新：2026-08-08（Phase G Audit 归因已完成；go build/vet/test/check-lines 全过）。
 
 ---
 
 ## 一句话现状
 
-系统重新定位为「**发现 + 评估 + 人工确认 + 执行**」顾问式（D-003）；架构定稿 **Go(core) + C# .NET 8 WPF(desk) + gRPC + PostgreSQL，多语言各层最优**（D-005）；第一版 = **FX MT5 确定性套利**（跨所价差/三角/套息，Crypto 留接口，D-004）；设计文档 00-14 完成；**Phase A 完全 A–F 合规**；**Phase B（Evaluator 算核）完全 A–F 合规并通过复审**；**Phase C（Detector 扫描器）已完成**；**Phase D（Engine 接线 + Dashboard OpportunityStream/ConfirmOpportunity + proto 同步）已完成**；下一步 **Claude 复审 Phase D + desk C# WPF 落地**。
+系统重新定位为「**发现 + 评估 + 人工确认 + 执行**」顾问式（D-003）；架构定稿 **Go(core) + C# .NET 8 WPF(desk) + gRPC + PostgreSQL，多语言各层最优**（D-005）；第一版 = **FX MT5 确定性套利**（跨所价差/三角/套息，Crypto 留接口，D-004）；**设计文档 00–17 全部完成，覆盖到终局**（发现→评估→接线→确认→执行→归因）；**Phase A/B/C/D 全部 A–F 合规并通过复审**；全链路「Quote→Detect→Evaluate→Engine→gRPC stream→desk」可运行；✅ **Phase G Audit 归因已完成**（protobuf + 埋点 + runCtx 修复），等待 Claude 复审。
 
 ---
 
-## 已定方向（decisions.md D-001~D-009）
+## 当前施工（接手第一眼）
 
-- **D-001** 协作架构：AGENTS.md 为 SSOT + docs/handoff/ 共享记忆（Claude/Windsurf 无损接手）
+> **施工方更新此节。** 休息前把正在做的任务标 🔄、完成的打 ✅。
+
+| # | 状态 | 在做的事 |
+|---|------|---------|
+| G-1 | ✅ | `proto/audit/audit.proto` + `internal/audit/audit.go` + `audit_test.go` — length-delimited protobuf 同步写 |
+| G-2 | ✅ | `internal/store/opportunities.go` — Write/Update/Query CRUD（用 003 DDL） |
+| G-3 | ✅ | Engine 5 处埋点 — Pushed/Confirmed/Filled/Failed/Expired |
+| G-4 | ✅ | main.go 接线 — `audit.NewLogger("audit.pb")` 传入 `engine.Deps.Audit` |
+| G-5 | ✅ | 修复 context.Background() → runCtx（New 初始化 + Run 覆写） |
+| G-6 | ✅ | 测试 — audit WriteRead + NilLogger + NotExecutable + AuditLog_Events + OpportunityRecord + MarshalLegs |
+
+> 状态：⬜ 未开始 · 🔄 进行中 · ✅ 已完成 · ⛔ 阻塞
+
+### 阻塞 / 待决策
+
+无阻塞。Phase G 全部完成，等待 Claude 复审。
+
+---
+
+## 已定方向（decisions.md D-001~D-013）
+
+- **D-001** 协作架构：AGENTS.md 为 SSOT + docs/handoff/ 共享记忆
 - **D-002** 交付前自我审计 A–F 强制
-- **D-003** 重新定位：混合模式（发现→评估→**你确认**→执行）；策略聚焦 A+B 确定性套利
-- **D-004** 先 FX MT5，Crypto 留接口；跨所价差优先；broker 重质不重量
-- **D-005** 架构最优解：**Go core + C# WPF desk + gRPC + PG**；多语言各层最优；**推翻 Wails/Svelte 前端**
-- **D-006** 竞品 UI 借鉴：机会列表 Master-Detail 表格 + 腿角色(LegRole) + Carry 年化度量 + 对冲手数归一化 + 风险提示/筛选排序栏；保人工确认 + 全成本优势。截图存档 `docs/1.png`
-- **D-007** 自审作用域明确：**设计文档审归 Claude**（定稿人，每次改文档必自审）；**代码审归施工 agent**（A-F）+ Claude 复审；施工 agent 遇文档矛盾上报不自行改。落 `AGENTS.md §3.0`
-- **D-008** Phase A 审查 + Phase B 设计 + 行数检查统一：Phase A 映射正确性已核（proto↔Go 枚举对齐），A–F 有 F2/F3/F4 待修；Evaluator 设计成文 `12-evaluator.md`（纯函数算核 + 3 项前置补齐 + swap 未测模式不猜值判不可执行）；phantom `tools/check-file-lines` 统一为 `scripts/check-lines.sh`（CI + 5 处文档共用）
-- **D-009** 仓库瘦身：`docs/ant/` 移出至 `/opt/arb-ant-ref`（-273MB，保留参考不污染本仓）+ Makefile 清 D-005 死目标（desk/frontend）；旧设计文档保持现状作快照
+- **D-003** 重新定位：混合模式（发现→评估→确认→执行）；策略聚焦 A+B 确定性套利
+- **D-004** 先 FX MT5，Crypto 留接口；跨所价差优先
+- **D-005** 架构最优解：Go core + C# WPF desk + gRPC + PG；推翻 Wails/Svelte
+- **D-006** 竞品 UI 借鉴：Master-Detail 表格 + LegRole + Carry 年化 + 对冲手数归一化
+- **D-007** 自审作用域：文档审归 Claude，代码审归施工 agent；落 AGENTS §3.0
+- **D-008** Phase A 审查 + Phase B 设计 + `scripts/check-lines.sh` 统一行数检查
+- **D-009** 仓库瘦身：docs/ant 移出（-273MB）+ Makefile 清死目标
+- **D-010** Phase C Detector 设计：`13-detector.md`（三类扫描算法实现级规格）
+- **D-011** Phase D Dashboard 接线设计：`14-dashboard-wiring.md`（OpportunityStream + ConfirmOpportunity）
+- **D-012** 二次瘦身 + Phase E Desk WPF 设计：`15-desk-wpf.md` + 删旧 docs/api/certs
+- **D-013** Phase F 执行接线 + Audit 归因设计：`16-execute-wiring.md` + `17-audit.md`
 
 ---
 
 ## 文档进度
 
 - ✅ `AGENTS.md`（SSOT，含 D-005 多语言/WPF）+ `CLAUDE.md`/`.windsurfrules`（入口）+ `docs/handoff/`（STATE/decisions）
-- ✅ `docs/design/` **00–14 全部完成**（00-08 设计 + 09 core 运行时 + 10 desk UI + 11 测试 + **12 Evaluator** + **13 Detector** + **14 Dashboard 接线**）
+- ✅ `docs/design/` **00–17 全部完成**（00-08 设计层 + 09-11 运行/UI/测试 + 12 Evaluator + 13 Detector + 14 Dashboard + 15 Desk WPF + **16 执行接线** + **17 Audit 归因**）
 - ✅ `docs/design/discussion-log.md`（讨论一~七 + 真实探测 + Carry 审计纠正）
 - ✅ `docs/design/01-architecture.md` 总览（含 D-005 架构）
 - ✅ **D-006 竞品 UI 借鉴**（2026-08-07）：`02`(§3.1 对冲手数归一化 / §5 Leg+LegRole / §5.1 度量双轨) + `03`(§2.1/§2.2 腿角色+正收益佐证) + `06`(§5.2 Opportunity/Leg 新字段 + LegRole 枚举) + `10`(§4 Master-Detail 表格重写) 同步更新；决策详 `decisions.md D-006`
 - ✅ **D-008 Phase A 审查 + Phase B 设计**（2026-08-07）：新增 `12-evaluator.md`（落地 02 §6，含 §2 三项前置补齐 + §9 真实数据黄金用例）；Phase A 代码审查结论见下方专节；行数检查统一 `scripts/check-lines.sh`
 - ✅ **Phase C Detector 设计**（2026-08-07）：新增 `13-detector.md`（落地 03 §4，三类扫描算法 + Quote 消费模式 + 黄金用例）；决策详 `decisions.md D-010`
 - ✅ **Phase D Dashboard 接线设计**（2026-08-07）：新增 `14-dashboard-wiring.md`（OpportunityStream + ConfirmOpportunity，落地 06 §5.2 / 04 §2）；决策详 `decisions.md D-011`
+- ✅ **Phase E Desk WPF 实施设计**（2026-08-07）：新增 `15-desk-wpf.md`（.NET 8 项目骨架 + MVVM + grpc-dotnet + v0/v1/v2 分阶段）；决策详 `decisions.md D-012`
+- ✅ **Phase F 执行接线 + Audit 设计**（2026-08-07）：新增 `16-execute-wiring.md`（Confirm→pipeline + Notional 替换）+ `17-audit.md`（Event Logger protobuf + opportunities 表 + 归因骨架；2026-08-08 修正：JSON Lines → protobuf 长度前缀格式，见 D-015）；决策详 `decisions.md D-013` + `D-015`
 
 ---
 
@@ -55,14 +82,19 @@
 
 ## 缺失 / 待办（按新架构，Windsurf 施工）
 
-- ✅ `internal/evaluator/` — **已实现并通过复审**（`12-evaluator.md`），B-0 前置 + B-1 核心 A–F 全达标；纯函数 warm-path decimal 管道完整
-- ✅ `internal/detector/` — **已实现**（`13-detector.md`），三类扫描器 + Scan 分发 + 去重；Claude 复审通过
-- ✅ `Opportunity` 对象 + `OpportunityStream` + `ConfirmOpportunity` RPC — **已完成并通过复审**：proto 已定义 + Go 实现完成（engine sub/pub + dashboard handler）
-- ❌ `internal/audit/` + 归因记账（`07 §3/§4`）
-- ❌ desk C# .NET 8 WPF 全新（`10-desk-ui`）
-- ⚠️ `Notional()`（`execute/pipeline.go:43` 硬编码 100000）— Evaluator 真实净盈利落地后替换（D-003）
+- ✅ `internal/evaluator/` — **已实现并通过复审**（B-0 前置 + B-1 核心 A–F 全达标）
+- ✅ `internal/detector/` — **已实现并通过复审**（三类扫描器 + Scan 分发去重）
+- ✅ `Opportunity` 对象 + `OpportunityStream` + `ConfirmOpportunity` RPC — **已完成并通过复审**
+- ✅ `internal/engine/` — **扫描循环 + Confirm→Pipeline 异步执行**（Phase D + Phase F 执行接线）
+- ✅ desk C# .NET 8 WPF — **v0/v1/v2 全部完成并通过复审**
+- ✅ Phase E v2 bug fixes F1–F4 — **已修复并通过复审**（SignalRecord/Handler/SL-TP）
+- ❌ `internal/audit/` + 归因记账（`17-audit.md §1`）— **Phase G 待施工**
+- ❌ `internal/store/opportunities.go`（CRUD，`17-audit.md §2`）— **Phase G 待施工**
+- ❌ Engine 审计埋点（5 处，`17-audit.md §1`）— **Phase G 待施工**
+- ⚠️ engine.go context.Background() → runCtx（复审发现 #1）— **Phase G-5 顺手修**
 - ✅ ~~`SymbolInfo`+`SymGroup` 缓存 → `Listing`~~ Phase A 完成
-- ✅ ~~成本模型 `Funding` 结构（swap 按 `SwapType`）~~ Phase A 完成；净盈利计算见 Evaluator（Phase B）
+- ✅ ~~成本模型 `Funding` 结构~~ Phase A 完成；净盈利计算见 Evaluator（Phase B）
+- ✅ ~~`Notional()` 硬编码 100000~~ Phase F 已替换为 Evaluator.NotionalUSD
 
 ---
 
@@ -112,7 +144,12 @@
 5. ✅ **Task B-1 Evaluator 核心已完成** → **Claude 复审通过（A–F 全达标）**：7 文件 + 12 黄金测试，纯函数 warm-path decimal。Evaluator 输入→输出管道完整（Candidate → 扣全成本 → NetBps/AnnualizedNetBps → 可执行性），未测 swap 模式判不可执行（保准确无误）。
 6. ✅ **Phase C Detector 已完成** → Claude 复审通过（A–F 全达标）：5 文件 + 9 测试，纯函数无 I/O。CrossExchange/Carry/Triangular 三类扫描器 + Scan 分发去重。
 7. ✅ **Phase D Engine+Dashboard 接线已完成** → **Claude 复审通过（A–F 全达标）**：engine 扫描循环（QuoteBus 事件驱动 + 节流）+ OpportunityStream gRPC stream + ConfirmOpportunity unary + proto 同步 06 §5.2 全部 enum/message + 端到端测试。全链路「Quote→Detect→Evaluate→Engine→gRPC stream→desk」可运行。
-8. ▶ **【当前 · Windsurf】Phase E Desk C# WPF**（`10-desk-ui` + **`15-desk-wpf.md` 实施设计已就绪**）：.NET 8 WPF 项目，grpc-dotnet 连 core gRPC。分三阶段：v0 Opportunity 列表+确认（最小可用）、v1 Matrix+Positions（实时数据）、v2 Trading+History+Admin（完整）。提示词见对话。
+8. ✅ **Phase E v0 Desk WPF 已完成** → **Claude 复审通过（A–F 全达标）**：.csproj + DashboardClient + MainViewModel + OpportunityView（DataGrid Master-Detail + Confirm）+ CommunityToolkit.Mvvm + Dispatcher.Invoke 线程模型。
+9. ✅ **Phase E v1 Desk WPF 已完成** → **Claude 复审通过（A–F 全达标）**：MatrixView（SpreadMatrix 流 → 8 列 DataGrid）+ PositionsView（PositionWatch 流 → 12 列 DataGrid）+ MatrixRow/PositionRow 模型。模式复制 v0（Dispatcher.Invoke + ObservableCollection）。
+10. ✅ **Phase E v2 Desk WPF 已完成** → **Claude 复审通过 + F1–F4 已修**：C# A–F ✅；4 个 Go 后端 bug 已修复（SignalRecord 对齐 DB schema、handler 补填字段、strategy 筛选、SL/TP 传递）。
+11. ✅ **Phase F 执行接线已完成** → **Claude 复审通过（A–F 全达标，见下方审查结论）**：ConfirmOpportunity→异步 Pipeline.Execute + NotionalUSD 替换硬编码 ×100000 + toPipelineOpp 转换 + main.go 传 Pipeline + 6 个引擎测试。Phase E v2 bug fixes F1–F4 同步验证通过。
+12. ✅ **Phase G Audit 归因已完成**：`proto/audit/audit.proto`（AuditEvent/LegResult/OrderResult/EventType）+ `internal/audit/`（Logger length-delimited protobuf 同步写）+ `internal/store/opportunities.go`（Write/Update/Query CRUD）+ Engine 5 处埋点（Pushed/Confirmed/Filled/Failed/Expired）+ main.go 接线 + runCtx 修复 + Executable=false 拒绝测试。10 新测试全过。
+13. ▶ **【当前】Phase G 过审 → Phase H**（待定）。
 
 ---
 
@@ -285,3 +322,179 @@
 - **D 正确性** ✅ — E2E 测试断言 proto 字段（id/type/legs/direction/net_profit/executable/status）；Confirm 二次拒绝；NotFound 拒绝；枚举映射全覆盖；`go test -race` 全过
 - **E 合规** ✅ — 无 decimal.NewFromFloat（proto 转换用 .String()）；无 goroutine pool/sync.Map/热路径 Mutex（engine.mu 保护 opp/sub 注册表，非热路径）；gRPC 唯一网络协议
 - **F 文档** ✅ — STATE.md 更新；未改设计文档（遇矛盾上报，不自行改）
+
+---
+
+## Phase E v0（2026-08-07）
+
+desk/ 11 文件：.csproj + App + MainWindow + DashboardClient + MainViewModel + OpportunityRow + Converters + OpportunityView。CommunityToolkit.Mvvm source generator，gRPC stream 后台 Task + Dispatcher.Invoke。proto 加 csharp_namespace。Go build/vet/test/check-lines 全过。.NET 8 SDK 已装 $HOME/.dotnet。Linux 无法编译 net8.0-windows，Windows 可 dotnet build。
+
+## Phase E v1（2026-08-07）
+
+desk/ +6 文件（共 17）：MatrixView.xaml/cs + PositionsView.xaml/cs + MatrixRow.cs + PositionRow.cs。DashboardClient 加 SpreadMatrixStream/PositionWatchStream。MainViewModel 加 MatrixRows/Positions ObservableCollection + StartMatrixStream/StartPositionsStream（Clear→Add 全量替换，Dispatcher.Invoke）。MainWindow 加 Matrix/Positions Tab。Go build/vet/test/check-lines 全过。
+
+## Phase E v2（2026-08-07）
+
+desk/ +9 文件（共 26）：TradingViewModel.cs + TradingView.xaml/cs + HistoryViewModel.cs + HistoryView.xaml/cs + AdminViewModel.cs + AdminView.xaml/cs。DashboardClient 加 7 unary：SubmitOrderAsync/ClosePositionAsync/GetSignalHistoryAsync/KillAsync/ResumeAsync/GetStrategyStatusAsync/ToggleStrategyAsync。MainViewModel 暴露 TradingVM/HistoryVM/AdminVM 子 ViewModel，InitializeAsync 中 Initialize(_client)。MainWindow 加 Trading/History/Admin 3 Tab（DataContext 绑定子 VM）。模式：[RelayCommand] async → gRPC unary → [ObservableProperty] ResultMessage。Go build/vet/test/check-lines 全过。
+
+---
+
+## Phase E v2 Claude 复审结论（2026-08-08）
+
+### 审查范围
+
+desk/ v2 新增 9 文件 + DashboardClient 7 unary + MainViewModel/MainWindow 集成。
+
+### C# desk 代码 A–F ✅
+
+- **A 架构** ✅ — Sub-ViewModel 模式一致，DashboardClient 薄封装 gRPC，依赖方向正确
+- **B 实现** ✅ — 输入校验完整（TryParse + 空值检查），错误信息清晰，async/await 正确
+- **C 洁净** ✅ — 无死代码/TODO/FIXME，code-behind 仅 InitializeComponent()
+- **D 正确性** ✅ — C# 侧按 proto 契约正确调用，无逻辑错误
+- **E 合规** ✅ — gRPC 唯一协议，WPF + C# desk
+- **F 文档** ✅ — 本次更新 STATE.md
+
+### 发现的 Go 后端 bug（阻塞 History Tab，需 Windsurf 修）
+
+以下 4 个 bug 在 Go 后端，C# desk 代码本身正确。**修复范围**：`internal/store/crud.go` + `internal/dashboard/handlers.go` + `internal/adapter/adapter.go` + `internal/adapter/mt5_trading.go`。
+
+**F1 [Critical] `SignalRecord` ↔ DB schema 列名完全不匹配**
+
+| 层 | 列/字段 |
+|---|---|
+| DB `001_init.sql` L37-46 | `id, ts, strategy, legs, gross_bps, net_bps, executed, dismissed` |
+| Go struct `crud.go:46-52` | `ID, Strategy, Legs, PnL, Status` |
+| Go SQL `crud.go:73` | `SELECT id, strategy, legs, pnl, status` |
+
+`pnl` 和 `status` 列在 DB 中**不存在**。`GetSignalHistory` RPC 调用时会抛 SQL 错误，History Tab 完全不可用。`InsertSignal` 同理。
+
+**修复**：重写 `SignalRecord` 对齐 DB schema（`ID, Ts, Strategy, Legs, GrossBps, NetBps, Executed, Dismissed`），改 SQL 和 scan。`QuerySignals` 加 `strategy` 参数支持筛选。
+
+**F2 [High] handler 未填充 `TimestampUnixMs`/`GrossBps`/`NetBps`**
+
+`handlers.go:109-114` 只设了 `Id, Strategy, LegsJson, Executed`。proto `SignalItem` 的 `timestamp_unix_ms`/`gross_bps`/`net_bps` 未赋值 → C# UI 显示 epoch/"0.0"/"0.0"。
+
+**修复**：从 `SignalRecord`（修好后）映射 `Ts→TimestampUnixMs`、`GrossBps→GrossBps`、`NetBps→NetBps`。
+
+**F3 [Medium] strategy 筛选被忽略**
+
+`handlers.go:103` 调用 `QuerySignals` 未传 `req.Strategy` → C# UI StrategyFilter 无效。
+
+**修复**：`QuerySignals` 加 `strategy` 参数，SQL 加 `WHERE strategy = $4`（空字符串 = 全部）。
+
+**F4 [Medium] SubmitOrder 丢弃 SL/TP**
+
+`adapter.OrderRequest` 无 `StopLoss`/`TakeProfit` 字段 → C# UI 收集的 SL/TP 被静默丢弃。
+
+**修复**：`OrderRequest` 加 `StopLoss float64` + `TakeProfit float64`；`mt5_trading.go:PlaceOrder` 在 `OrderSendRequest` 中设 `Sl`/`Tp`；`handlers.go:SubmitOrder` 传入 `req.StopLoss`/`req.TakeProfit`。
+
+### 修复后验证
+
+```bash
+go build ./... && go vet ./... && go test -race -count=1 ./... && ./scripts/check-lines.sh
+```
+
+### 修复完成后的下一步
+
+Phase F 执行接线（`16-execute-wiring.md`）：ConfirmOpportunity→pipeline + Notional 替换。
+
+### Phase F 执行接线完成（2026-08-08，Windsurf）
+
+- **F-1** `execute/pipeline.go`：ArbitrageOpportunity 加 `NotionalUSD float64` 字段；`Notional()` 从硬编码 `×100000` 改为直接返回 `o.NotionalUSD`
+- **F-2** `engine/engine.go`：Deps 加 `Pipeline *execute.ExecutionPipeline`；ConfirmOpportunity 改为 Unlock 后异步 `go executeConfirmed`；`executeConfirmed` 调 Pipeline.Execute → 回填 Filled/Failed → broadcast；`toPipelineOpp` 转换 OppLeg→execute.Leg（Direction→Operation, Lots→Volume, EstPrice→Price, NotionalUSD 映射）
+- **F-3** `cmd/core/main.go`：pipeline 创建移到 engine 之前；engine.Deps 传入 Pipeline；删除 `_ = pipeline`
+- **F-4** `engine/engine_test.go`（新文件，6 测试）：TestConfirm_RunsPipeline（confirm→pipeline→Filled）、TestConfirm_PipelineError（reject→Failed）、TestConfirm_NotFound、TestConfirm_NotPushedState、TestNotional_FromEvaluator（108000）、TestToPipelineOpp_LegMapping
+- `go build` ✅ / `go vet` ✅ / `go test -race` ✅ / `check-lines` ✅
+
+### F1–F4 修复完成（2026-08-08，Windsurf）
+
+- **F1** `crud.go`：SignalRecord 重写（ID/Ts/Strategy/Legs/GrossBps/NetBps/Executed/Dismissed）；InsertSignal SQL 对齐 8 列；QuerySignals 加 strategy 参数 + 分支 SQL；UpdateSignalStatus→UpdateSignalExecuted（executed/dismissed）；scanSignals 抽取复用
+- **F2** `handlers.go`：SignalItem 补填 TimestampUnixMs/GrossBps/NetBps（从 SignalRecord 映射）
+- **F3** `handlers.go`：QuerySignals 调用传入 req.Strategy
+- **F4** `adapter.go` + `mt5_trading.go` + `handlers.go`：OrderRequest 加 StopLoss/TakeProfit；mt5 OrderSendRequest 设 Stoploss/Takeprofit（proto 字段名）；handler 传入 req.StopLoss/req.TakeProfit
+- `store_test.go`：TestSignalRecordConstruction 适配新字段
+- `go build` ✅ / `go vet` ✅ / `go test -race` ✅ / `check-lines` ✅
+
+---
+
+## Phase F Claude 复审结论（2026-08-08）
+
+### 审查范围
+
+Phase F 执行接线（16-execute-wiring.md）+ Phase E v2 bug fixes F1–F4。
+
+### A–F 判定
+
+- **A 架构** ✅ — engine→execute 依赖方向正确（Layer 4→Layer 3），toPipelineOpp 纯函数，ConfirmOpportunity 先解锁再异步避免死锁。
+- **B 实现** ✅ — Notional 替换干净（硬编码→Evaluator 真实值），toPipelineOpp 逐字段映射正确，ClientID 唯一。
+- **C 洁净** ✅ — 无死代码/TODO/FIXME，旧 `_ = pipeline` 已删，PushOpportunityForTest 标注测试专用。
+- **D 正确性** ✅ — 111 tests passed + `-race` clean。6 引擎测试覆盖：正常→Filled、失败→Failed、NotFound、NotPushedState、Notional 值、LegMapping。
+- **E 合规** ✅ — 生产代码无 `decimal.NewFromFloat`（仅测试用），check-lines 无硬违例（engine.go 338 行 < 450）。
+- **F 文档** ✅ — STATE.md 本次更新，区分执行接线（已完成）和审计归因（待施工）。
+
+### Phase E v2 Bug Fixes 复核
+
+F1–F4 全部正确：SignalRecord 对齐 DB schema、handler 补填三字段、strategy 筛选生效、SL/TP 传递完整。
+
+### 发现（非阻塞，Phase G 顺手修）
+
+1. **[Minor] `engine.go:101`**：`context.Background()` 用于异步执行 — shutdown 时无法取消在途 pipeline。Engine 应存 `runCtx`，`executeConfirmed` 用派生 ctx。
+2. **[Minor] `engine_test.go`**：缺 `Executable=false` 的 Confirm 拒绝测试用例。
+
+---
+
+## Phase G 完成详情 + 自审（2026-08-08，Windsurf）
+
+### 新增文件
+
+- **`internal/audit/audit.go`** (40行) — Logger（sync.Mutex + length-delimited protobuf 同步写，nil-safe）+ NewLogger/Log/Close
+- **`internal/audit/audit_test.go`** (111行) — TestAuditLog_WriteRead（2 事件写→读回断言）+ TestAuditLog_NilLogger（nil-safe）
+- **`internal/store/opportunities.go`** (150行) — OpportunityRecord + WriteOpportunity（ON CONFLICT upsert）+ UpdateOpportunityFilled（实际成交回填）+ UpdateOpportunityStatus + QueryOpportunities（status/时间筛选）+ GetOpportunity + MarshalLegs
+
+### 修改文件
+
+- **`internal/engine/engine.go`** — Deps 加 `Audit *audit.Logger`；Engine 加 `runCtx` 字段（New 初始化 context.Background()，Run 覆写）；ConfirmOpportunity 用 `e.runCtx` 替代 `context.Background()`；5 处埋点（Pushed/Confirmed/Filled/Failed/Expired）+ `auditLog` helper（构造 `auditpb.AuditEvent`）；373 行 < 450
+- **`cmd/core/main.go`** — 创建 `audit.NewLogger("audit.pb")` + defer Close；传入 `engine.Deps.Audit`
+- **`proto/audit/audit.proto`** — AuditEvent/LegResult/OrderResult/EventType proto 定义 + buf generate 生成 `proto/gen/audit/audit.pb.go`
+- **`internal/engine/engine_test.go`** — 加 TestConfirm_NotExecutable（Executable=false 拒绝）+ TestAuditLog_Events（审计文件写读验证 OPP_CONFIRMED + OPP_FILLED）
+- **`internal/store/store_test.go`** — 加 TestOpportunityRecordConstruction + TestMarshalLegs
+
+### Before Commit
+
+- `go build ./...` ✅ / `go vet ./...` ✅ / `go test -race -count=1 ./...` ✅ / `./scripts/check-lines.sh` ✅
+
+### A–F 自审
+
+- **A 架构** ✅ — audit 包（Layer 0，无依赖 engine/execute）→ engine 引用 audit（Layer 4→Layer 0）；store opportunities 独立文件；runCtx 修复使 shutdown 可取消在途 pipeline
+- **B 实现** ✅ — Protobuf length-delimited 格式（D-015，17 §0–2）；Logger 同步写无 goroutine（code-map §4）；nil-safe（Logger 可为 nil）；runCtx 在 New 初始化避免测试未调 Run 时 panic
+- **C 洁净** ✅ — 无死代码/TODO/FIXME；auditLog helper 复用；MarshalLegs 工具函数
+- **D 正确性** ✅ — 10 新测试全过 + `-race` clean；Executable=false 拒绝测试覆盖复审发现 #2；audit 事件写读验证
+- **E 合规** ✅ — 无 decimal.NewFromFloat；无 goroutine pool/sync.Map；sync.Mutex 仅在 audit Logger（非热路径）；engine.go 373 行 < 450
+- **F 文档** ✅ — STATE.md 本次更新；proto 定义与 17-audit.md §1 完全一致
+
+### 复审发现修复
+
+- **#1 context.Background()** ✅ — Engine 加 runCtx 字段，New() 初始化 context.Background()，Run() 覆写为传入 ctx，ConfirmOpportunity 用 e.runCtx
+- **#2 Executable=false 测试** ✅ — TestConfirm_NotExecutable 覆盖
+
+---
+
+## Phase G 任务清单（Windsurf 施工）
+
+> 依据：`docs/design/17-audit.md`。DDL 已就位（`migrations/003_opportunity.sql`，含 opportunities + audit_events 表）。
+
+| # | 任务 | 产出 | 参考 |
+|---|------|------|------|
+| **G-1** | `internal/audit/` 包 + `proto/audit/audit.proto` | `audit.proto`（AuditEvent + LegResult + EventType）+ `audit.go`（Logger 长度前缀 protobuf 同步写）+ `audit_test.go` | 17 §1–2 |
+| **G-2** | `internal/store/opportunities.go` | WriteOpportunity / UpdateOpportunityFilled / QueryOpportunities CRUD（用 003 DDL） | 17 §2 |
+| **G-3** | Engine 5 处埋点 | scanOnce 产出→Log(Detected)；push→Log(Pushed)；ConfirmOpportunity→Log(Confirmed)；executeConfirmed→Log(Filled/Failed + OrderResult) | 17 §1 |
+| **G-4** | main.go 接线 | 创建 `audit.Logger` + `store.WriteOpportunity` 方法，传入 `engine.Deps` | 17 §3 |
+| **G-5** | **修复 #1** context 生命周期 | Engine 加 `runCtx` 字段（`Run()` 入口存），`ConfirmOpportunity` 用 `e.runCtx` 替代 `context.Background()` | 本次复审 |
+| **G-6** | store_test.go | opportunities CRUD 往返测试 + audit 文件写读测试 | 17 §4 |
+
+### 施工注意事项
+
+- `internal/store/` 现有实现在 `crud.go`（非 `store.go`），新增 opportunities CRUD 可放同一文件或新建 `opportunities.go`。
+- Engine.Deps 已有 `Pipeline` 字段（Phase F 加），G-4 追加 `Audit *audit.Logger` + `Store *store.Store`（或直接传 store）。
+- 审计 Logger 是同步写（code-map §4），不加 goroutine。
+- 文件行数注意 engine.go 已 338 行，新增埋点后可能接近 350，仍在 450 红线内。

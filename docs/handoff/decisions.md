@@ -301,3 +301,103 @@ Phase C 中 Windsurf 顺手建的 `internal/engine/` 已完成扫描循环（Sna
 - `proto/dashboard/dashboard.proto` 新增内容；`buf generate` 重生成 Go + C# stub。
 - `internal/dashboard/opportunity.go` 新增。
 - Phase D 施工后，全链路「Quote → Detect → Evaluate → Engine → gRPC → desk」可运行。
+
+---
+
+## D-012 · 仓库二次瘦身 + Phase E Desk WPF 设计（2026-08-07）
+
+**背景**
+D-009 移走 docs/ant（273MB）后，跟踪文件里仍有被 docs/design/ 取代的旧设计文档（evaluation-framework.md 63K、implementation.md 36K）、非我方代码的 mtapi Go 示例（docs/api/ 440K）、以及无任何引用的旧 Wails desk TLS 证书（certs/ 2.8K）。用户要求彻底清理使仓库干净。同时 Phase E desk WPF 需要实施级设计文档。
+
+**决策**
+1. **删 12 个死文件**（`git rm`）：`docs/evaluation-framework.md` + `docs/implementation.md`（被 00-15 取代）+ `docs/api/`（8 文件，mtapi 示例）+ `certs/`（2 文件，旧 TLS 证书无引用）。AGENTS §11 索引同步去 implementation.md、补 docs/design/。
+2. **Desk WPF 实施设计 `15-desk-wpf.md`**：.NET 8 项目骨架 + NuGet 包（Grpc.Net.Client/Grpc.Tools/CommunityToolkit.Mvvm）+ MVVM 模式 + grpc-dotnet 线程模型 + 6 视图文件清单 + v0→v1→v2 分阶段实施。
+3. **Desk 优先于 audit**：归因校准需要真实成交数据 → 成交需要确认→执行接线 → 确认需要 desk UI → 先 desk。
+
+**理由**
+- 删除的文件覆盖 "旧设计/外部示例/死配置" 三类，删除后仓库只有当前设计+当前代码，无歧义。
+- Desk WPF 是 C# 独立项目（D-005），Windsurf 可直接创建 .NET 项目。
+- 分阶段（v0 最小可用 → v1/v2 完善）降低风险，每阶段独立可验收。
+
+**影响**
+- git 跟踪文件 -12（540K），工作树 3.4M。
+- `15-desk-wpf.md` 新增；code-map §7 加 Phase E 文件清单。
+- AGENTS §11 索引更新。
+
+---
+
+## D-013 · Phase F 执行接线 + Audit 归因设计（2026-08-07）
+
+**背景**
+Phase E desk WPF v2 完成后，下一步是把 Engine 的 ConfirmOpportunity 接到 ExecutionPipeline（让人确认的机会真正下单），同时用 Evaluator 算好的真实 NotionalUSD 替换 pipeline 里的硬编码 ×100000。另外归因记账（17-audit.md）是「准确无误」闭环的最后一块——成交后用实际 swap/commission/滑点校准 Evaluator 预估参数。
+
+**决策**
+1. **设计成文两份**：`16-execute-wiring.md`（执行接线 + Notional 替换）+ `17-audit.md`（Event Logger + opportunities 表 + 归因骨架）。
+2. **ConfirmOpportunity → 异步 Pipeline.Execute**：gRPC unary 立即返回 `{Accepted: true}`，go routine 异步执行 pipeline → 结果回填 Filled/Failed → broadcast。
+3. **Notional 替换**：`ArbitrageOpportunity` 加 `NotionalUSD float64` 字段，`Notional()` 直接返回该字段（由 Evaluator 算，不再硬编码 ×100000）。
+4. **Audit JSON Lines**（非 protobuf 文件）：同步写、人工可 grep/jq，Phase F 归因分析直接用。
+5. **opportunities 表 + audit_events 表**：DDL 含预估/实际/偏差字段，支持归因校准查询。
+
+**理由**
+- 异步执行不阻塞 gRPC 返回，用户确认后立即看到 "Confirmed"。
+- Notional 替换消除最后一个硬编码魔术数（D-003）。
+- JSON Lines 审计比 protobuf 更实用（人工可读、可 grep、可 jq）。
+
+**影响**
+- `docs/design/16-execute-wiring.md` + `17-audit.md` 新增。
+- `code-map.md §7` 加 Phase F 文件清单（后拆为 Phase F 执行接线 + Phase G Audit）。
+- Phase F 施工范围：F-1~F-4（执行接线）+ G-1~G-6（审计归因）。
+
+---
+
+## D-014 · Phase F 复审：执行接线通过、审计归因拆分 Phase G（2026-08-08）
+
+**背景**
+Windsurf 完成 Phase F 施工后 Claude 复审。实际交付 = 执行接线（16-execute-wiring.md）全部完成 + Phase E v2 bug fixes F1–F4 完成，但审计归因（17-audit.md）**零交付**（`internal/audit/` 不存在、Engine 无埋点、store/opportunities.go 不存在）。DDL 已就位（`migrations/003_opportunity.sql`，Phase A 已提交）。
+
+**决策**
+1. **执行接线部分 A–F 全达标**：架构正确（无循环依赖）、Notional 替换干净、6 引擎测试覆盖正常/失败/边界/Cancel、go build/vet/test/check-lines 全过。
+2. **Phase E v2 bug fixes F1–F4 复核通过**：SignalRecord 对齐 DB schema、handler 补填字段、strategy 筛选生效、SL/TP 传递完整。
+3. **审计归因拆为 Phase G**（独立 phase，G-1~G-6）：`internal/audit/` 包 + store CRUD + Engine 5 处埋点 + main.go 接线 + context 生命周期修复 + 测试。
+4. **复审发现 2 项**（非阻塞，Phase G 顺手修）：① `engine.go:101` `context.Background()` → 应用 engine 的 `runCtx`（shutdown 时取消在途 pipeline）；② `engine_test.go` 缺 `Executable=false` 的 Confirm 拒绝测试。
+
+**理由**
+- 执行接线可独立验收（A–F 全达标），不等审计代码绑在一起提交。
+- 审计归因是独立功能块（§2.3 cross-scope），拆 Phase G 符合约束。
+- DDL 已在 Phase A 提交，Phase G 只需写 Go 代码，不碰 SQL。
+
+**影响**
+- STATE.md 更新：Phase F 执行接线 → 已通过；Phase G Audit → 待施工（6 子任务清单）。
+- code-map.md §7 拆分 Phase F（done）和 Phase G（pending）。
+- decisions.md 本条目（D-014）。
+
+---
+
+## D-015 · 审计日志格式修正：JSON Lines → Protobuf（2026-08-08）
+
+**背景**
+17-audit.md 初版设计审计 Logger 用 JSON Lines 格式（`encoding/json`，`json.Encoder`）。
+用户指出这违反 `constraints.md §二 2.1`（审计日志 MUST 用 protobuf），且 JSON 本身有严谨性问题：
+无 schema 校验、数字精度为 float64、字段类型漂移不报错。审计日志是归因校准的**数据源**——不严谨 = 校准不准 = 「准确无误」崩塌。
+
+**决策**
+1. **审计日志格式改为 protobuf 长度前缀**（`varint(len) + proto.Marshal(body)`），标准 streaming protobuf 格式。
+2. **新增 `proto/audit/audit.proto`**：`AuditEvent` + `LegResult` + `OrderResult` + `EventType` 枚举。
+   Decimal 字段走 string（与 dashboard proto 一致），时间用 `google.protobuf.Timestamp`。
+3. **Logger 写文件用 `proto.Marshal` + `binary.PutUvarint` 长度前缀**（不用 `json.Encoder`）。
+4. **人读方案**：`cat audit.pb | protoc --decode=arb.audit.AuditEvent proto/audit/audit.proto`（标准 protoc 管道），
+   或可选的 Go 便利工具 `tools/readaudit/main.go`（~30 行，非必须）。
+5. **不影响归因查询**：归因统计走 PG `opportunities` 表（SQL），不走 audit.pb 文件。
+   audit.pb 是 append-only 不可篡改的完整事件流；PG 表是结构化查询层。
+
+**理由**
+- JSON 的"人能读"是以牺牲严谨性为代价——审计日志是归因校准数据源，不严谨不如不记。
+- protobuf = 编译期 schema + 精确 decimal（string 字段）+ 向后兼容。
+- `protoc --decode` 已覆盖"人读"需求，无需另造工具。
+- constraints §二 2.1 原文："审计日志 (protobuf)"——初版设计偏离了约束，修正回正轨。
+
+**影响**
+- `docs/design/17-audit.md` 重写：§0 加"为什么必须是 protobuf"、§1 proto 定义、§2 Logger 改用长度前缀。
+- STATE.md / code-map.md / practices.md 同步更新，去除所有 JSON Lines 引用。
+- Phase G-1 任务范围扩大：加 `proto/audit/audit.proto`（新建 proto 文件 + buf generate）。
+- decisions.md 本条目（D-015）。

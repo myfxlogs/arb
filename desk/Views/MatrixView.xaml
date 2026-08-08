@@ -1,0 +1,32 @@
+<UserControl x:Class="ArbDesk.Views.MatrixView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{Binding MatrixTimestamp, StringFormat='Updated: {0}'}"
+                   Foreground="#888" FontSize="11" Margin="0,0,0,4" />
+
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding MatrixRows}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Broker" Binding="{Binding Broker}" Width="140" />
+                <DataGridTextColumn Header="CCY" Binding="{Binding BaseCurrency}" Width="50" />
+                <DataGridTextColumn Header="Connected" Binding="{Binding IsConnected}" Width="70" />
+                <DataGridTextColumn Header="Equity" Binding="{Binding Equity}" Width="90" />
+                <DataGridTextColumn Header="FreeMargin" Binding="{Binding FreeMargin}" Width="90" />
+                <DataGridTextColumn Header="SwapLong" Binding="{Binding SwapLongBps}" Width="70" />
+                <DataGridTextColumn Header="SwapShort" Binding="{Binding SwapShortBps}" Width="70" />
+                <DataGridTextColumn Header="Symbols" Binding="{Binding SymbolsSummary}" Width="80" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,84 @@
+<UserControl x:Class="ArbDesk.Views.TradingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Submit Order -->
+        <GroupBox Grid.Row="0" Header="Submit Order" Padding="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Label Grid.Row="0" Grid.Column="0" Content="Broker:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Broker}" Margin="4" />
+
+                <Label Grid.Row="0" Grid.Column="2" Content="Symbol:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="0" Grid.Column="3" Text="{Binding Symbol}" Margin="4" />
+
+                <Label Grid.Row="1" Grid.Column="0" Content="Side:" VerticalAlignment="Center" />
+                <ComboBox Grid.Row="1" Grid.Column="1" Text="{Binding Side}" Margin="4" IsEditable="True">
+                    <ComboBoxItem Content="Buy" />
+                    <ComboBoxItem Content="Sell" />
+                </ComboBox>
+
+                <Label Grid.Row="1" Grid.Column="2" Content="Lots:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding LotsText}" Margin="4" />
+
+                <Label Grid.Row="2" Grid.Column="0" Content="Price:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding PriceText}" Margin="4" />
+
+                <Label Grid.Row="2" Grid.Column="2" Content="Slippage:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding SlippageText}" Margin="4" />
+
+                <Label Grid.Row="3" Grid.Column="0" Content="SL:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding StopLossText}" Margin="4" />
+
+                <Label Grid.Row="3" Grid.Column="2" Content="TP:" VerticalAlignment="Center" />
+                <TextBox Grid.Row="3" Grid.Column="3" Text="{Binding TakeProfitText}" Margin="4" />
+            </Grid>
+        </GroupBox>
+
+        <!-- Close Position -->
+        <GroupBox Grid.Row="1" Header="Close Position" Padding="8" Margin="0,8,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Label Content="Broker:" VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Text="{Binding CloseBroker}" Margin="4" />
+
+                <Label Grid.Column="2" Content="Ticket:" VerticalAlignment="Center" />
+                <TextBox Grid.Column="3" Text="{Binding CloseTicketText}" Margin="4" />
+            </Grid>
+        </GroupBox>
+
+        <!-- Buttons + Result -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,12,0,0">
+            <Button Content="Submit Order" Command="{Binding SubmitOrderCommand}"
+                    Padding="16,6" Margin="0,0,8,0" />
+            <Button Content="Close Position" Command="{Binding ClosePositionCommand}"
+                    Padding="16,6" Margin="0,0,16,0" />
+            <TextBlock Text="{Binding ResultMessage}" VerticalAlignment="Center"
+                       Foreground="#FFA500" FontWeight="Bold" />
+        </StackPanel>
+    </Grid>
+</UserControl>

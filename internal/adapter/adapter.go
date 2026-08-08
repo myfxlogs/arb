@@ -43,12 +43,14 @@ const (
 
 // OrderRequest is the unified order submission request.
 type OrderRequest struct {
-	ClientID  string
-	Symbol    string
-	Operation OrderOperation
-	Volume    decimal.Decimal
-	Price     float64
-	Slippage  int32
+	ClientID    string
+	Symbol      string
+	Operation   OrderOperation
+	Volume      decimal.Decimal
+	Price       float64
+	Slippage    int32
+	StopLoss    float64
+	TakeProfit  float64
 }
 
 // OrderState classifies the result state of an order.

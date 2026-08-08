@@ -1,0 +1,36 @@
+<UserControl x:Class="ArbDesk.Views.PositionsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="{Binding PositionsTimestamp, StringFormat='Updated: {0}'}"
+                   Foreground="#888" FontSize="11" Margin="0,0,0,4" />
+
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding Positions}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Broker" Binding="{Binding Broker}" Width="140" />
+                <DataGridTextColumn Header="Ticket" Binding="{Binding Ticket}" Width="90" />
+                <DataGridTextColumn Header="Symbol" Binding="{Binding Symbol}" Width="80" />
+                <DataGridTextColumn Header="Side" Binding="{Binding Side}" Width="50" />
+                <DataGridTextColumn Header="Lots" Binding="{Binding Lots}" Width="60" />
+                <DataGridTextColumn Header="OpenPrice" Binding="{Binding OpenPrice}" Width="80" />
+                <DataGridTextColumn Header="Current" Binding="{Binding CurrentPrice}" Width="80" />
+                <DataGridTextColumn Header="FloatingPnL" Binding="{Binding FloatingPnl}" Width="90" />
+                <DataGridTextColumn Header="Swap" Binding="{Binding SwapAccrued}" Width="70" />
+                <DataGridTextColumn Header="Commission" Binding="{Binding Commission}" Width="80" />
+                <DataGridTextColumn Header="OpenTime" Binding="{Binding OpenTime}" Width="90" />
+                <DataGridTextColumn Header="Comment" Binding="{Binding Comment}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

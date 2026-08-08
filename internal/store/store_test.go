@@ -24,13 +24,20 @@ func TestTickRecordConstruction(t *testing.T) {
 
 func TestSignalRecordConstruction(t *testing.T) {
 	sr := SignalRecord{
-		ID:       "sig-001",
-		Strategy: "triangular",
-		Legs:     "leg1,leg2,leg3",
-		Status:   "pending",
+		ID:        "sig-001",
+		Ts:        time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC),
+		Strategy:  "triangular",
+		Legs:      "leg1,leg2,leg3",
+		GrossBps:  5.2,
+		NetBps:    3.1,
+		Executed:  false,
+		Dismissed: false,
 	}
 	if sr.ID != "sig-001" {
 		t.Errorf("ID = %s, want sig-001", sr.ID)
+	}
+	if sr.NetBps != 3.1 {
+		t.Errorf("NetBps = %v, want 3.1", sr.NetBps)
 	}
 }
 
@@ -78,4 +85,42 @@ func TestAuditEntryConstruction(t *testing.T) {
 	if ae.EventType != "order_placed" {
 		t.Errorf("EventType = %s", ae.EventType)
 	}
+}
+
+func TestOpportunityRecordConstruction(t *testing.T) {
+r := OpportunityRecord{
+ID:             "opp-001",
+Type:           "CROSS_EXCHANGE",
+Status:         "PUSHED",
+Legs:           `[{"broker":"BrokerA","symbol":"EURUSD"}]`,
+GrossProfit:    "10.00000000",
+NetProfit:      "8.00000000",
+NetBps:         "3.50000000",
+QuoteTime:      time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC),
+ExpiresAt:      time.Date(2026, 8, 8, 12, 0, 5, 0, time.UTC),
+Confidence:     0.95,
+}
+if r.ID != "opp-001" {
+t.Errorf("ID = %s, want opp-001", r.ID)
+}
+if r.Type != "CROSS_EXCHANGE" {
+t.Errorf("Type = %s, want CROSS_EXCHANGE", r.Type)
+}
+if r.NetProfit != "8.00000000" {
+t.Errorf("NetProfit = %s", r.NetProfit)
+}
+}
+
+func TestMarshalLegs(t *testing.T) {
+legs := []map[string]any{
+{"broker": "BrokerA", "symbol": "EURUSD", "direction": "Buy"},
+{"broker": "BrokerB", "symbol": "EURUSD", "direction": "Sell"},
+}
+s, err := MarshalLegs(legs)
+if err != nil {
+t.Fatalf("MarshalLegs: %v", err)
+}
+if s == "" {
+t.Error("expected non-empty JSON")
+}
 }

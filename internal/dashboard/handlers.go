@@ -25,12 +25,14 @@ func (s *Server) SubmitOrder(ctx context.Context, req *dashpb.ManualOrderRequest
 		op = adapter.OpSell
 	}
 	result, err := a.PlaceOrder(ctx, adapter.OrderRequest{
-		ClientID:  req.ClientId,
-		Symbol:    req.Symbol,
-		Operation: op,
-		Volume:    decimalutil.FromFloat64(req.Lots, 8),
-		Price:     req.Price,
-		Slippage:  req.Slippage,
+		ClientID:    req.ClientId,
+		Symbol:      req.Symbol,
+		Operation:   op,
+		Volume:      decimalutil.FromFloat64(req.Lots, 8),
+		Price:       req.Price,
+		Slippage:    req.Slippage,
+		StopLoss:    req.StopLoss,
+		TakeProfit:  req.TakeProfit,
 	})
 	if err != nil {
 		return &dashpb.ManualOrderReply{ClientId: req.ClientId, Status: "Rejected", Error: err.Error()}, nil
@@ -100,17 +102,20 @@ func (s *Server) GetSignalHistory(ctx context.Context, req *dashpb.SignalHistory
 	if limit == 0 {
 		limit = 100
 	}
-	signals, err := s.store.QuerySignals(ctx, from, to, limit)
+	signals, err := s.store.QuerySignals(ctx, from, to, req.Strategy, limit)
 	if err != nil {
 		return nil, fmt.Errorf("query signals: %w", err)
 	}
 	items := make([]*dashpb.SignalHistoryReply_SignalItem, 0, len(signals))
 	for _, sig := range signals {
 		items = append(items, &dashpb.SignalHistoryReply_SignalItem{
-			Id:       sig.ID,
-			Strategy: sig.Strategy,
-			LegsJson: sig.Legs,
-			Executed: sig.Status == "executed",
+			Id:              sig.ID,
+			TimestampUnixMs: sig.Ts.UnixMilli(),
+			Strategy:        sig.Strategy,
+			LegsJson:        sig.Legs,
+			GrossBps:        sig.GrossBps,
+			NetBps:          sig.NetBps,
+			Executed:        sig.Executed,
 		})
 	}
 	return &dashpb.SignalHistoryReply{Items: items}, nil

@@ -4,10 +4,13 @@
 > **开工第一件事：读 `AGENTS.md` 全文 + `docs/handoff/STATE.md`。**
 > 本文件仅补充 Windsurf 专属行为；与 `AGENTS.md` 冲突时，**以 `AGENTS.md` 为准**。
 
-## 开工前必读
+## 开工前必读（按此顺序）
 1. `AGENTS.md` — 约束 SSOT + 工作方法 + 自我审计 + 接手协议（本文件不能替代它，必须读全文）。
-2. `docs/handoff/STATE.md` — 当前工作状态、阻塞、下一步、未决决策（上一个 AI 留下的交接）。
-3. `docs/code-map.md` — 依赖图 + 数据流 + Phase 文件清单（写代码前必读）。
+2. `docs/handoff/STATE.md` — 当前工作状态。**特别注意「当前施工」表格**（知道自己该做哪个子任务）+ **「阻塞 / 待决策」**（知道有没有等 Claude 回复的事）。
+3. `docs/handoff/practices.md` — **高频打回模式 + 代码风格约定 + 动手前思考清单**。读了不会被审回来。
+4. `docs/handoff/WORKING.md` — Claude ↔ Windsurf 协作协议（角色、通信约定、中断恢复步骤）。
+5. `docs/code-map.md` — 依赖图 + 数据流 + Phase 文件清单（写代码前必读）。
+6. 任务相关的 `docs/design/`（如 `17-audit.md`）。
 
 ## 必须遵守的工作方法（AGENTS.md §2 摘要）
 - **Root-Cause-First**：功能消失/退化/bug，先 `git log --all --oneline -- <path>` + `git blame`，禁止"看到没了就重写"。
@@ -26,10 +29,15 @@
 - 存疑按"不达标"处理，当场修；修不好降级为"未完成"。自审结论写入 commit/PR 或 `STATE.md`。
 
 ## 收工前必写（无损接手 — 失职红线）
+
 1. 通过 §3 自我审计（A–F 全达标）。
-2. 更新 `docs/handoff/STATE.md`：当前进度 / 阻塞 / 下一步 / 未决决策。
-3. 重要架构决策追加 `docs/handoff/decisions.md`。
-4. 这几条是另一个 AI（Claude Code）能无缝接手的保证。**收工不写 STATE.md = 失职。**
+2. **更新 `docs/handoff/STATE.md`「当前施工」表格**：
+   - 已完成的子任务标 ✅，进行中的标 🔄。
+   - 不要只改自由文本——表格是接手方第一眼看的东西。
+3. **有阻塞写「阻塞 / 待决策」**：设计矛盾、需要 Claude 决策的事放这里，不要在自由文本里埋。
+4. 重要架构决策追加 `docs/handoff/decisions.md`。
+5. **提交代码（含 STATE.md）**，让 git 状态干净——未提交文件 = 施工中断信号。
+6. 这几条是另一个 AI（Claude Code）能无缝接手的保证。**收工不写 STATE.md = 失职。**
 
 ## Before Commit（AGENTS.md §10）
 ```bash

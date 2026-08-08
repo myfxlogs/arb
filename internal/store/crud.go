@@ -44,44 +44,63 @@ func (s *Store) InsertTicks(ctx context.Context, ticks []TickRecord) error {
 
 // SignalRecord represents an arbitrage signal for storage.
 type SignalRecord struct {
-	ID       string
-	Strategy string
-	Legs     string // JSONB
-	PnL      *float64
-	Status   string
+	ID        string
+	Ts        time.Time
+	Strategy  string
+	Legs      string // JSONB
+	GrossBps  float64
+	NetBps    float64
+	Executed  bool
+	Dismissed bool
 }
 
 // InsertSignal inserts a new signal record.
 func (s *Store) InsertSignal(ctx context.Context, r SignalRecord) error {
 	_, err := s.pool.Exec(ctx,
-		`INSERT INTO signals (id, strategy, legs, pnl, status) VALUES ($1, $2, $3, $4, $5)`,
-		r.ID, r.Strategy, r.Legs, r.PnL, r.Status)
+		`INSERT INTO signals (id, ts, strategy, legs, gross_bps, net_bps, executed, dismissed)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		r.ID, r.Ts, r.Strategy, r.Legs, r.GrossBps, r.NetBps, r.Executed, r.Dismissed)
 	return err
 }
 
-// UpdateSignalStatus updates the status and PnL of a signal.
-func (s *Store) UpdateSignalStatus(ctx context.Context, id, status string, pnl *float64) error {
+// UpdateSignalExecuted marks a signal as executed or dismissed.
+func (s *Store) UpdateSignalExecuted(ctx context.Context, id string, executed, dismissed bool) error {
 	_, err := s.pool.Exec(ctx,
-		`UPDATE signals SET status = $2, pnl = $3 WHERE id = $1`,
-		id, status, pnl)
+		`UPDATE signals SET executed = $2, dismissed = $3 WHERE id = $1`,
+		id, executed, dismissed)
 	return err
 }
 
-// QuerySignals retrieves signals within a time range.
-func (s *Store) QuerySignals(ctx context.Context, from, to time.Time, limit int32) ([]SignalRecord, error) {
+// QuerySignals retrieves signals within a time range, optionally filtered by strategy.
+func (s *Store) QuerySignals(ctx context.Context, from, to time.Time, strategy string, limit int32) ([]SignalRecord, error) {
+	if strategy != "" {
+		rows, err := s.pool.Query(ctx,
+			`SELECT id, ts, strategy, legs, gross_bps, net_bps, executed, dismissed
+			 FROM signals WHERE ts >= $1 AND ts <= $2 AND strategy = $3 ORDER BY ts DESC LIMIT $4`,
+			from, to, strategy, limit)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		return scanSignals(rows)
+	}
 	rows, err := s.pool.Query(ctx,
-		`SELECT id, strategy, legs, pnl, status FROM signals
-		 WHERE ts >= $1 AND ts <= $2 ORDER BY ts DESC LIMIT $3`,
+		`SELECT id, ts, strategy, legs, gross_bps, net_bps, executed, dismissed
+		 FROM signals WHERE ts >= $1 AND ts <= $2 ORDER BY ts DESC LIMIT $3`,
 		from, to, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
+	return scanSignals(rows)
+}
 
+func scanSignals(rows pgx.Rows) ([]SignalRecord, error) {
 	var results []SignalRecord
 	for rows.Next() {
 		var r SignalRecord
-		if err := rows.Scan(&r.ID, &r.Strategy, &r.Legs, &r.PnL, &r.Status); err != nil {
+		if err := rows.Scan(&r.ID, &r.Ts, &r.Strategy, &r.Legs,
+			&r.GrossBps, &r.NetBps, &r.Executed, &r.Dismissed); err != nil {
 			return nil, err
 		}
 		results = append(results, r)

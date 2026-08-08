@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package arb.audit;
+
+option go_package = "arb/proto/audit";
+
+import "google/protobuf/timestamp.proto";
+
+message AuditEvent {
+  google.protobuf.Timestamp timestamp = 1;
+  EventType type = 2;
+  string opportunity_id = 3;
+  string gross_profit_est = 4;
+  string net_profit_est = 5;
+  string net_bps_est = 6;
+  int32 leg_count = 7;
+  OrderResult order_result = 8;
+  string detail = 9;
+}
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  EVENT_TYPE_DETECTED = 1;
+  EVENT_TYPE_PUSHED = 2;
+  EVENT_TYPE_CONFIRMED = 3;
+  EVENT_TYPE_FILLED = 4;
+  EVENT_TYPE_FAILED = 5;
+  EVENT_TYPE_EXPIRED = 6;
+}
+
+message LegResult {
+  string broker = 1;
+  string broker_symbol = 2;
+  string direction = 3;
+  string lots = 4;
+  string est_price = 5;
+  string actual_price = 6;
+  double slippage_bps = 7;
+  string swap = 8;
+  string commission = 9;
+  uint64 ticket = 10;
+}
+
+message OrderResult {
+  repeated LegResult legs = 1;
+  string total_swap = 2;
+  string total_commission = 3;
+  string total_slippage_bps = 4;
+  string actual_net_profit = 5;
+}

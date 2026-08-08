@@ -415,21 +415,34 @@ Phase D: Dashboard 机会闭环接线（已完成 2026-08-07，A–F 全达标�
   internal/dashboard/opportunity.go     # OpportunityStream + ConfirmOpportunity handler + 类型映射
   proto/dashboard/dashboard.proto       # +OppType/OppStatus/BuySell/LegRole/Opportunity/Leg/Event/Confirm/Stream RPC (06 §5.2)
 
-Phase E: Desk C# WPF 桌面应用（设计完成 docs/design/15-desk-wpf.md，待施工）
+Phase E: Desk C# WPF 桌面应用（v0 完成并通过复审，v1/v2 设计完成 `15-desk-wpf.md`，待施工）
   desk/ArbDesk.csproj                  # .NET 8 WPF + Grpc.Net.Client/Grpc.Tools/CommunityToolkit.Mvvm
   desk/Services/DashboardClient.cs     # GrpcChannel + gRPC client 封装
-  desk/ViewModels/OpportunityViewModel.cs # 机会列表 + Confirm ICommand + ObservableCollection
-  desk/Views/OpportunityView.xaml       # Master-Detail 表格（10 §4）
-  desk/ViewModels/MatrixViewModel.cs    # 价差矩阵
+  desk/ViewModels/MainViewModel.cs      # v0: 机会列表 + Confirm + ObservableCollection
+  desk/ViewModels/OpportunityRow.cs     # v0: INotifyPropertyChanged row
+  desk/Views/OpportunityView.xaml       # v0: DataGrid Master-Detail
+  desk/ViewModels/MatrixViewModel.cs    # v1: 价差矩阵（SpreadMatrix stream）
   desk/Views/MatrixView.xaml
-  desk/ViewModels/PositionsViewModel.cs # 持仓列表
+  desk/ViewModels/PositionsViewModel.cs # v1: 持仓列表（PositionWatch stream）
   desk/Views/PositionsView.xaml
-  desk/ViewModels/TradingViewModel.cs   # 手动交易
-  desk/Views/TradingView.xaml
-  desk/ViewModels/HistoryViewModel.cs   # 历史查询
-  desk/Views/HistoryView.xaml
-  desk/ViewModels/AdminViewModel.cs     # Kill Switch/策略开关
-  desk/Views/AdminView.xaml
+  desk/ViewModels/TradingViewModel.cs   # v2: 手动交易
+  desk/ViewModels/HistoryViewModel.cs   # v2: 历史查询
+  desk/ViewModels/AdminViewModel.cs     # v2: Kill/策略开关
+
+Phase F: 执行接线（已完成并通过复审 2026-08-08，16-execute-wiring.md）
+  ✅ internal/execute/pipeline.go        # ArbitrageOpportunity.NotionalUSD + Notional() 读字段
+  ✅ internal/engine/engine.go           # ConfirmOpportunity→异步 Pipeline.Execute + toPipelineOpp + FILLED/FAILED broadcast
+  ✅ cmd/core/main.go                    # pipeline 移到 engine 之前 + engine.Deps.Pipeline
+  ✅ internal/engine/engine_test.go      # 6 测试（Confirm/PipelineError/NotFound/NotPushed/Notional/LegMapping）
+
+Phase G: Audit 归因（设计完成 docs/design/17-audit.md，待施工）
+  ❌ proto/audit/audit.proto              # AuditEvent + LegResult + OrderResult + EventType
+  ❌ internal/audit/audit.go             # Event + EventType + Logger (长度前缀 protobuf)
+  ❌ internal/audit/audit_test.go        # 写读往返测试
+  ❌ internal/store/opportunities.go     # WriteOpportunity / UpdateOpportunityFilled / QueryOpportunities
+  ❌ internal/engine/engine.go           # 5 处审计埋点（Detected/Pushed/Confirmed/Filled/Failed）
+  ❌ cmd/core/main.go                    # audit.Logger 创建 + 传入 engine.Deps
+  ✅ migrations/003_opportunity.sql      # DDL 已就位（opportunities + audit_events 表）
 
 Phase 9: 集成
   test/integration/mt5_connect_test.go

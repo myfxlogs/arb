@@ -32,7 +32,9 @@
 | `12-evaluator.md` | Evaluator 算核：Candidate→扣全成本→净盈利+可执行性（落地 02 §6）+ Phase A→B 前置补齐 | ✅ |
 | `13-detector.md` | Detector 扫描器：三类扫描算法（CrossExchange/Carry/Triangular）+ Quote 消费 + 黄金用例（落地 03 §4） | ✅ |
 | `14-dashboard-wiring.md` | Dashboard 机会闭环接线：OpportunityStream + ConfirmOpportunity（落地 06 §5.2 / 04 §2） | ✅ |
-| `15-desk-wpf.md` | Desk C# WPF 实施规格：项目骨架 + MVVM + grpc-dotnet + 线程模型 + 分阶段落地（落地 10 + 06 §5.2） | ✅ |
+| `15-desk-wpf.md` | Desk C# WPF 实施规格：项目骨架 + MVVM + grpc-dotnet + 分阶段落地（10 + 06 §5.2） | ✅ |
+| `16-execute-wiring.md` | 执行接线：ConfirmOpportunity→ExecutionPipeline + Notional 替换 | ✅ |
+| `17-audit.md` | Audit 审计 + 归因记账：Event Logger + opportunities 表 + 校准闭环 | ✅ |
 
 ## 关键决策（见 `../handoff/decisions.md`）
 - **D-003**：混合模式（发现+评估+人确认+执行），非全自动；策略聚焦 A+B 确定性套利。

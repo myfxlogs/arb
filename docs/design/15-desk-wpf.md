@@ -142,12 +142,142 @@ public partial class OpportunityViewModel : ObservableObject
 - gRPC 流消费在后台 Task；UI 更新通过 `App.Current.Dispatcher.Invoke`
 - decimal 字段：`decimal.Parse(opp.NetProfit)` → 格式化展示
 
-### 其余 ViewModel 同理
-- MatrixViewModel：`await foreach (var m in _client.SpreadMatrix())` → `Dispatcher.Invoke` → 更新 `ObservableCollection<SpreadCell>`
-- PositionsViewModel：同上，`PositionWatch` 流
-- TradingViewModel：`ICommand` → `SubmitOrderAsync` / `ClosePositionAsync`
-- HistoryViewModel：`ICommand` → `GetSignalHistoryAsync`（unary，非流）
-- AdminViewModel：`ICommand` → `Kill` / `ToggleStrategy` / `Resume`
+### v1：MatrixViewModel + MatrixView
+
+```csharp
+public partial class MatrixViewModel : ObservableObject
+{
+    readonly DashboardClient _client;
+    CancellationTokenSource _cts = new();
+
+    public ObservableCollection<BrokerCell> Rows { get; } = new();
+
+    public async Task StartStream(CancellationToken ct)
+    {
+        await foreach (var m in _client.SpreadMatrix(ct))
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Rows.Clear();
+                foreach (var row in m.Rows)
+                    Rows.Add(new BrokerCell(row));
+            });
+        }
+    }
+}
+
+public class BrokerCell
+{
+    public string Broker { get; }
+    public string Symbol { get; }
+    public double Bid { get; }
+    public double Ask { get; }
+    public double Spread { get; }
+    public bool Arbitrageable { get; }  // from proto spread_cell
+    public BrokerCell(SpreadMatrixReply.Types.BrokerRow row) { /* map fields */ }
+}
+```
+
+MatrixView.xaml：`DataGrid` 绑 `Rows`，列 = Broker / Symbol / Bid / Ask / Spread，`Arbitrageable`=true 行高亮。
+
+### v1：PositionsViewModel + PositionsView
+
+```csharp
+public partial class PositionsViewModel : ObservableObject
+{
+    readonly DashboardClient _client;
+
+    public ObservableCollection<PositionRow> Positions { get; } = new();
+
+    public async Task StartStream(CancellationToken ct)
+    {
+        await foreach (var p in _client.PositionWatch(ct))
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Positions.Clear();
+                foreach (var b in p.Brokers)
+                foreach (var pos in b.Positions)
+                    Positions.Add(new PositionRow(b.Broker, pos));
+            });
+        }
+    }
+}
+
+public class PositionRow
+{
+    public string Broker { get; }
+    public string Symbol { get; }
+    public string Direction { get; }
+    public double Volume { get; }
+    public double OpenPrice { get; }
+    public double CurrentPrice { get; }
+    public double PnL { get; }
+    public double Swap { get; }
+    public PositionRow(string broker, Position pos) { /* map fields */ }
+}
+```
+
+PositionsView.xaml：`DataGrid` 绑 `Positions`，列 = Broker / Symbol / Direction / Volume / OpenPrice / CurrentPrice / PnL / Swap。
+
+### v2：Trading + History + Admin
+
+**TradingViewModel**：
+```csharp
+public partial class TradingViewModel : ObservableObject
+{
+    [ObservableProperty] string _broker, _symbol, _lots;
+    [ObservableProperty] BuySell _direction;
+
+    [RelayCommand]
+    async Task SubmitOrder() {
+        var reply = await _client.SubmitOrderAsync(new ManualOrderRequest {
+            Broker = Broker, Symbol = Symbol, Lots = Lots, Direction = Direction, Slippage = 5
+        });
+        LastResult = reply.Accepted ? "Order placed" : $"Rejected: {reply.Error}";
+    }
+
+    [RelayCommand]
+    async Task ClosePosition(PositionRow row) {
+        await _client.ClosePositionAsync(new ClosePositionRequest {
+            Broker = row.Broker, Ticket = row.Ticket, Volume = row.Volume
+        });
+    }
+}
+```
+TradingView.xaml：Broker/Symbol/Lots/Direction 输入框 + Submit/Close 按钮 + 结果文本。
+
+**HistoryViewModel**：
+```csharp
+public partial class HistoryViewModel : ObservableObject
+{
+    public ObservableCollection<SignalRow> Signals { get; } = new();
+
+    [RelayCommand]
+    async Task Load() {
+        var reply = await _client.GetSignalHistoryAsync(new SignalHistoryRequest());
+        Application.Current.Dispatcher.Invoke(() => {
+            Signals.Clear();
+            foreach (var s in reply.Signals) Signals.Add(new SignalRow(s));
+        });
+    }
+}
+```
+HistoryView.xaml：`DataGrid` 绑 `Signals`，列 = Time / Strategy / Legs / PnL / Status。`LoadCommand` 按钮触发。
+
+**AdminViewModel**：
+```csharp
+public partial class AdminViewModel : ObservableObject
+{
+    [ObservableProperty] bool _isKilled;
+    [ObservableProperty] string _strategyStatus;
+
+    [RelayCommand] async Task Kill() { await _client.KillAsync(new KillRequest()); IsKilled = true; }
+    [RelayCommand] async Task Resume() { await _client.ResumeAsync(new ResumeRequest()); IsKilled = false; }
+    [RelayCommand] async Task ToggleStrategy(string name) { await _client.ToggleStrategyAsync(...); }
+}
+```
+AdminView.xaml：Kill 按钮（红色）+ Resume + 策略开关列表。
 
 ---
 

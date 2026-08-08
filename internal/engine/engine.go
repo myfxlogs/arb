@@ -3,13 +3,22 @@ package engine
 import (
 	"context"
 	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 
+	"arb/internal/adapter"
+	"arb/internal/audit"
 	"arb/internal/bus"
 	"arb/internal/detector"
+	"arb/internal/decimalutil"
 	"arb/internal/evaluator"
+	"arb/internal/execute"
 	"arb/internal/listing"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	auditpb "arb/proto/gen/audit"
 )
 
 // SymMapProvider returns the current symbol_map (broker → brokerSymbol → canonical).
@@ -25,13 +34,16 @@ type Deps struct {
 	SymMap    SymMapProvider
 	Evaluator *evaluator.Evaluator
 	Detectors []detector.Detector
+	Pipeline  *execute.ExecutionPipeline
+	Audit     *audit.Logger
 	Throttle  time.Duration // min interval between scans (default 100ms)
 	Symbols   []string      // all broker symbols to snapshot
 }
 
 // Engine runs the scan loop: Snapshot → CanonicalIndex → Detect → Evaluate → push.
 type Engine struct {
-	deps Deps
+	deps  Deps
+	runCtx context.Context
 
 	mu   sync.RWMutex
 	opp  map[string]*evaluator.Opportunity // active opportunities by ID
@@ -41,16 +53,17 @@ type Engine struct {
 // OpportunityEvent is pushed to subscribers when an opportunity is created or updated.
 type OpportunityEvent struct {
 	Opp    *evaluator.Opportunity
-	Action string // "PUSHED" | "EXPIRED"
+	Action string // "PUSHED" | "EXPIRED" | "FILLED" | "FAILED"
 	Reason string
 }
 
 // New creates an Engine.
 func New(deps Deps) *Engine {
 	return &Engine{
-		deps: deps,
-		opp:  make(map[string]*evaluator.Opportunity),
-		sub:  make(map[chan OpportunityEvent]struct{}),
+		deps:   deps,
+		runCtx: context.Background(),
+		opp:    make(map[string]*evaluator.Opportunity),
+		sub:    make(map[chan OpportunityEvent]struct{}),
 	}
 }
 
@@ -76,29 +89,90 @@ func (e *Engine) GetOpportunity(id string) *evaluator.Opportunity {
 	return e.opp[id]
 }
 
-// ConfirmOpportunity transitions an opportunity from Pushed to Confirmed.
+// ConfirmOpportunity transitions an opportunity from Pushed to Confirmed
+// and asynchronously triggers execution via the pipeline.
 // Returns the opportunity if confirmed, nil if not found or not in Pushed state.
 func (e *Engine) ConfirmOpportunity(id string) (*evaluator.Opportunity, string) {
 	e.mu.Lock()
-	defer e.mu.Unlock()
 	opp, ok := e.opp[id]
 	if !ok {
+		e.mu.Unlock()
 		return nil, "opportunity not found"
 	}
 	if opp.Status != evaluator.OppStatusPushed {
+		e.mu.Unlock()
 		return nil, "opportunity not in Pushed state"
 	}
 	if !opp.Executable {
+		e.mu.Unlock()
 		return nil, "opportunity not executable"
 	}
 	opp.Status = evaluator.OppStatusConfirmed
+	e.mu.Unlock()
+
+	e.auditLog(auditpb.EventType_EVENT_TYPE_CONFIRMED, opp)
+
+	if e.deps.Pipeline != nil {
+		go e.executeConfirmed(e.runCtx, opp)
+	}
 	return opp, ""
+}
+
+// executeConfirmed runs the pipeline for a confirmed opportunity and broadcasts the result.
+func (e *Engine) executeConfirmed(ctx context.Context, opp *evaluator.Opportunity) {
+	pipeOpp := toPipelineOpp(opp)
+	err := e.deps.Pipeline.Execute(ctx, pipeOpp)
+
+	e.mu.Lock()
+	if err != nil {
+		opp.Status = evaluator.OppStatusFailed
+	} else {
+		opp.Status = evaluator.OppStatusFilled
+	}
+	e.mu.Unlock()
+
+	action := "FILLED"
+	evType := auditpb.EventType_EVENT_TYPE_FILLED
+	if err != nil {
+		action = "FAILED"
+		evType = auditpb.EventType_EVENT_TYPE_FAILED
+	}
+	e.auditLog(evType, opp)
+	e.broadcast(OpportunityEvent{Opp: opp, Action: action})
+}
+
+// toPipelineOpp converts an evaluator.Opportunity to an execute.ArbitrageOpportunity.
+func toPipelineOpp(opp *evaluator.Opportunity) execute.ArbitrageOpportunity {
+	legs := make([]execute.Leg, len(opp.Legs))
+	for i, l := range opp.Legs {
+		op := adapter.OpBuy
+		if l.Direction == evaluator.Sell {
+			op = adapter.OpSell
+		}
+		legs[i] = execute.Leg{
+			Broker:    l.Broker,
+			Symbol:    l.BrokerSymbol,
+			Operation: op,
+			Volume:    decimalutil.ToFloat64(l.Lots),
+			Price:     decimalutil.ToFloat64(l.EstPrice),
+			ClientID:  opp.ID + "-leg" + strconv.Itoa(i),
+		}
+	}
+	return execute.ArbitrageOpportunity{
+		Legs:        legs,
+		NotionalUSD: decimalutil.ToFloat64(opp.NotionalUSD),
+		Params: execute.StrategyParams{
+			OrderTimeout: 10 * time.Second,
+			MaxSlippage:  50,
+		},
+	}
 }
 
 // Run starts the event-driven scan loop. Subscribes to QuoteBus for all
 // symbols; on any quote arrival triggers a scan, throttled to Throttle
 // interval to avoid scanning on every single tick. Blocks until ctx cancelled.
 func (e *Engine) Run(ctx context.Context) {
+	e.runCtx = ctx
 	throttle := e.deps.Throttle
 	if throttle <= 0 {
 		throttle = 100 * time.Millisecond
@@ -208,6 +282,7 @@ func (e *Engine) scanOnce(ctx context.Context) {
 		e.opp[opp.ID] = opp
 		e.mu.Unlock()
 
+		e.auditLog(auditpb.EventType_EVENT_TYPE_PUSHED, opp)
 		e.broadcast(OpportunityEvent{
 			Opp:    opp,
 			Action: "PUSHED",
@@ -232,6 +307,7 @@ func (e *Engine) expireOld(ctx context.Context) {
 
 	for _, id := range expired {
 		opp := e.opp[id]
+		e.auditLog(auditpb.EventType_EVENT_TYPE_EXPIRED, opp)
 		e.broadcast(OpportunityEvent{
 			Opp:    opp,
 			Action: "EXPIRED",
@@ -266,6 +342,25 @@ func (e *Engine) PushOpportunityForTest(opp *evaluator.Opportunity) {
 	e.opp[opp.ID] = opp
 	e.mu.Unlock()
 	e.broadcast(OpportunityEvent{Opp: opp, Action: "PUSHED"})
+}
+
+// auditLog writes a protobuf audit event if the logger is configured.
+func (e *Engine) auditLog(evType auditpb.EventType, opp *evaluator.Opportunity) {
+	if e.deps.Audit == nil {
+		return
+	}
+	ev := &auditpb.AuditEvent{
+		Timestamp:      timestamppb.Now(),
+		Type:           evType,
+		OpportunityId:  opp.ID,
+		GrossProfitEst: opp.GrossProfit.String(),
+		NetProfitEst:   opp.NetProfit.String(),
+		NetBpsEst:      opp.NetBps.String(),
+		LegCount:       int32(len(opp.Legs)),
+	}
+	if err := e.deps.Audit.Log(ev); err != nil {
+		slog.Warn("engine: audit log", "error", err)
+	}
 }
 
 // genOppID generates a deterministic ID from candidate legs.

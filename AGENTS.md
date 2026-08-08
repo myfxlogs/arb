@@ -19,8 +19,10 @@
 
 1. 本文件（`AGENTS.md`）全文。
 2. `docs/handoff/STATE.md` — **当前工作状态、阻塞、下一步、未决决策**（无损接手的核心）。
-3. `docs/code-map.md` — 依赖图 + 数据流 + goroutine 拓扑 + Phase 文件清单（写任何代码前必读）。
-4. 任务相关的 `docs/`：`constraints.md` / `implementation.md` / `testing.md` / `development.md` / `operations.md` / `pitfalls.md`。
+3. `docs/handoff/practices.md` — **高频打回模式 + 代码风格约定**（写了不被审回来）。
+4. `docs/handoff/WORKING.md` — **协作协议**（角色、通信约定、中断恢复步骤）。
+5. `docs/code-map.md` — 依赖图 + 数据流 + goroutine 拓扑 + Phase 文件清单（写任何代码前必读）。
+6. 任务相关的 `docs/`：`constraints.md` / `implementation.md` / `testing.md` / `development.md` / `operations.md` / `pitfalls.md`。
 
 ---
 
@@ -115,9 +117,13 @@
 ## 4. 收工前必做（无损接手）
 
 1. 通过 §3 自我审计（A–F 全达标）。
-2. 更新 `docs/handoff/STATE.md`：当前进度 / 阻塞 / 下一步 / 未决决策。
+2. 更新 `docs/handoff/STATE.md`：
+   - **「当前施工」表格**：每个子任务标状态（⬜→🔄→✅），接手方第一眼看这里。
+   - **「阻塞 / 待决策」**：有设计矛盾或需对方回复的事，写在这里（不要埋在自由文本里）。
+   - 一句话现状 + 下一步。
 3. 重要架构决策追加到 `docs/handoff/decisions.md`（ADR-lite：背景 / 决策 / 理由）。
 4. 通过 §10 Before Commit。
+5. **提交代码**（含 STATE.md），让 git 状态干净 —— 未提交文件 = 施工中断信号。
 
 > 这是"另一个 AI 能无缝接手"的保证。**收工不写 STATE.md = 失职。**
 
@@ -251,11 +257,14 @@ govulncheck ./...                           # 已知漏洞
 | `AGENTS.md`（本文件） | AI 协作契约 + 约束 SSOT，所有 agent 入口 |
 | `docs/handoff/STATE.md` | 当前工作状态（开工读 / 收工写） |
 | `docs/handoff/decisions.md` | 跨会话架构决策记录 |
+| `docs/handoff/practices.md` | 共享实践记忆：高频打回模式 + 代码风格约定 |
+| `docs/handoff/WORKING.md` | Claude ↔ Windsurf 协作协议（角色、通信、中断恢复） |
 | `docs/code-map.md` | 包依赖图 + 数据流 + goroutine 拓扑 + 文件清单 |
 | `docs/constraints.md` | 13 章硬约束全文 |
-| `docs/implementation.md` | 18 节实现规范 + 代码骨架 |
+| `docs/design/` | 00–17 设计文档（权威实现规范，施工 agent 照此落地） |
+| `docs/design/discussion-log.md` | 设计讨论与决策推演记录 |
 | `docs/testing.md` | 测试规范 |
-| `docs/development.md` | 环境搭建 + 8 Phase 实施顺序 |
+| `docs/development.md` | 环境搭建 |
 | `docs/operations.md` | 运维操作手册 |
 | `docs/pitfalls.md` | 已发现陷阱 + 根因 + 修复（持续追加） |
 | `proto/` | mtapi + config + dashboard proto 定义 |
