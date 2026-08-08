@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16
     container_name: arb-postgres
     environment:
       POSTGRES_USER: arb
@@ -18,15 +18,19 @@ services:
       retries: 5
 
   core:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.core
     container_name: arb-core
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DB_DSN: "postgres://arb:arb@postgres:5432/arb?sslmode=disable"
+      ARB_PG_DSN: "postgres://arb:arb@postgres:5432/arb?sslmode=disable"
     ports:
       - "127.0.0.1:50051:50051"
+    volumes:
+      - ./audit.pb:/app/audit.pb
     restart: unless-stopped
 
 volumes:
