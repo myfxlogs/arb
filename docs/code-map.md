@@ -435,14 +435,18 @@ Phase F: 执行接线（已完成并通过复审 2026-08-08，16-execute-wiring.
   ✅ cmd/core/main.go                    # pipeline 移到 engine 之前 + engine.Deps.Pipeline
   ✅ internal/engine/engine_test.go      # 6 测试（Confirm/PipelineError/NotFound/NotPushed/Notional/LegMapping）
 
-Phase G: Audit 归因（设计完成 docs/design/17-audit.md，待施工）
-  ❌ proto/audit/audit.proto              # AuditEvent + LegResult + OrderResult + EventType
-  ❌ internal/audit/audit.go             # Event + EventType + Logger (长度前缀 protobuf)
-  ❌ internal/audit/audit_test.go        # 写读往返测试
-  ❌ internal/store/opportunities.go     # WriteOpportunity / UpdateOpportunityFilled / QueryOpportunities
-  ❌ internal/engine/engine.go           # 5 处审计埋点（Detected/Pushed/Confirmed/Filled/Failed）
-  ❌ cmd/core/main.go                    # audit.Logger 创建 + 传入 engine.Deps
-  ✅ migrations/003_opportunity.sql      # DDL 已就位（opportunities + audit_events 表）
+Phase G: Audit 归因（已完成 2026-08-08，Claude 复审条件通过）
+	  ✅ proto/audit/audit.proto              # AuditEvent + LegResult + OrderResult + EventType
+	  ✅ proto/gen/audit/audit.pb.go          # buf generate 生成
+	  ✅ internal/audit/audit.go             # Logger (长度前缀 protobuf 同步写，nil-safe)
+	  ✅ internal/audit/audit_test.go        # 写 2 event → 读回 → 字段断言
+	  ✅ internal/store/opportunities.go     # WriteOpportunity/UpdateOpportunityFilled/QueryOpportunities/GetOpportunity
+	  ✅ internal/engine/engine.go           # 5 埋点（Pushed/Confirmed/Filled/Failed/Expired）+ runCtx 修复
+	  ✅ internal/engine/engine_test.go      # +TestConfirm_NotExecutable + TestAuditLog_Events
+	  ✅ cmd/core/main.go                    # audit.NewLogger("audit.pb") + defer Close + engine.Deps.Audit
+	  ✅ migrations/003_opportunity.sql      # DDL 已就位（opportunities + audit_events 表）
+	  ⚠️ store/opportunities.go CRUD 未接线引擎 — 只写 protobuf 文件，不写 PG（Phase H）
+	  ⚠️ DDL id UUID vs genOppID() 字符串 ID 不匹配 — 接线后 SQL 报错（Phase H）
 
 Phase 9: 集成
   test/integration/mt5_connect_test.go
